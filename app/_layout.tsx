@@ -4,28 +4,70 @@ import { NAV_THEME } from '@/lib/theme';
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { ThemeProvider } from '@react-navigation/native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PortalHost } from '@rn-primitives/portal';
+import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
+import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
+import { Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { db, expoDb } from '@/database/db';
+import migrations from '@/drizzle/migrations';
 
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary,
 } from 'expo-router';
 
+// Component that handles migrations and Drizzle Studio
+function MigrationHandler({ children }: { children: React.ReactNode }) {
+  // Set up Drizzle Studio
+  useDrizzleStudio(expoDb);
+
+  // Run migrations
+  const { success, error } = useMigrations(db, migrations);
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Migration error: {error.message}</Text>
+      </View>
+    );
+  }
+
+  if (!success) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Migration is in progress...</Text>
+      </View>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
+  const [queryClient] = React.useState(() => new QueryClient());
 
   return (
     <ClerkProvider tokenCache={tokenCache}>
-      <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
-        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <Routes />
-        <PortalHost />
-      </ThemeProvider>
+      <SafeAreaProvider>
+        <MigrationHandler>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
+              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+              <Routes />
+              <PortalHost />
+            </ThemeProvider>
+          </QueryClientProvider>
+        </MigrationHandler>
+      </SafeAreaProvider>
     </ClerkProvider>
   );
 }
