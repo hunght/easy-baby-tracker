@@ -1,29 +1,28 @@
-import '@/global.css';
-
-import { NAV_THEME } from '@/lib/theme';
-import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
-import { tokenCache } from '@clerk/clerk-expo/token-cache';
-import { ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { PortalHost } from '@rn-primitives/portal';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'nativewind';
-import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { LocalizationProvider } from '@/localization/LocalizationProvider';
 
+import { NotificationProvider } from '@/components/ui/NotificationContext';
 import { db, expoDb } from '@/database/db';
-import migrations from '@/drizzle/migrations';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import {
+  cancelStoredScheduledNotification,
+  restoreScheduledNotifications,
+} from '@/lib/notification-scheduler';
+import { LocalizationProvider, useLocalization } from '@/localization/LocalizationProvider';
+import * as Notifications from 'expo-notifications';
+import migrations from '../drizzle/migrations';
 
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
 
 // Component that handles migrations and Drizzle Studio
 function MigrationHandler({ children }: { children: React.ReactNode }) {
@@ -53,71 +52,106 @@ function MigrationHandler({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
-  const { colorScheme } = useColorScheme();
-  const [queryClient] = React.useState(() => new QueryClient());
-
   return (
-    <ClerkProvider tokenCache={tokenCache}>
-      <LocalizationProvider>
-        <SafeAreaProvider>
-          <MigrationHandler>
-            <QueryClientProvider client={queryClient}>
-              <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
-                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-                <Routes />
-                <PortalHost />
-              </ThemeProvider>
-            </QueryClientProvider>
-          </MigrationHandler>
-        </SafeAreaProvider>
-      </LocalizationProvider>
-    </ClerkProvider>
+    <LocalizationProvider>
+      <AppProviders />
+    </LocalizationProvider>
   );
 }
 
-SplashScreen.preventAutoHideAsync();
+function AppProviders() {
+  const colorScheme = useColorScheme();
+  const [queryClient] = useState(() => new QueryClient());
+  const { t } = useLocalization();
+  const router = useRouter();
 
-function Routes() {
-  const { isSignedIn, isLoaded } = useAuth();
+  // Initialize notification handler and restore scheduled notifications
+  useEffect(() => {
+    // Set up notification handler
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
+      }),
+    });
 
-  React.useEffect(() => {
-    if (isLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [isLoaded]);
+    // Restore scheduled notifications on app startup
+    // This ensures notifications persist even after app termination
+    restoreScheduledNotifications().catch((error) => {
+      console.error('Failed to restore scheduled notifications:', error);
+    });
 
-  if (!isLoaded) {
-    return null;
-  }
+    // Handle notification tap - navigate to appropriate screen
+    const handleNotificationResponse = async (response: Notifications.NotificationResponse) => {
+      const data = response.notification.request.content.data;
+
+      if (data?.type === 'feeding') {
+        // Cancel the scheduled notification since user is now logging the feeding
+        await cancelStoredScheduledNotification();
+        // Navigate to feeding screen
+        router.push('/feeding');
+      }
+      // Add other notification types here as needed
+    };
+
+    // Listen for notification taps when app is in foreground/background
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
+      handleNotificationResponse
+    );
+
+    // Check if app was opened from a notification (when app was closed)
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) {
+        handleNotificationResponse(response);
+      }
+    });
+
+    // Listen for notification received events to clean up stored notifications
+    const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
+      // If it's a feeding notification, clean up the stored state
+      if (notification.request.content.data?.type === 'feeding') {
+        restoreScheduledNotifications().catch((error) => {
+          console.error('Failed to clean up notification after receipt:', error);
+        });
+      }
+    });
+
+    return () => {
+      responseSubscription.remove();
+      receivedSubscription.remove();
+    };
+  }, [router]);
 
   return (
-    <Stack>
-      {/* Auth screens available but not required to use the app */}
-      <Stack.Screen name="(auth)/sign-in" options={SIGN_IN_SCREEN_OPTIONS} />
-      <Stack.Screen name="(auth)/sign-up" options={SIGN_UP_SCREEN_OPTIONS} />
-      <Stack.Screen name="(auth)/reset-password" options={DEFAULT_AUTH_SCREEN_OPTIONS} />
-      <Stack.Screen name="(auth)/forgot-password" options={DEFAULT_AUTH_SCREEN_OPTIONS} />
-
-      {/* Main app accessible whether signed in or not */}
-      <Stack.Screen name="index" />
-    </Stack>
+    <SafeAreaProvider>
+      <NotificationProvider>
+        <MigrationHandler>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <Stack>
+                <Stack.Screen name="index" options={{ headerShown: false }} />
+                <Stack.Screen name="profile-selection" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="feeding" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="pumping" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="diaper" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="sleep" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="health" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="growth" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="easy-schedule" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="easy-schedule-info" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="diary" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen name="modal" options={{ presentation: 'modal', title: t('modal.title') }} />
+                <Stack.Screen name="profile-edit" options={{ presentation: 'modal', headerShown: false }} />
+              </Stack>
+              <StatusBar style="auto" />
+            </ThemeProvider>
+          </QueryClientProvider>
+        </MigrationHandler>
+      </NotificationProvider>
+    </SafeAreaProvider>
   );
 }
-
-const SIGN_IN_SCREEN_OPTIONS = {
-  headerShown: false,
-  title: 'Sign in',
-};
-
-const SIGN_UP_SCREEN_OPTIONS = {
-  presentation: 'modal',
-  title: '',
-  headerTransparent: true,
-  gestureEnabled: false,
-} as const;
-
-const DEFAULT_AUTH_SCREEN_OPTIONS = {
-  title: '',
-  headerShadowVisible: false,
-  headerTransparent: true,
-};

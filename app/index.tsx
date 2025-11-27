@@ -1,86 +1,148 @@
-import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
-import { Text } from '@/components/ui/text';
-import { UserMenu } from '@/components/user-menu';
-import { useUser } from '@clerk/clerk-expo';
-import { Link, Stack } from 'expo-router';
-import { MoonStarIcon, XIcon, SunIcon } from 'lucide-react-native';
-import { useColorScheme } from 'nativewind';
-import * as React from 'react';
-import { Image, type ImageStyle, View } from 'react-native';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native';
 
-const LOGO = {
-  light: require('@/assets/images/react-native-reusables-light.png'),
-  dark: require('@/assets/images/react-native-reusables-dark.png'),
-};
+import { BabyProfileStep } from '@/components/BabyProfileStep';
+import { ConcernsStep } from '@/components/ConcernsStep';
+import { FeaturesStep } from '@/components/FeaturesStep';
+import { WelcomeStep } from '@/components/WelcomeStep';
+import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
+import { BabyProfilePayload, getActiveBabyProfile, getBabyProfiles, saveOnboardingProfile } from '@/database/baby-profile';
+import { useLocalization } from '@/localization/LocalizationProvider';
 
-const CLERK_LOGO = {
-  light: require('@/assets/images/clerk-logo-light.png'),
-  dark: require('@/assets/images/clerk-logo-dark.png'),
-};
 
-const LOGO_STYLE: ImageStyle = {
-  height: 36,
-  width: 40,
-};
 
-const SCREEN_OPTIONS = {
-  header: () => (
-    <View className="top-safe absolute left-0 right-0 flex-row justify-between px-4 py-2 web:mx-2">
-      <ThemeToggle />
-      <UserMenu />
-    </View>
-  ),
-};
+export default function OnboardingScreen() {
+  const { t } = useLocalization();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: BABY_PROFILE_QUERY_KEY,
+    queryFn: getActiveBabyProfile,
+    staleTime: 30 * 1000,
+  });
+  const { data: profiles = [], isLoading: profilesLoading } = useQuery({
+    queryKey: BABY_PROFILES_QUERY_KEY,
+    queryFn: getBabyProfiles,
+  });
+  const [step, setStep] = useState(0);
+  const [selectedConcerns, setSelectedConcerns] = useState<string[]>([]);
 
-export default function Screen() {
-  const { colorScheme } = useColorScheme();
-  const { user } = useUser();
+  useEffect(() => {
+    if (!profileLoading && !profilesLoading) {
+      if (profile) {
+        router.replace('/(tabs)');
+      } else if (profiles.length > 0) {
+        router.replace('/profile-selection');
+      }
+    }
+  }, [profile, profileLoading, profiles, profilesLoading, router]);
 
-  return (
-    <>
-      <Stack.Screen options={SCREEN_OPTIONS} />
-      <View className="flex-1 items-center justify-center gap-8 p-4">
-        <View className="flex-row items-center justify-center gap-3.5">
-          <Image
-            source={CLERK_LOGO[colorScheme ?? 'light']}
-            resizeMode="contain"
-            style={LOGO_STYLE}
-          />
-          <Icon as={XIcon} className="mr-1 size-5" />
-          <Image source={LOGO[colorScheme ?? 'light']} style={LOGO_STYLE} resizeMode="contain" />
-        </View>
-        <View className="max-w-sm gap-2 px-4">
-          <Text variant="h1" className="text-3xl font-medium">
-            Make it yours{user?.firstName ? `, ${user.firstName}` : ''}.
-          </Text>
-          <Text className="ios:text-foreground text-center font-mono text-sm text-muted-foreground">
-            Update the screens and components to match your design and logic.
-          </Text>
-        </View>
-        <View className="gap-2">
-          <Link href="https://go.clerk.com/8e6CCee" asChild>
-            <Button size="sm">
-              <Text>Explore Clerk Docs</Text>
-            </Button>
-          </Link>
-        </View>
+  const nextStep = () => {
+    if (step < 3) {
+      setStep((prev) => prev + 1);
+    }
+  };
+
+  const handleSaveProfile = async (profileData: BabyProfilePayload) => {
+    await saveOnboardingProfile(profileData);
+    await queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
+    await queryClient.invalidateQueries({ queryKey: BABY_PROFILES_QUERY_KEY });
+    router.replace('/(tabs)');
+  };
+
+  const toggleConcern = (id: string) =>
+    setSelectedConcerns((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
+
+  const headerText = useMemo(() => {
+    switch (step) {
+      case 0:
+        return t('onboarding.headers.welcome');
+      case 1:
+        return t('onboarding.headers.concerns');
+      case 2:
+        return t('onboarding.headers.features');
+      default:
+        return t('onboarding.headers.profile');
+    }
+  }, [step, t]);
+
+  if (profileLoading || profilesLoading || profile || profiles.length > 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF5C8D" />
+        <Text style={styles.loadingText}>
+          {profile
+            ? t('common.loadingDashboard')
+            : profiles.length > 0
+              ? t('common.loadingProfiles')
+              : t('common.loading')}
+        </Text>
       </View>
-    </>
-  );
-}
-
-const THEME_ICONS = {
-  light: SunIcon,
-  dark: MoonStarIcon,
-};
-
-function ThemeToggle() {
-  const { colorScheme, toggleColorScheme } = useColorScheme();
+    );
+  }
 
   return (
-    <Button onPress={toggleColorScheme} size="icon" variant="ghost" className="rounded-full">
-      <Icon as={THEME_ICONS[colorScheme ?? 'light']} className="size-6" />
-    </Button>
+    <View style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container} bounces={false}>
+        {step === 0 && (
+          <WelcomeStep
+            headerText={headerText}
+            onContinue={nextStep}
+          />
+        )}
+        {step === 1 && (
+          <ConcernsStep
+            headerText={headerText}
+            selectedConcerns={selectedConcerns}
+            toggleConcern={toggleConcern}
+            onContinue={nextStep}
+          />
+        )}
+        {step === 2 && <FeaturesStep headerText={headerText} onContinue={nextStep} />}
+        {step === 3 && (
+          <BabyProfileStep
+            headerText={headerText}
+            concerns={selectedConcerns}
+            onSave={handleSaveProfile}
+          />
+        )}
+      </ScrollView>
+    </View>
   );
 }
+
+
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFF5F7',
+  },
+  container: {
+    paddingTop: 60,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    gap: 24,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF5F7',
+    gap: 12,
+  },
+  loadingText: {
+    color: '#FF5C8D',
+    fontWeight: '600',
+  },
+});
+
+
