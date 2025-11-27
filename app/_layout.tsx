@@ -15,6 +15,7 @@ import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { LocalizationProvider } from '@/localization/LocalizationProvider';
 
 import { db, expoDb } from '@/database/db';
 import migrations from '@/drizzle/migrations';
@@ -57,17 +58,19 @@ export default function RootLayout() {
 
   return (
     <ClerkProvider tokenCache={tokenCache}>
-      <SafeAreaProvider>
-        <MigrationHandler>
-          <QueryClientProvider client={queryClient}>
-            <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
-              <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-              <Routes />
-              <PortalHost />
-            </ThemeProvider>
-          </QueryClientProvider>
-        </MigrationHandler>
-      </SafeAreaProvider>
+      <LocalizationProvider>
+        <SafeAreaProvider>
+          <MigrationHandler>
+            <QueryClientProvider client={queryClient}>
+              <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
+                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+                <Routes />
+                <PortalHost />
+              </ThemeProvider>
+            </QueryClientProvider>
+          </MigrationHandler>
+        </SafeAreaProvider>
+      </LocalizationProvider>
     </ClerkProvider>
   );
 }
@@ -89,20 +92,14 @@ function Routes() {
 
   return (
     <Stack>
-      {/* Screens only shown when the user is NOT signed in */}
-      <Stack.Protected guard={!isSignedIn}>
-        <Stack.Screen name="(auth)/sign-in" options={SIGN_IN_SCREEN_OPTIONS} />
-        <Stack.Screen name="(auth)/sign-up" options={SIGN_UP_SCREEN_OPTIONS} />
-        <Stack.Screen name="(auth)/reset-password" options={DEFAULT_AUTH_SCREEN_OPTIONS} />
-        <Stack.Screen name="(auth)/forgot-password" options={DEFAULT_AUTH_SCREEN_OPTIONS} />
-      </Stack.Protected>
+      {/* Auth screens available but not required to use the app */}
+      <Stack.Screen name="(auth)/sign-in" options={SIGN_IN_SCREEN_OPTIONS} />
+      <Stack.Screen name="(auth)/sign-up" options={SIGN_UP_SCREEN_OPTIONS} />
+      <Stack.Screen name="(auth)/reset-password" options={DEFAULT_AUTH_SCREEN_OPTIONS} />
+      <Stack.Screen name="(auth)/forgot-password" options={DEFAULT_AUTH_SCREEN_OPTIONS} />
 
-      {/* Screens only shown when the user IS signed in */}
-      <Stack.Protected guard={isSignedIn}>
-        <Stack.Screen name="index" />
-      </Stack.Protected>
-
-      {/* Screens outside the guards are accessible to everyone (e.g. not found) */}
+      {/* Main app accessible whether signed in or not */}
+      <Stack.Screen name="index" />
     </Stack>
   );
 }
