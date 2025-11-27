@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
 import { BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
@@ -24,63 +26,59 @@ export default function SettingsScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF5C8D" />
-        <Text style={styles.loadingText}>{t('common.loadingProfiles')}</Text>
+      <View className="flex-1 items-center justify-center bg-background gap-3">
+        <ActivityIndicator size="large" />
+        <Text className="text-primary font-semibold">{t('common.loadingProfiles')}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.screen}>
-      <TabPageHeader
-        title={t('settings.title')}
-        subtitle={t('settings.description')}
-      />
-      <ScrollView
-        style={styles.body}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.profilesList}>
+    <View className="flex-1 bg-background">
+      <TabPageHeader title={t('settings.title')} subtitle={t('settings.description')} />
+      <ScrollView className="flex-1" contentContainerClassName="px-6 pt-6 pb-10 gap-6" showsVerticalScrollIndicator={false}>
+        <View className="gap-4">
           {profiles.map((profile) => {
             const monthsOld = computeMonthsOld(profile.birthDate);
             return (
               <Pressable
                 key={profile.id}
-                style={styles.profileCard}
+                className="bg-card rounded-2xl p-5 flex-row items-center justify-between shadow-sm"
                 onPress={() =>
                   router.push({ pathname: '/profile-edit', params: { babyId: profile.id.toString() } })
-                }>
-                <View style={styles.profileInfo}>
-                  <Text style={styles.profileName}>{profile.nickname}</Text>
-                  <Text style={styles.profileAge}>
+                }
+              >
+                <View className="flex-1 gap-1">
+                  <Text className="text-xl font-extrabold text-foreground">{profile.nickname}</Text>
+                  <Text className="text-base text-muted-foreground">
                     {t('common.monthsOld', { params: { count: monthsOld } })}
                   </Text>
                 </View>
-                <Text style={styles.editText}>{`${t('settings.edit')} →`}</Text>
+                <Text className="text-base text-primary font-semibold">{`${t('settings.edit')} →`}</Text>
               </Pressable>
             );
           })}
-          <Pressable
-            style={styles.addButton}
-            onPress={() => router.push({ pathname: '/profile-edit', params: {} })}>
-            <Text style={styles.addButtonText}>{t('common.addNewBaby')}</Text>
-          </Pressable>
+          <Button className="rounded-3xl py-4 mt-2" onPress={() => router.push({ pathname: '/profile-edit', params: {} })}>
+            <Text className="text-primary-foreground text-[17px] font-bold">{t('common.addNewBaby')}</Text>
+          </Button>
         </View>
 
-        <View style={styles.languageSection}>
-          <Text style={styles.languageTitle}>{t('settings.languageTitle')}</Text>
-          <Text style={styles.languageSubtitle}>{t('settings.languageSubtitle')}</Text>
-          <View style={styles.languageOptions}>
+        <View className="bg-card rounded-2xl p-5 gap-3 shadow-sm">
+          <Text className="text-lg font-extrabold text-foreground">{t('settings.languageTitle')}</Text>
+          <Text className="text-sm text-muted-foreground">{t('settings.languageSubtitle')}</Text>
+          <View className="flex-row gap-3">
             {availableLocales.map((language) => {
               const isActive = locale === language.code;
               return (
                 <Pressable
                   key={language.code}
                   onPress={() => setLocale(language.code)}
-                  style={[styles.languageButton, isActive && styles.languageButtonActive]}>
-                  <Text style={[styles.languageButtonText, isActive && styles.languageButtonTextActive]}>
+                  className={[
+                    'flex-1 rounded-xl border py-3 items-center',
+                    isActive ? 'bg-primary border-primary' : 'bg-background border-border',
+                  ].join(' ')}
+                >
+                  <Text className={isActive ? 'text-primary-foreground font-semibold' : 'text-muted-foreground font-semibold'}>
                     {language.code === 'en' ? t('settings.english') : t('settings.vietnamese')}
                   </Text>
                 </Pressable>
@@ -93,117 +91,4 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#F6F2FF',
-  },
-  body: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 40,
-    gap: 24,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F6F2FF',
-    gap: 12,
-  },
-  loadingText: {
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  profilesList: {
-    gap: 16,
-  },
-  profileCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  profileInfo: {
-    flex: 1,
-    gap: 4,
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  profileAge: {
-    fontSize: 16,
-    color: '#8B8B8B',
-  },
-  editText: {
-    fontSize: 16,
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  addButton: {
-    backgroundColor: '#FF5C8D',
-    paddingVertical: 16,
-    borderRadius: 24,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  addButtonText: {
-    color: '#FFF',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-  languageSection: {
-    padding: 20,
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  languageTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  languageSubtitle: {
-    fontSize: 14,
-    color: '#8B8B8B',
-  },
-  languageOptions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  languageButton: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  languageButtonActive: {
-    backgroundColor: '#FF5C8D',
-    borderColor: '#FF5C8D',
-  },
-  languageButtonText: {
-    fontWeight: '600',
-    color: '#8B8B8B',
-  },
-  languageButtonTextActive: {
-    color: '#FFF',
-  },
-});
 

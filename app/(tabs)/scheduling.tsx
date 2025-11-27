@@ -1,16 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import {
-    ActivityIndicator,
-    Alert,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, View } from 'react-native';
+import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
 import { SCHEDULED_NOTIFICATIONS_QUERY_KEY } from '@/constants/query-keys';
@@ -106,48 +99,54 @@ export default function SchedulingScreen() {
     return (
       <View
         key={record.notificationId}
-        style={[styles.card, isNext && styles.nextCard]}
+        className={[
+          'bg-card border border-border rounded-2xl p-4 mb-3 shadow-sm',
+          isNext ? 'border-primary/30 shadow-md' : '',
+        ].join(' ')}
       >
-        <View style={styles.cardHeader}>
-          <Text style={styles.cardLabel}>{label}</Text>
-          <Text style={styles.cardType}>
-            {typeLabels[record.notificationType as keyof typeof typeLabels] ??
-              typeLabels.default}
+        <View className="flex-row items-center justify-between mb-2">
+          <Text className="text-base font-semibold text-foreground flex-1 mr-3">{label}</Text>
+          <Text className="text-xs font-semibold text-muted-foreground">
+            {typeLabels[record.notificationType as keyof typeof typeLabels] ?? typeLabels.default}
           </Text>
         </View>
-        <Text style={styles.cardTime}>
+        <Text className="text-sm text-foreground/80">
           {t('scheduling.dueAt', { params: { date: dateString, time: timeString } })}
         </Text>
-        <Text style={styles.cardRemaining}>
+        <Text className="text-[13px] text-muted-foreground mt-1">
           {t('scheduling.minutesRemaining', { params: { minutes: minutesLeft } })}
         </Text>
-        <TouchableOpacity
-          style={[
-            styles.cancelButton,
-            pendingId === record.notificationId && styles.cancelButtonDisabled,
-          ]}
+        <Button
+          variant="outline"
+          className="mt-3 rounded-xl"
           onPress={() => handleCancel(record.notificationId)}
           disabled={pendingId === record.notificationId}
         >
-          <Text style={styles.cancelButtonText}>{t('scheduling.cancel')}</Text>
-        </TouchableOpacity>
+          <Text className="text-destructive/80 font-semibold">
+            {t('scheduling.cancel')}
+          </Text>
+        </Button>
       </View>
     );
   };
 
   const renderContent = () => {
     if (isLoading) {
-      return <ActivityIndicator style={styles.loader} />;
+      return <ActivityIndicator className="mt-10" />;
     }
 
     if (notifications.length === 0) {
       return (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIconWrap}>
+        <View className="items-center py-16">
+          <View className="w-16 h-16 rounded-full bg-card border border-border items-center justify-center mb-4">
             <Ionicons name="calendar-outline" size={36} color="#B7B7C8" />
           </View>
-          <Text style={styles.emptyTitle}>{t('scheduling.emptyTitle')}</Text>
-          <Text style={styles.emptySubtitle}>{t('scheduling.emptySubtitle')}</Text>
+          <Text className="text-lg font-semibold text-foreground mb-2">
+            {t('scheduling.emptyTitle')}
+          </Text>
+          <Text className="text-sm text-muted-foreground text-center px-5">
+            {t('scheduling.emptySubtitle')}
+          </Text>
         </View>
       );
     }
@@ -155,13 +154,17 @@ export default function SchedulingScreen() {
     return (
       <>
         {nextReminder && (
-          <View style={styles.section}>
-            <Text style={styles.sectionHeading}>{t('scheduling.nextHeading')}</Text>
+          <View className="mb-6">
+            <Text className="text-base font-semibold text-muted-foreground mb-3">
+              {t('scheduling.nextHeading')}
+            </Text>
             {renderCard(nextReminder, true)}
           </View>
         )}
-        <View style={styles.section}>
-          <Text style={styles.sectionHeading}>{t('scheduling.upcomingHeading')}</Text>
+        <View className="mb-6">
+          <Text className="text-base font-semibold text-muted-foreground mb-3">
+            {t('scheduling.upcomingHeading')}
+          </Text>
           {notifications.map((record) =>
             renderCard(record, record.notificationId === nextReminder?.notificationId)
           )}
@@ -171,11 +174,11 @@ export default function SchedulingScreen() {
   };
 
   return (
-    <View style={styles.screen}>
+    <View className="flex-1 bg-background">
       <TabPageHeader title={t('scheduling.title')} />
       <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
+        className="flex-1"
+        contentContainerClassName="px-5 pb-10"
         refreshControl={
           <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
         }
@@ -185,117 +188,4 @@ export default function SchedulingScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#F6F2FF',
-  },
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  loader: {
-    marginTop: 40,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeading: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6D4F91',
-    marginBottom: 12,
-  },
-  card: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#F0E9FA',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  nextCard: {
-    borderColor: '#D6C3FF',
-    shadowColor: '#7B5AB1',
-    shadowOpacity: 0.12,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  cardLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2D2D2D',
-    flex: 1,
-    marginRight: 12,
-  },
-  cardType: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#7B6F9D',
-  },
-  cardTime: {
-    fontSize: 14,
-    color: '#4C3A6D',
-  },
-  cardRemaining: {
-    fontSize: 13,
-    color: '#7B6F9D',
-    marginTop: 4,
-  },
-  cancelButton: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#F0E9FA',
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  cancelButtonDisabled: {
-    opacity: 0.6,
-  },
-  cancelButtonText: {
-    color: '#B8578B',
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#FFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#EEE4FA',
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2D2D2D',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#6B6B6B',
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-});
 
