@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, View, Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
+import { Badge } from '@/components/ui/badge';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
 import { DiaperCharts } from '@/components/charts/DiaperCharts';
@@ -46,21 +47,20 @@ export default function ChartsScreen() {
           {categories.map((cat) => {
             const active = selectedCategory === cat.id;
             return (
-              <Pressable
+              <Badge
                 key={cat.id}
-                onPress={() => setSelectedCategory(cat.id)}
-                className={[
-                  'px-4 py-2 rounded-full border',
-                  active ? 'bg-primary border-primary' : 'bg-accent border-border',
-                ].join(' ')}
-                role="button"
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
+                asChild
+                variant={active ? 'default' : 'outline'}
+                className={active ? '' : 'bg-accent border-border'}
               >
-                <Text className={active ? 'text-primary-foreground text-sm font-semibold' : 'text-muted-foreground text-sm font-semibold'}>
-                  {cat.label}
-                </Text>
-              </Pressable>
+                <Pressable
+                  onPress={() => setSelectedCategory(cat.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text className="text-sm font-semibold">{cat.label}</Text>
+                </Pressable>
+              </Badge>
             );
           })}
         </ScrollView>
