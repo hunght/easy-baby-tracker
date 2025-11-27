@@ -64,4 +64,4 @@ export function FeaturesStep({ headerText, onContinue }: FeaturesStepProps) {
         </View>
     );
 }
- 
+
