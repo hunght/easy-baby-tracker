@@ -1,8 +1,8 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { useLocalization } from '@/localization/LocalizationProvider';
-
-import { PrimaryButton } from './ui/PrimaryButton';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
 
 const concernOptions: { id: string; labelKey: string }[] = [
     { id: 'sleep', labelKey: 'onboarding.concerns.options.sleep' },
@@ -24,68 +24,28 @@ export function ConcernsStep({ headerText, selectedConcerns, toggleConcern, onCo
     const { t } = useLocalization();
 
     return (
-        <>
-            <Text style={styles.heading}>{headerText}</Text>
-            <Text style={styles.helper}>{t('onboarding.concerns.helper')}</Text>
-            <View style={styles.concernList}>
-                {concernOptions.map((option) => (
-                    <Pressable
-                        key={option.id}
-                        onPress={() => toggleConcern(option.id)}
-                        style={[styles.concernItem, selectedConcerns.includes(option.id) && styles.concernSelected]}>
-                        <View style={[styles.checkbox, selectedConcerns.includes(option.id) && styles.checkboxSelected]} />
-                        <Text style={styles.concernLabel}>{t(option.labelKey)}</Text>
-                    </Pressable>
-                ))}
+        <View className="gap-4">
+            <Text className="text-center text-2xl font-bold text-neutral-900">{headerText}</Text>
+            <Text className="text-center text-sm text-neutral-400">{t('onboarding.concerns.helper')}</Text>
+            <View className="gap-3">
+                {concernOptions.map((option) => {
+                    const selected = selectedConcerns.includes(option.id);
+                    return (
+                        <Pressable
+                            key={option.id}
+                            onPress={() => toggleConcern(option.id)}
+                            className={`flex-row items-center gap-3 rounded-xl border p-4 ${selected ? 'border-pink-400 bg-pink-50' : 'border-pink-200 bg-white'}`}
+                        >
+                            <View className={`h-5 w-5 rounded border-2 ${selected ? 'border-pink-500 bg-pink-500' : 'border-neutral-300'}`} />
+                            <Text className="flex-1 text-base text-neutral-800">{t(option.labelKey)}</Text>
+                        </Pressable>
+                    );
+                })}
             </View>
-            <PrimaryButton label={t('common.continue')} onPress={onContinue} />
-        </>
+            <Button onPress={onContinue}>
+                <Text>{t('common.continue')}</Text>
+            </Button>
+        </View>
     );
 }
-
-const styles = StyleSheet.create({
-    heading: {
-        fontSize: 26,
-        textAlign: 'center',
-        fontWeight: '700',
-        color: '#2D2D2D',
-    },
-    helper: {
-        textAlign: 'center',
-        color: '#C3C3C3',
-        fontSize: 14,
-    },
-    concernList: {
-        gap: 12,
-    },
-    concernItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-        borderWidth: 1,
-        borderColor: '#F1B6C6',
-        borderRadius: 12,
-        padding: 16,
-        backgroundColor: '#FFF',
-    },
-    concernSelected: {
-        borderColor: '#FF728D',
-        backgroundColor: '#FFE7EF',
-    },
-    checkbox: {
-        width: 20,
-        height: 20,
-        borderWidth: 2,
-        borderColor: '#C3C3C3',
-        borderRadius: 4,
-    },
-    checkboxSelected: {
-        backgroundColor: '#FF728D',
-        borderColor: '#FF728D',
-    },
-    concernLabel: {
-        flex: 1,
-        fontSize: 16,
-        color: '#333',
-    },
-});
+ 

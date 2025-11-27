@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import { useLocalization } from '@/localization/LocalizationProvider';
-
-import { PrimaryButton } from './ui/PrimaryButton';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
 
 const featureSections = [
     {
@@ -31,86 +31,37 @@ export function FeaturesStep({ headerText, onContinue }: FeaturesStepProps) {
     const { t } = useLocalization();
 
     return (
-        <>
-            <Text style={styles.heading}>{headerText}</Text>
-            <View style={styles.featureList}>
+        <View className="gap-4">
+            <Text className="text-center text-2xl font-bold text-neutral-900">{headerText}</Text>
+            <View className="gap-4">
                 {featureSections.map((section) => (
-                    <View key={section.key} style={styles.featureCard}>
-                        <View style={styles.featureHeader}>
-                            <Text style={styles.featureIcon}>★</Text>
-                            <Text style={styles.featureTitle}>
+                    <View key={section.key} className="gap-3 rounded-2xl bg-white p-5 shadow-sm">
+                        <View className="flex-row items-center gap-3">
+                            <Text className="text-xl text-pink-500">★</Text>
+                            <Text className="text-lg font-bold text-neutral-900">
                                 {t(`onboarding.features.sections.${section.key}.title`)}
                             </Text>
                         </View>
                         {section.bulletKeys.map((bulletKey) => (
-                            <View key={bulletKey} style={styles.featureBulletRow}>
-                                <Text style={styles.checkIcon}>✓</Text>
-                                <Text style={styles.featureBullet}>
+                            <View key={bulletKey} className="flex-row items-center gap-2">
+                                <Text className="text-pink-500">✓</Text>
+                                <Text className="flex-1 text-[15px] text-neutral-600">
                                     {t(`onboarding.features.sections.${section.key}.bullets.${bulletKey}`)}
                                 </Text>
                             </View>
                         ))}
-                        {section.canShowAll && <Text style={styles.showAll}>{t('onboarding.features.showAll')}</Text>}
+                        {section.canShowAll && (
+                            <Text className="self-end font-semibold text-pink-500">
+                                {t('onboarding.features.showAll')}
+                            </Text>
+                        )}
                     </View>
                 ))}
             </View>
-            <PrimaryButton label={t('common.continue')} onPress={onContinue} />
-        </>
+            <Button onPress={onContinue}>
+                <Text>{t('common.continue')}</Text>
+            </Button>
+        </View>
     );
 }
-
-const styles = StyleSheet.create({
-    heading: {
-        fontSize: 26,
-        textAlign: 'center',
-        fontWeight: '700',
-        color: '#2D2D2D',
-    },
-    featureList: {
-        gap: 16,
-    },
-    featureCard: {
-        backgroundColor: '#FFF',
-        borderRadius: 20,
-        padding: 20,
-        gap: 14,
-        shadowColor: '#000',
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 4 },
-        elevation: 2,
-    },
-    featureHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-    },
-    featureIcon: {
-        color: '#FF728D',
-        fontSize: 20,
-    },
-    featureTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#2D2D2D',
-    },
-    featureBulletRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
-    checkIcon: {
-        color: '#FF728D',
-        fontSize: 16,
-    },
-    featureBullet: {
-        flex: 1,
-        fontSize: 15,
-        color: '#555',
-    },
-    showAll: {
-        alignSelf: 'flex-end',
-        color: '#FF728D',
-        fontWeight: '600',
-    },
-});
+ 

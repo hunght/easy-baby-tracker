@@ -1,4 +1,6 @@
+import '@/global.css';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { PortalHost } from '@rn-primitives/portal';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
@@ -148,6 +150,7 @@ function AppProviders() {
                 <Stack.Screen name="profile-edit" options={{ presentation: 'modal', headerShown: false }} />
               </Stack>
               <StatusBar style="auto" />
+              <PortalHost />
             </ThemeProvider>
           </QueryClientProvider>
         </MigrationHandler>

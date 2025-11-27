@@ -1,9 +1,8 @@
-import { Image } from 'expo-image';
-import { StyleSheet, Text, View } from 'react-native';
-
+import * as React from 'react';
+import { Image, View } from 'react-native';
 import { useLocalization } from '@/localization/LocalizationProvider';
-
-import { PrimaryButton } from './ui/PrimaryButton';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
 
 type WelcomeStepProps = {
     headerText: string;
@@ -14,56 +13,30 @@ export function WelcomeStep({ headerText, onContinue }: WelcomeStepProps) {
     const { t } = useLocalization();
 
     return (
-        <>
-            <View style={styles.topLinks}>
-                <Text style={styles.linkText}>{t('onboarding.welcome.privacy')}</Text>
-                <Text style={styles.linkText}>{t('onboarding.welcome.terms')}</Text>
+        <View className="gap-6">
+            <View className="flex-row items-center justify-between">
+                <Text className="text-sm underline text-neutral-500">{t('onboarding.welcome.privacy')}</Text>
+                <Text className="text-sm underline text-neutral-500">{t('onboarding.welcome.terms')}</Text>
             </View>
-            <View style={styles.centeredContent}>
-                <Image source={require('@/assets/images/icon.png')} style={styles.logo} />
-                <Text style={styles.heading}>{headerText}</Text>
-                <Text style={styles.subQuote}>{t('onboarding.welcome.quote')}</Text>
-                <Text style={styles.disclaimer}>{t('onboarding.welcome.disclaimer')}</Text>
+
+            <View className="items-center gap-4">
+                <Image
+                    source={require('@/assets/images/icon.png')}
+                    className="h-40 w-40"
+                    resizeMode="contain"
+                />
+                <Text className="text-center text-2xl font-semibold text-neutral-900">{headerText}</Text>
+                <Text className="text-center text-lg font-medium text-pink-500">
+                    {t('onboarding.welcome.quote')}
+                </Text>
+                <Text className="text-center text-xs leading-5 text-neutral-500">
+                    {t('onboarding.welcome.disclaimer')}
+                </Text>
             </View>
-            <PrimaryButton label={t('common.continue')} onPress={onContinue} />
-        </>
+
+            <Button onPress={onContinue}>
+                <Text>{t('common.continue')}</Text>
+            </Button>
+        </View>
     );
 }
-
-const styles = StyleSheet.create({
-    topLinks: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    linkText: {
-        color: '#999',
-        fontSize: 13,
-        textDecorationLine: 'underline',
-    },
-    centeredContent: {
-        alignItems: 'center',
-        gap: 16,
-    },
-    logo: {
-        width: 160,
-        height: 160,
-    },
-    heading: {
-        fontSize: 26,
-        textAlign: 'center',
-        fontWeight: '700',
-        color: '#2D2D2D',
-    },
-    subQuote: {
-        textAlign: 'center',
-        fontSize: 18,
-        color: '#FF7FA3',
-        fontWeight: '500',
-    },
-    disclaimer: {
-        textAlign: 'center',
-        color: '#888',
-        fontSize: 12,
-        lineHeight: 18,
-    },
-});

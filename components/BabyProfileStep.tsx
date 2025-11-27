@@ -1,6 +1,8 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, TextInput, View } from 'react-native';
+import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 
 import { BabyProfilePayload, Gender } from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
@@ -45,112 +47,50 @@ export function BabyProfileStep({ headerText, concerns, onSave }: BabyProfileSte
     };
 
     return (
-        <View style={styles.profileCard}>
-            <Text style={styles.heading}>{headerText}</Text>
-            <View style={styles.avatarWrapper}>
-                <Image source={require('@/assets/images/icon.png')} style={styles.avatar} />
-                <Text style={styles.addPhoto}>{t('common.addPhoto')}</Text>
+        <View className="gap-3 rounded-3xl bg-violet-50 p-6">
+            <Text className="text-center text-2xl font-bold text-neutral-900">{headerText}</Text>
+            <View className="items-center">
+                <Image source={require('@/assets/images/icon.png')} style={{ width: 120, height: 120 }} />
+                <Text className="mt-2 text-pink-500">{t('common.addPhoto')}</Text>
             </View>
 
-            <Text style={styles.label}>{t('common.nickname')}</Text>
+            <Text className="font-semibold text-neutral-600">{t('common.nickname')}</Text>
             <TextInput
                 value={nickname}
                 onChangeText={setNickname}
-                style={styles.input}
+                className="rounded-2xl border border-violet-200 bg-white px-4 py-3"
                 placeholder={t('common.nicknamePlaceholder')}
                 placeholderTextColor="#C4C4C4"
             />
 
-            <Text style={styles.label}>{t('common.gender')}</Text>
-            <View style={styles.segmentedControl}>
-                {genderSegments.map((segment) => (
-                    <Pressable
-                        key={segment.key}
-                        onPress={() => setGender(segment.key)}
-                        style={[styles.segment, gender === segment.key && styles.segmentActive]}>
-                        <Text style={[styles.segmentText, gender === segment.key && styles.segmentTextActive]}>
-                            {t(segment.labelKey)}
-                        </Text>
-                    </Pressable>
-                ))}
+            <Text className="font-semibold text-neutral-600">{t('common.gender')}</Text>
+            <View className="flex-row overflow-hidden rounded-2xl border border-violet-200 bg-white">
+                {genderSegments.map((segment) => {
+                    const active = gender === segment.key;
+                    return (
+                        <Pressable
+                            key={segment.key}
+                            onPress={() => setGender(segment.key)}
+                            className={`flex-1 items-center py-2 ${active ? 'bg-pink-500' : ''}`}
+                        >
+                            <Text className={`font-semibold ${active ? 'text-white' : 'text-neutral-400'}`}>
+                                {t(segment.labelKey)}
+                            </Text>
+                        </Pressable>
+                    );
+                })}
             </View>
 
             <DatePickerField label={t('common.birthdate')} value={birthDate} onChange={setBirthDate} />
 
             <DatePickerField label={t('common.dueDate')} value={dueDate} onChange={setDueDate} />
 
-            <Text style={styles.infoText}>
-                {t('onboarding.babyProfile.info')}
-            </Text>
+            <Text className="text-xs leading-5 text-neutral-500">{t('onboarding.babyProfile.info')}</Text>
 
-            <PrimaryButton label={t('common.continue')} onPress={handleContinue} loading={isSaving} />
+            <Button onPress={handleContinue} disabled={isSaving}>
+                <Text>{t('common.continue')}</Text>
+            </Button>
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    heading: {
-        fontSize: 26,
-        textAlign: 'center',
-        fontWeight: '700',
-        color: '#2D2D2D',
-    },
-    profileCard: {
-        backgroundColor: '#F7F4FF',
-        borderRadius: 28,
-        padding: 24,
-        gap: 12,
-    },
-    avatarWrapper: {
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    avatar: {
-        width: 120,
-        height: 120,
-    },
-    addPhoto: {
-        color: '#FF728D',
-        marginTop: 8,
-    },
-    label: {
-        fontWeight: '600',
-        color: '#757575',
-    },
-    input: {
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#E0D5FF',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: '#FFF',
-    },
-    segmentedControl: {
-        flexDirection: 'row',
-        borderRadius: 16,
-        backgroundColor: '#FFF',
-        borderWidth: 1,
-        borderColor: '#E0D5FF',
-        overflow: 'hidden',
-    },
-    segment: {
-        flex: 1,
-        paddingVertical: 10,
-        alignItems: 'center',
-    },
-    segmentActive: {
-        backgroundColor: '#FF728D',
-    },
-    segmentText: {
-        color: '#A4A4A4',
-        fontWeight: '600',
-    },
-    segmentTextActive: {
-        color: '#FFF',
-    },
-    infoText: {
-        fontSize: 13,
-        color: '#999',
-        lineHeight: 18,
-    },
-});
+ 
