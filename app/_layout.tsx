@@ -1,5 +1,9 @@
 import '@/global.css';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
+} from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
@@ -13,11 +17,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { NotificationProvider } from '@/components/ui/NotificationContext';
 import { db, expoDb } from '@/database/db';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import {
   cancelStoredScheduledNotification,
   restoreScheduledNotifications,
 } from '@/lib/notification-scheduler';
+import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { LocalizationProvider, useLocalization } from '@/localization/LocalizationProvider';
 import * as Notifications from 'expo-notifications';
 import migrations from '../drizzle/migrations';
@@ -56,13 +60,15 @@ function MigrationHandler({ children }: { children: React.ReactNode }) {
 export default function RootLayout() {
   return (
     <LocalizationProvider>
-      <AppProviders />
+      <ThemeProvider>
+        <AppProviders />
+      </ThemeProvider>
     </LocalizationProvider>
   );
 }
 
 function AppProviders() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useTheme();
   const [queryClient] = useState(() => new QueryClient());
   const { t } = useLocalization();
   const router = useRouter();
@@ -132,26 +138,59 @@ function AppProviders() {
       <NotificationProvider>
         <MigrationHandler>
           <QueryClientProvider client={queryClient}>
-            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
               <Stack>
                 <Stack.Screen name="index" options={{ headerShown: false }} />
                 <Stack.Screen name="profile-selection" options={{ headerShown: false }} />
                 <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="feeding" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="pumping" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="diaper" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="sleep" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="health" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="growth" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="easy-schedule" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="easy-schedule-info" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="diary" options={{ presentation: 'modal', headerShown: false }} />
-                <Stack.Screen name="modal" options={{ presentation: 'modal', title: t('modal.title') }} />
-                <Stack.Screen name="profile-edit" options={{ presentation: 'modal', headerShown: false }} />
+                <Stack.Screen
+                  name="feeding"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
+                <Stack.Screen
+                  name="pumping"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
+                <Stack.Screen
+                  name="diaper"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
+                <Stack.Screen
+                  name="sleep"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
+                <Stack.Screen
+                  name="health"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
+                <Stack.Screen
+                  name="growth"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
+                <Stack.Screen
+                  name="easy-schedule"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
+                <Stack.Screen
+                  name="easy-schedule-info"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
+                <Stack.Screen
+                  name="diary"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
+                <Stack.Screen
+                  name="modal"
+                  options={{ presentation: 'modal', title: t('modal.title') }}
+                />
+                <Stack.Screen
+                  name="profile-edit"
+                  options={{ presentation: 'modal', headerShown: false }}
+                />
               </Stack>
               <StatusBar style="auto" />
               <PortalHost />
-            </ThemeProvider>
+            </NavigationThemeProvider>
           </QueryClientProvider>
         </MigrationHandler>
       </NotificationProvider>
