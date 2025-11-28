@@ -34,7 +34,7 @@ export function ModalHeader({
       <Text className="text-xl font-bold text-foreground">{title}</Text>
       {onSave ? (
         <Button
-          variant="link"
+          variant="ghost"
           size="sm"
           className="px-2"
           onPress={onSave}

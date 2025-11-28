@@ -3,16 +3,18 @@ import Slider from '@react-native-community/slider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TimePickerField } from '@/components/TimePickerField';
 import { HEALTH_RECORDS_QUERY_KEY } from '@/constants/query-keys';
 import type { HealthRecordPayload, HealthRecordType, MedicineType } from '@/database/health';
 import { getHealthRecordById, saveHealthRecord, updateHealthRecord } from '@/database/health';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 type HealthTabOption = {
@@ -32,6 +34,7 @@ export default function HealthScreen() {
   const queryClient = useQueryClient();
   const { t } = useLocalization();
   const { showNotification } = useNotification();
+  const brandColors = useBrandColor();
   const params = useLocalSearchParams<{ id: string }>();
   const id = params.id ? Number(params.id) : undefined;
   const isEditing = !!id;
@@ -155,25 +158,37 @@ export default function HealthScreen() {
 
       <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
         {/* Tab Selection */}
-        <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-white">
-          {healthTabs.map((tab, index) => (
-            <Pressable
-              key={tab.key}
-              onPress={() => setActiveTab(tab.key)}
-              className={`flex-1 flex-row items-center justify-center gap-1.5 py-3 ${
-                activeTab === tab.key ? 'bg-accent' : ''
-              } ${index > 0 ? 'border-l border-border' : ''}`}>
-              <MaterialCommunityIcons
-                name={tab.icon}
-                size={20}
-                color={activeTab === tab.key ? '#FFF' : '#666'}
-              />
-              <Text
-                className={`text-sm font-semibold ${activeTab === tab.key ? 'text-white' : 'text-muted-foreground'}`}>
-                {t(tab.labelKey)}
-              </Text>
-            </Pressable>
-          ))}
+        <View className="mb-6">
+          <ToggleGroup
+            type="single"
+            value={activeTab}
+            onValueChange={(value) => {
+              if (
+                value &&
+                (value === 'temperature' || value === 'medicine' || value === 'symptoms')
+              ) {
+                setActiveTab(value);
+              }
+            }}
+            variant="outline"
+            className="w-full">
+            {healthTabs.map((tab, index) => (
+              <ToggleGroupItem
+                key={tab.key}
+                value={tab.key}
+                isFirst={index === 0}
+                isLast={index === healthTabs.length - 1}
+                className="flex-1 flex-row items-center justify-center gap-1.5"
+                aria-label={t(tab.labelKey)}>
+                <MaterialCommunityIcons
+                  name={tab.icon}
+                  size={20}
+                  color={activeTab === tab.key ? brandColors.colors.white : '#666666'}
+                />
+                <Text>{t(tab.labelKey)}</Text>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </View>
 
         {/* Time */}
@@ -197,13 +212,13 @@ export default function HealthScreen() {
               step={0.1}
               value={temperature}
               onValueChange={setTemperature}
-              minimumTrackTintColor="#FF5C8D"
+              minimumTrackTintColor={brandColors.colors.accent}
               maximumTrackTintColor="#E0E0E0"
-              thumbTintColor="#FFF"
+              thumbTintColor={brandColors.colors.white}
             />
             <View className="mb-6 flex-row justify-between px-1">
               {[34, 35, 36, 37, 38, 39, 40, 41, 42].map((value) => (
-                <Text key={value} className="text-xs text-gray-400">
+                <Text key={value} className="text-xs text-muted-foreground">
                   {value}
                 </Text>
               ))}
@@ -219,42 +234,47 @@ export default function HealthScreen() {
                 <Text className="text-base font-medium text-muted-foreground">
                   {t('common.medicineType')}
                 </Text>
-                <MaterialCommunityIcons name="information-outline" size={16} color="#999" />
+                <MaterialCommunityIcons name="information-outline" size={16} color="#999999" />
               </View>
             </View>
-            <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-card">
-              <Pressable
-                onPress={() => setMedicineType('medication')}
-                className={`flex-1 flex-row items-center justify-center gap-1.5 py-3 ${
-                  medicineType === 'medication' ? 'bg-accent' : ''
-                }`}>
-                <MaterialCommunityIcons
-                  name="pill"
-                  size={18}
-                  color={medicineType === 'medication' ? '#FFF' : '#666'}
-                />
-                <Text
-                  className={`text-sm font-semibold ${
-                    medicineType === 'medication' ? 'text-white' : 'text-muted-foreground'
-                  }`}>
-                  {t('health.medicineTypes.medication')}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setMedicineType('vaccine')}
-                className={`flex-1 flex-row items-center justify-center gap-1.5 border-l border-border py-3 ${
-                  medicineType === 'vaccine' ? 'bg-accent' : ''
-                }`}>
-                <MaterialCommunityIcons
-                  name="needle"
-                  size={18}
-                  color={medicineType === 'vaccine' ? '#FFF' : '#666'}
-                />
-                <Text
-                  className={`text-sm font-semibold ${medicineType === 'vaccine' ? 'text-white' : 'text-muted-foreground'}`}>
-                  {t('health.medicineTypes.vaccine')}
-                </Text>
-              </Pressable>
+            <View className="mb-6">
+              <ToggleGroup
+                type="single"
+                value={medicineType}
+                onValueChange={(value) => {
+                  if (value && (value === 'medication' || value === 'vaccine')) {
+                    setMedicineType(value);
+                  }
+                }}
+                variant="outline"
+                className="w-full">
+                <ToggleGroupItem
+                  value="medication"
+                  isFirst={true}
+                  isLast={false}
+                  className="flex-1 flex-row items-center justify-center gap-1.5"
+                  aria-label={t('health.medicineTypes.medication')}>
+                  <MaterialCommunityIcons
+                    name="pill"
+                    size={18}
+                    color={medicineType === 'medication' ? brandColors.colors.white : '#666666'}
+                  />
+                  <Text>{t('health.medicineTypes.medication')}</Text>
+                </ToggleGroupItem>
+                <ToggleGroupItem
+                  value="vaccine"
+                  isFirst={false}
+                  isLast={true}
+                  className="flex-1 flex-row items-center justify-center gap-1.5"
+                  aria-label={t('health.medicineTypes.vaccine')}>
+                  <MaterialCommunityIcons
+                    name="needle"
+                    size={18}
+                    color={medicineType === 'vaccine' ? brandColors.colors.white : '#666666'}
+                  />
+                  <Text>{t('health.medicineTypes.vaccine')}</Text>
+                </ToggleGroupItem>
+              </ToggleGroup>
             </View>
 
             <View className="mb-3 flex-row items-center justify-between">

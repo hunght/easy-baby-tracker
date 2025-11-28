@@ -10,9 +10,11 @@ import { ModalHeader } from '@/components/ModalHeader';
 import { DateTimePickerModal } from '@/components/DateTimePickerModal';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { SLEEP_SESSIONS_QUERY_KEY } from '@/constants/query-keys';
 import type { SleepSessionKind, SleepSessionPayload } from '@/database/sleep';
 import { getSleepSessionById, saveSleepSession, updateSleepSession } from '@/database/sleep';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 const sleepKinds: {
@@ -52,6 +54,7 @@ export default function SleepScreen() {
   const queryClient = useQueryClient();
   const { t } = useLocalization();
   const { showNotification } = useNotification();
+  const brandColors = useBrandColor();
   const params = useLocalSearchParams<{ id: string }>();
   const id = params.id ? Number(params.id) : undefined;
   const isEditing = !!id;
@@ -255,51 +258,63 @@ export default function SleepScreen() {
       />
 
       <ScrollView contentContainerClassName="p-5 pb-10 gap-6" showsVerticalScrollIndicator={false}>
-        <View className="flex-row overflow-hidden rounded-xl border border-border bg-card">
+        <ToggleGroup
+          type="single"
+          value={sleepKind}
+          onValueChange={(value) => {
+            if (value && (value === 'nap' || value === 'night')) {
+              setSleepKind(value);
+            }
+          }}
+          variant="outline"
+          className="w-full">
           {sleepKinds.map((kind, index) => (
-            <Pressable
+            <ToggleGroupItem
               key={kind.key}
-              onPress={() => setSleepKind(kind.key)}
-              className={`flex-1 flex-row items-center justify-center gap-1.5 py-3 ${
-                sleepKind === kind.key ? 'bg-lavender' : ''
-              } ${index > 0 ? 'border-l border-border' : ''}`}>
+              value={kind.key}
+              isFirst={index === 0}
+              isLast={index === sleepKinds.length - 1}
+              className="flex-1 flex-row items-center justify-center gap-1.5"
+              aria-label={t(kind.labelKey)}>
               <MaterialCommunityIcons
                 name={kind.icon}
                 size={20}
-                color={sleepKind === kind.key ? '#FFF' : '#666'}
+                color={sleepKind === kind.key ? brandColors.colors.white : '#666666'}
               />
-              <Text
-                className={`text-sm font-semibold ${sleepKind === kind.key ? 'text-white' : 'text-muted-foreground'}`}>
-                {t(kind.labelKey)}
-              </Text>
-            </Pressable>
+              <Text>{t(kind.labelKey)}</Text>
+            </ToggleGroupItem>
           ))}
-        </View>
+        </ToggleGroup>
 
         {!isEditing && (
-          <View className="items-center gap-3 rounded-2xl bg-violet-50 p-5">
+          <View className="items-center gap-3 rounded-lg border border-border bg-card p-5">
             <Text className="text-4xl font-bold text-foreground">
               {formatClock(resolvedDuration)}
             </Text>
             <Pressable
               className={`flex-row items-center gap-2.5 rounded-pill px-5 py-3 ${
-                timerActive ? 'bg-pink-400' : 'bg-lavender'
+                timerActive ? 'bg-accent' : 'bg-lavender'
               }`}
               onPress={handleTimerPress}>
               <MaterialCommunityIcons
                 name={timerActive ? 'pause' : 'play'}
                 size={22}
-                color="#FFF"
+                color={brandColors.colors.white}
               />
-              <Text className="text-base font-semibold text-white">
+              <Text
+                className={`text-base font-semibold ${
+                  timerActive ? 'text-accent-foreground' : 'text-lavender-foreground'
+                }`}>
                 {t(timerActive ? 'sleep.timer.stop' : 'sleep.timer.start')}
               </Text>
             </Pressable>
-            <Text className="text-center text-sm text-violet-600">{t('sleep.timerHint')}</Text>
+            <Text className="text-center text-sm text-muted-foreground">
+              {t('sleep.timerHint')}
+            </Text>
           </View>
         )}
 
-        <View className="gap-4.5 rounded-2xl border border-border bg-card p-4">
+        <View className="gap-4.5 rounded-lg border border-border bg-card p-4">
           <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-base font-medium text-muted-foreground">
@@ -325,7 +340,7 @@ export default function SleepScreen() {
             <View className="items-end gap-1">
               {endTime && !timerActive && (
                 <Pressable onPress={clearEndTime}>
-                  <Text className="text-sm font-semibold text-pink-400">{t('sleep.clearEnd')}</Text>
+                  <Text className="text-sm font-semibold text-accent">{t('sleep.clearEnd')}</Text>
                 </Pressable>
               )}
               <Pressable onPress={() => openPicker('end')}>
