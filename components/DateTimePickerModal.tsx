@@ -1,7 +1,8 @@
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, Text, View } from 'react-native';
-
+import { Modal, Platform, View } from 'react-native';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 type DateTimePickerModalProps = {
@@ -139,11 +140,11 @@ export function DateTimePickerModal({
   return (
     <Modal transparent={true} animationType="slide" visible={visible} onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/50">
-        <View className="rounded-t-[20px] bg-white pb-[34px]">
-          <View className="flex-row justify-end border-b border-border p-4">
-            <Pressable onPress={onClose}>
-              <Text className="text-[17px] font-semibold text-accent">{t('common.done')}</Text>
-            </Pressable>
+        <View className="rounded-t-[20px] bg-background pb-8">
+          <View className="flex-row justify-end border-b border-border p-2">
+            <Button variant="ghost" onPress={onClose}>
+              <Text className="font-semibold">{t('common.done')}</Text>
+            </Button>
           </View>
           <DateTimePicker value={value} mode={mode} display="spinner" onChange={onChange} />
         </View>

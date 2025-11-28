@@ -51,9 +51,11 @@ export function TimePickerField({
           <Text className="text-base font-medium text-muted-foreground">
             {label || t('common.time')}
           </Text>
-          <Text className="mt-1 text-[15px] text-foreground">{formatDateTime(value)}</Text>
+          <Text className="mt-1 text-base text-foreground">{formatDateTime(value)}</Text>
           {showHint && (
-            <Text className="mt-0.5 text-xs italic text-[#999]">{t('common.defaultsToNow')}</Text>
+            <Text className="mt-0.5 text-xs italic text-muted-foreground">
+              {t('common.defaultsToNow')}
+            </Text>
           )}
         </View>
         <Pressable onPress={() => setShowTimePicker(true)}>

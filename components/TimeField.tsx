@@ -96,21 +96,21 @@ export function TimeField({
           <Pressable
             onPress={() => setShowTimePicker(true)}
             className="flex-row items-center gap-2">
-            <Text className="text-base font-semibold text-accent">{displayText}</Text>
+            <Text className="text-base font-semibold">{displayText}</Text>
             <View
               className="flex-row items-center gap-1 rounded-xl px-2 py-1"
               style={{ backgroundColor: stateInfo.color }}>
               <MaterialCommunityIcons name={stateInfo.icon} size={12} color="#FFF" />
-              <Text className="text-[11px] font-semibold text-white">{stateInfo.label}</Text>
+              <Text className="text-sm font-semibold">{stateInfo.label}</Text>
             </View>
           </Pressable>
         </View>
 
         {showHelperText && (
           <View
-            className="mt-2 rounded border-l-[3px] bg-[#F9F9F9] py-2 pl-3"
+            className="mt-2 rounded border-l-2 bg-background py-2 pl-3"
             style={{ borderLeftColor: stateInfo.color }}>
-            <Text className="text-[13px] leading-[18px] text-muted-foreground">
+            <Text className="text-sm leading-tight text-muted-foreground">
               {stateInfo.helperText}
             </Text>
           </View>
