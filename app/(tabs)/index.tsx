@@ -2,11 +2,18 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
-import { getActiveBabyProfile, getBabyProfiles, setActiveBabyProfileId } from '@/database/baby-profile';
+import {
+  getActiveBabyProfile,
+  getBabyProfiles,
+  setActiveBabyProfileId,
+} from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 const trackingTiles: readonly {
@@ -16,15 +23,63 @@ const trackingTiles: readonly {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
   color: string;
 }[] = [
-    { id: 'feeding', labelKey: 'tracking.tiles.feeding.label', sublabelKey: 'tracking.tiles.feeding.sublabel', icon: 'baby-bottle-outline', color: '#FF7A9B' },
-    { id: 'pumping', labelKey: 'tracking.tiles.pumping.label', sublabelKey: 'tracking.tiles.pumping.sublabel', icon: 'bottle-tonic-outline', color: '#FF7A9B' },
-    { id: 'diaper', labelKey: 'tracking.tiles.diaper.label', sublabelKey: 'tracking.tiles.diaper.sublabel', icon: 'baby-face-outline', color: '#6BC9FF' },
-    { id: 'sleep', labelKey: 'tracking.tiles.sleep.label', sublabelKey: 'tracking.tiles.sleep.sublabel', icon: 'sleep', color: '#B49BFF' },
-    { id: 'easy-schedule', labelKey: 'tracking.tiles.easySchedule.label', sublabelKey: 'tracking.tiles.easySchedule.sublabel', icon: 'calendar-clock', color: '#9B7EBD' },
-    { id: 'health', labelKey: 'tracking.tiles.health.label', sublabelKey: 'tracking.tiles.health.sublabel', icon: 'stethoscope', color: '#35C2C4' },
-    { id: 'growth', labelKey: 'tracking.tiles.growth.label', sublabelKey: 'tracking.tiles.growth.sublabel', icon: 'human-male-height', color: '#FFA74F' },
-    { id: 'diary', labelKey: 'tracking.tiles.diary.label', sublabelKey: 'tracking.tiles.diary.sublabel', icon: 'notebook', color: '#F8C93B' },
-  ];
+  {
+    id: 'feeding',
+    labelKey: 'tracking.tiles.feeding.label',
+    sublabelKey: 'tracking.tiles.feeding.sublabel',
+    icon: 'baby-bottle-outline',
+    color: '#FF7A9B',
+  },
+  {
+    id: 'pumping',
+    labelKey: 'tracking.tiles.pumping.label',
+    sublabelKey: 'tracking.tiles.pumping.sublabel',
+    icon: 'bottle-tonic-outline',
+    color: '#FF7A9B',
+  },
+  {
+    id: 'diaper',
+    labelKey: 'tracking.tiles.diaper.label',
+    sublabelKey: 'tracking.tiles.diaper.sublabel',
+    icon: 'baby-face-outline',
+    color: '#6BC9FF',
+  },
+  {
+    id: 'sleep',
+    labelKey: 'tracking.tiles.sleep.label',
+    sublabelKey: 'tracking.tiles.sleep.sublabel',
+    icon: 'sleep',
+    color: '#B49BFF',
+  },
+  {
+    id: 'easy-schedule',
+    labelKey: 'tracking.tiles.easySchedule.label',
+    sublabelKey: 'tracking.tiles.easySchedule.sublabel',
+    icon: 'calendar-clock',
+    color: '#9B7EBD',
+  },
+  {
+    id: 'health',
+    labelKey: 'tracking.tiles.health.label',
+    sublabelKey: 'tracking.tiles.health.sublabel',
+    icon: 'stethoscope',
+    color: '#35C2C4',
+  },
+  {
+    id: 'growth',
+    labelKey: 'tracking.tiles.growth.label',
+    sublabelKey: 'tracking.tiles.growth.sublabel',
+    icon: 'human-male-height',
+    color: '#FFA74F',
+  },
+  {
+    id: 'diary',
+    labelKey: 'tracking.tiles.diary.label',
+    sublabelKey: 'tracking.tiles.diary.sublabel',
+    icon: 'notebook',
+    color: '#F8C93B',
+  },
+];
 
 export default function TrackingScreen() {
   const { t } = useLocalization();
@@ -57,8 +112,8 @@ export default function TrackingScreen() {
 
   if (isLoading || profilesLoading || !profile) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.loadingText}>{t('tracking.loading')}</Text>
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="font-semibold text-primary">{t('tracking.loading')}</Text>
       </View>
     );
   }
@@ -97,53 +152,75 @@ export default function TrackingScreen() {
     } else if (tileId === 'diary') {
       router.push('/diary');
     }
-    // Add other navigation handlers as needed
   };
 
   return (
-    <View style={styles.screen}>
+    <View className="flex-1 bg-background">
       <TabPageHeader title={t('tabs.tracking')} />
       <ScrollView
-        style={styles.body}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.babyHeader}>
+        className="flex-1"
+        contentContainerClassName="px-6 pt-6 pb-20 gap-6"
+        showsVerticalScrollIndicator={false}>
+        <View className="mb-1">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.babyTabsContent}
-            style={styles.babyTabs}>
+            contentContainerClassName="gap-2">
             {displayBabies.map((baby) => {
               const isActive = baby.id === profile.id;
               const tabMonths = computeMonthsOld(baby.birthDate);
               return (
-                <Pressable
+                <Badge
                   key={baby.id}
-                  disabled={switchingBabyId != null}
+                  variant={isActive ? 'default' : 'secondary'}
                   onPress={() => handleSelectBaby(baby.id)}
-                  style={[styles.babyTab, isActive && styles.babyTabActive]}>
-                  <Text style={[styles.babyTabLabel, isActive && styles.babyTabLabelActive]}>{baby.nickname}</Text>
-                  <Text style={[styles.babyTabSubLabel, isActive && styles.babyTabSubLabelActive]}>
-                    {t('common.monthsOld', { params: { count: tabMonths } })}
-                  </Text>
-                </Pressable>
+                  className={
+                    isActive
+                      ? 'border-[#FF5C8D] bg-[#FF5C8D] px-4 py-2.5'
+                      : 'border-[#E5D8FF] bg-[#F2ECFF] px-4 py-2.5'
+                  }
+                  accessibilityLabel={t('tracking.accessibility.selectBaby', {
+                    defaultValue: 'Select %{name}',
+                    params: { name: baby.nickname },
+                  })}
+                  accessibilityState={{ selected: isActive, disabled: switchingBabyId != null }}>
+                  <View className="gap-0.5">
+                    <Text
+                      className={
+                        isActive
+                          ? 'text-sm font-semibold text-white'
+                          : 'text-sm font-semibold text-[#5B4B7B]'
+                      }>
+                      {baby.nickname}
+                    </Text>
+                    <Text
+                      className={isActive ? 'text-xs text-[#FFE8F0]' : 'text-xs text-[#7C6A99]'}>
+                      {t('common.monthsOld', { params: { count: tabMonths } })}
+                    </Text>
+                  </View>
+                </Badge>
               );
             })}
           </ScrollView>
         </View>
 
-        <View style={styles.tilesWrapper}>
+        <View className="flex-row flex-wrap justify-between gap-y-4">
           {trackingTiles.map((tile) => (
-            <Pressable
+            <Card
               key={tile.id}
-              testID={`tracking-tile-${tile.id}`}
-              style={styles.tile}
-              onPress={() => handleTilePress(tile.id)}>
-              <MaterialCommunityIcons name={tile.icon} size={34} color={tile.color} />
-              <Text style={styles.tileLabel}>{t(tile.labelKey)}</Text>
-              <Text style={styles.tileSub}>{t(tile.sublabelKey)}</Text>
-            </Pressable>
+              className="w-[47%] shadow-sm"
+              onPress={() => handleTilePress(tile.id)}
+              accessibilityLabel={t('tracking.accessibility.openTile', {
+                defaultValue: 'Open %{label}',
+                params: { label: t(tile.labelKey) },
+              })}
+              accessibilityRole="button">
+              <CardContent className="gap-2.5 p-4">
+                <MaterialCommunityIcons name={tile.icon} size={34} color={tile.color} />
+                <Text className="text-lg font-bold text-foreground">{t(tile.labelKey)}</Text>
+                <Text className="text-sm text-muted-foreground">{t(tile.sublabelKey)}</Text>
+              </CardContent>
+            </Card>
           ))}
         </View>
       </ScrollView>
@@ -154,94 +231,7 @@ export default function TrackingScreen() {
 function computeMonthsOld(birthDateIso: string) {
   const birth = new Date(birthDateIso);
   const now = new Date();
-  const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+  const months =
+    (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
   return Math.max(months, 0);
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#F6F2FF',
-  },
-  body: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 80,
-    gap: 24,
-  },
-  babyHeader: {
-    marginBottom: 4,
-  },
-  babyTabs: {
-    marginHorizontal: -6,
-  },
-  babyTabsContent: {
-    paddingHorizontal: 6,
-  },
-  babyTab: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: '#F2ECFF',
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#E5D8FF',
-  },
-  babyTabActive: {
-    backgroundColor: '#FF5C8D',
-    borderColor: '#FF5C8D',
-  },
-  babyTabLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#5B4B7B',
-  },
-  babyTabLabelActive: {
-    color: '#FFF',
-  },
-  babyTabSubLabel: {
-    fontSize: 11,
-    color: '#7C6A99',
-  },
-  babyTabSubLabelActive: {
-    color: '#FFE8F0',
-  },
-  tilesWrapper: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 18,
-  },
-  tile: {
-    width: '47%',
-    backgroundColor: '#FFF',
-    borderRadius: 22,
-    padding: 18,
-    gap: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  tileLabel: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2E2E2E',
-  },
-  tileSub: {
-    color: '#A4A4A4',
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F6F2FF',
-  },
-  loadingText: {
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-});

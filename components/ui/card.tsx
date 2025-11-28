@@ -1,15 +1,27 @@
 import { Text, TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
-import { View, type ViewProps } from 'react-native';
+import { Pressable, View, type ViewProps } from 'react-native';
 
-function Card({ className, ...props }: ViewProps & React.RefAttributes<View>) {
+type CardProps = ViewProps &
+  React.RefAttributes<View> & {
+    onPress?: () => void;
+    accessibilityLabel?: string;
+    accessibilityRole?: string;
+  };
+
+function Card({ className, onPress, accessibilityLabel, accessibilityRole, ...props }: CardProps) {
+  const Component = onPress ? Pressable : View;
   return (
     <TextClassContext.Provider value="text-card-foreground">
-      <View
+      <Component
         className={cn(
           'flex flex-col gap-6 rounded-xl border border-border bg-card py-6 shadow-sm shadow-black/5',
+          onPress && 'active:opacity-70',
           className
         )}
+        onPress={onPress}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityRole={accessibilityRole}
         {...props}
       />
     </TextClassContext.Provider>
