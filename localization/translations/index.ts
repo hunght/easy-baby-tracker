@@ -9,7 +9,7 @@ import { tracking } from './tracking';
 
 export const translationObject = {
   en: {
-    common:common.en,
+    common: common.en,
     tabs: tabs.en,
     tracking: tracking.en,
     easySchedule: easySchedule.en,
@@ -30,7 +30,7 @@ export const translationObject = {
     diary: features.en.diary,
   },
   vi: {
-    common:common.vi,
+    common: common.vi,
     tabs: tabs.vi,
     tracking: tracking.vi,
     easySchedule: easySchedule.vi,
@@ -50,10 +50,10 @@ export const translationObject = {
     scheduling: features.vi.scheduling,
     diary: features.vi.diary,
   },
-} as const;
+};
 
 export type Locale = keyof typeof translationObject;
 export const supportedLocales: readonly { code: Locale; label: string }[] = [
-  { code: "en", label: "English" },
-  { code: "vi", label: "Tiếng Việt" },
+  { code: 'en', label: 'English' },
+  { code: 'vi', label: 'Tiếng Việt' },
 ];
