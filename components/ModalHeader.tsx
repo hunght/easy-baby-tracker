@@ -22,14 +22,14 @@ export function ModalHeader({
   const router = useRouter();
 
   return (
-    <View className="pt-15 flex-row items-center justify-between border-b border-border bg-background px-5 py-4 dark:bg-card">
+    <View className="pt-15 flex-row items-center justify-between border-b border-border bg-background px-5 py-4">
       <Button
         variant="link"
         size="sm"
         className="-ml-2 px-2"
         onPress={() => router.back()}
         accessibilityLabel={closeLabel}>
-        <Text className="text-base font-semibold">{closeLabel}</Text>
+        <Text className="text-base font-semibold text-foreground">{closeLabel}</Text>
       </Button>
       <Text className="text-xl font-bold text-foreground">{title}</Text>
       {onSave ? (
@@ -41,7 +41,7 @@ export function ModalHeader({
           disabled={isSaving}
           accessibilityLabel={saveLabel}
           accessibilityState={{ disabled: isSaving }}>
-          <Text className="text-base font-semibold">{saveLabel}</Text>
+          <Text className="text-base font-semibold text-foreground">{saveLabel}</Text>
         </Button>
       ) : (
         <View className="w-12" />

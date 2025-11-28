@@ -1,14 +1,38 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
-import { Text } from '@/components/ui/text';
+import { z } from 'zod';
+
 import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { TabPageHeader } from '@/components/TabPageHeader';
 import { useTheme } from '@/lib/ThemeContext';
 
-import { TabPageHeader } from '@/components/TabPageHeader';
 import { BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
 import { getBabyProfiles } from '@/database/baby-profile';
+import type { Locale } from '@/localization/translations';
 import { useLocalization } from '@/localization/LocalizationProvider';
+
+// Theme mode options
+const themeModes: readonly ('system' | 'light' | 'dark')[] = ['system', 'light', 'dark'];
+
+// Zod schema for theme mode validation
+const themeModeSchema = z.enum(['system', 'light', 'dark']);
+
+// Type guard using Zod validation
+function isThemeMode(value: unknown): value is 'system' | 'light' | 'dark' {
+  return themeModeSchema.safeParse(value).success;
+}
+
+// Zod schema for Locale validation
+const localeSchema = z.enum(['en', 'vi']);
+
+// Type guard using Zod validation
+function isLocale(value: unknown): value is Locale {
+  return localeSchema.safeParse(value).success;
+}
 
 function computeMonthsOld(birthDateIso: string) {
   const birth = new Date(birthDateIso);
@@ -49,7 +73,7 @@ export default function SettingsScreen() {
             return (
               <Pressable
                 key={profile.id}
-                className="flex-row items-center justify-between rounded-2xl bg-card p-5 shadow-sm"
+                className="flex-row items-center justify-between rounded-lg bg-card p-5 shadow-sm"
                 onPress={() =>
                   router.push({
                     pathname: '/profile-edit',
@@ -67,7 +91,7 @@ export default function SettingsScreen() {
             );
           })}
           <Button
-            className="mt-2 rounded-3xl"
+            className="mt-2 rounded-pill"
             onPress={() => router.push({ pathname: '/profile-edit', params: {} })}>
             <Text className="text-[17px] font-bold text-primary-foreground">
               {t('common.addNewBaby')}
@@ -75,66 +99,76 @@ export default function SettingsScreen() {
           </Button>
         </View>
 
-        <View className="gap-3 rounded-2xl bg-card p-5 shadow-sm">
+        <View className="gap-3 rounded-lg bg-card p-5 shadow-sm">
           <Text className="text-lg font-extrabold text-foreground">{t('settings.themeTitle')}</Text>
           <Text className="text-sm text-muted-foreground">{t('settings.themeSubtitle')}</Text>
-          <View className="flex-row gap-3">
-            {(['system', 'light', 'dark'] as const).map((mode) => {
-              const isActive = themeMode === mode;
-              return (
-                <Pressable
-                  key={mode}
-                  onPress={() => setThemeMode(mode)}
-                  className={[
-                    'flex-1 items-center rounded-xl border py-3',
-                    isActive ? 'border-primary bg-primary' : 'border-border bg-background',
-                  ].join(' ')}>
-                  <Text
-                    className={
-                      isActive
-                        ? 'font-semibold text-primary-foreground'
-                        : 'font-semibold text-muted-foreground'
-                    }>
-                    {mode === 'system'
-                      ? t('settings.themeSystem')
-                      : mode === 'light'
-                        ? t('settings.themeLight')
-                        : t('settings.themeDark')}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <ToggleGroup
+            type="single"
+            value={themeMode}
+            onValueChange={(value) => {
+              if (value && isThemeMode(value)) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setThemeMode(value);
+              }
+            }}
+            variant="outline"
+            className="w-full">
+            {themeModes.map((mode, index) => (
+              <ToggleGroupItem
+                key={mode}
+                value={mode}
+                isFirst={index === 0}
+                isLast={index === themeModes.length - 1}
+                className="flex-1"
+                aria-label={
+                  mode === 'system'
+                    ? t('settings.themeSystem')
+                    : mode === 'light'
+                      ? t('settings.themeLight')
+                      : t('settings.themeDark')
+                }>
+                <Text className="font-semibold">
+                  {mode === 'system'
+                    ? t('settings.themeSystem')
+                    : mode === 'light'
+                      ? t('settings.themeLight')
+                      : t('settings.themeDark')}
+                </Text>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </View>
 
-        <View className="gap-3 rounded-2xl bg-card p-5 shadow-sm">
+        <View className="gap-3 rounded-lg bg-card p-5 shadow-sm">
           <Text className="text-lg font-extrabold text-foreground">
             {t('settings.languageTitle')}
           </Text>
           <Text className="text-sm text-muted-foreground">{t('settings.languageSubtitle')}</Text>
-          <View className="flex-row gap-3">
-            {availableLocales.map((language) => {
-              const isActive = locale === language.code;
-              return (
-                <Pressable
-                  key={language.code}
-                  onPress={() => setLocale(language.code)}
-                  className={[
-                    'flex-1 items-center rounded-xl border py-3',
-                    isActive ? 'border-primary bg-primary' : 'border-border bg-background',
-                  ].join(' ')}>
-                  <Text
-                    className={
-                      isActive
-                        ? 'font-semibold text-primary-foreground'
-                        : 'font-semibold text-muted-foreground'
-                    }>
-                    {language.code === 'en' ? t('settings.english') : t('settings.vietnamese')}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <ToggleGroup
+            type="single"
+            value={locale}
+            onValueChange={(value) => {
+              if (value && isLocale(value)) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setLocale(value);
+              }
+            }}
+            variant="outline"
+            className="w-full">
+            {availableLocales.map((language, index) => (
+              <ToggleGroupItem
+                key={language.code}
+                value={language.code}
+                isFirst={index === 0}
+                isLast={index === availableLocales.length - 1}
+                className="flex-1"
+                aria-label={language.label}>
+                <Text className="font-semibold">
+                  {language.code === 'en' ? t('settings.english') : t('settings.vietnamese')}
+                </Text>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
         </View>
       </ScrollView>
     </View>

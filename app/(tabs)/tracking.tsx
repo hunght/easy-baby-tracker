@@ -1,19 +1,21 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
 import {
   getActiveBabyProfile,
   getBabyProfiles,
   setActiveBabyProfileId,
 } from '@/database/baby-profile';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 const trackingTiles: readonly {
@@ -21,63 +23,63 @@ const trackingTiles: readonly {
   labelKey: string;
   sublabelKey: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  color: string;
+  colorKey: 'accent' | 'info' | 'lavender' | 'mint' | 'secondary' | 'primary';
 }[] = [
   {
     id: 'feeding',
     labelKey: 'tracking.tiles.feeding.label',
     sublabelKey: 'tracking.tiles.feeding.sublabel',
     icon: 'baby-bottle-outline',
-    color: '#FF7A9B',
+    colorKey: 'accent',
   },
   {
     id: 'pumping',
     labelKey: 'tracking.tiles.pumping.label',
     sublabelKey: 'tracking.tiles.pumping.sublabel',
     icon: 'bottle-tonic-outline',
-    color: '#FF7A9B',
+    colorKey: 'accent',
   },
   {
     id: 'diaper',
     labelKey: 'tracking.tiles.diaper.label',
     sublabelKey: 'tracking.tiles.diaper.sublabel',
     icon: 'baby-face-outline',
-    color: '#6BC9FF',
+    colorKey: 'info',
   },
   {
     id: 'sleep',
     labelKey: 'tracking.tiles.sleep.label',
     sublabelKey: 'tracking.tiles.sleep.sublabel',
     icon: 'sleep',
-    color: '#B49BFF',
+    colorKey: 'lavender',
   },
   {
     id: 'easy-schedule',
     labelKey: 'tracking.tiles.easySchedule.label',
     sublabelKey: 'tracking.tiles.easySchedule.sublabel',
     icon: 'calendar-clock',
-    color: '#9B7EBD',
+    colorKey: 'lavender',
   },
   {
     id: 'health',
     labelKey: 'tracking.tiles.health.label',
     sublabelKey: 'tracking.tiles.health.sublabel',
     icon: 'stethoscope',
-    color: '#35C2C4',
+    colorKey: 'mint',
   },
   {
     id: 'growth',
     labelKey: 'tracking.tiles.growth.label',
     sublabelKey: 'tracking.tiles.growth.sublabel',
     icon: 'human-male-height',
-    color: '#FFA74F',
+    colorKey: 'secondary',
   },
   {
     id: 'diary',
     labelKey: 'tracking.tiles.diary.label',
     sublabelKey: 'tracking.tiles.diary.sublabel',
     icon: 'notebook',
-    color: '#F8C93B',
+    colorKey: 'secondary',
   },
 ];
 
@@ -85,6 +87,7 @@ export default function TrackingScreen() {
   const { t } = useLocalization();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const brandColors = useBrandColor();
   const [switchingBabyId, setSwitchingBabyId] = useState<number | null>(null);
   const { data: profile, isLoading } = useQuery({
     queryKey: BABY_PROFILE_QUERY_KEY,
@@ -166,30 +169,44 @@ export default function TrackingScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerClassName="gap-2">
-            {displayBabies.map((baby) => {
-              const isActive = baby.id === profile.id;
-              const tabMonths = computeMonthsOld(baby.birthDate);
-              return (
-                <Badge
-                  key={baby.id}
-                  variant={isActive ? 'default' : 'secondary'}
-                  className="px-4 py-2.5"
-                  accessibilityLabel={t('tracking.accessibility.selectBaby', {
-                    defaultValue: 'Select %{name}',
-                    params: { name: baby.nickname },
-                  })}
-                  accessibilityState={{ selected: isActive, disabled: switchingBabyId != null }}>
-                  <Pressable key={baby.id} onPress={() => handleSelectBaby(baby.id)}>
+            <ToggleGroup
+              type="single"
+              value={profile.id.toString()}
+              onValueChange={(value) => {
+                if (value) {
+                  const babyId = parseInt(value, 10);
+                  if (!isNaN(babyId)) {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    handleSelectBaby(babyId);
+                  }
+                }
+              }}
+              variant="outline"
+              disabled={switchingBabyId != null}
+              className="flex-row">
+              {displayBabies.map((baby, index) => {
+                const tabMonths = computeMonthsOld(baby.birthDate);
+                return (
+                  <ToggleGroupItem
+                    key={baby.id}
+                    value={baby.id.toString()}
+                    isFirst={index === 0}
+                    isLast={index === displayBabies.length - 1}
+                    className="px-4 py-2.5"
+                    aria-label={t('tracking.accessibility.selectBaby', {
+                      defaultValue: 'Select %{name}',
+                      params: { name: baby.nickname },
+                    })}>
                     <View className="gap-0.5">
                       <Text className="text-sm font-semibold">{baby.nickname}</Text>
                       <Text className="text-xs opacity-80">
                         {t('common.monthsOld', { params: { count: tabMonths } })}
                       </Text>
                     </View>
-                  </Pressable>
-                </Badge>
-              );
-            })}
+                  </ToggleGroupItem>
+                );
+              })}
+            </ToggleGroup>
           </ScrollView>
         </View>
 
@@ -205,7 +222,11 @@ export default function TrackingScreen() {
               })}
               accessibilityRole="button">
               <CardContent className="gap-2.5 p-4">
-                <MaterialCommunityIcons name={tile.icon} size={34} color={tile.color} />
+                <MaterialCommunityIcons
+                  name={tile.icon}
+                  size={34}
+                  color={brandColors.get(tile.colorKey)}
+                />
                 <Text className="text-lg font-bold text-foreground">{t(tile.labelKey)}</Text>
                 <Text className="text-sm text-muted-foreground">{t(tile.sublabelKey)}</Text>
               </CardContent>

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { DatePickerField } from '@/components/DatePickerField';
@@ -30,6 +31,14 @@ const genderSegments: { key: Gender; labelKey: string }[] = [
   { key: 'boy', labelKey: 'onboarding.babyProfile.genderOptions.boy' },
   { key: 'girl', labelKey: 'onboarding.babyProfile.genderOptions.girl' },
 ];
+
+// Zod schema for Gender validation
+const genderSchema = z.enum(['unknown', 'boy', 'girl']);
+
+// Type guard using Zod validation
+function isGender(value: unknown): value is Gender {
+  return genderSchema.safeParse(value).success;
+}
 
 export default function ProfileEditScreen() {
   const { t } = useLocalization();
@@ -118,9 +127,9 @@ export default function ProfileEditScreen() {
           type="single"
           value={gender}
           onValueChange={(value) => {
-            if (value) {
+            if (value && isGender(value)) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setGender(value as Gender);
+              setGender(value);
             }
           }}
           variant="outline"
@@ -152,7 +161,7 @@ export default function ProfileEditScreen() {
           onPress={handleSave}
           disabled={isSaving}
           className="mt-4 rounded-pill">
-          <Text className="text-lg font-bold text-white">
+          <Text className="text-lg font-bold text-primary-foreground">
             {isSaving
               ? t('common.saving')
               : numericBabyId
