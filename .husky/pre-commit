@@ -1,2 +1,5 @@
+# Type-check entire project
+npm run type-check
+
 # Format and lint staged files
 npx lint-staged
