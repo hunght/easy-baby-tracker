@@ -25,6 +25,7 @@ import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { LocalizationProvider, useLocalization } from '@/localization/LocalizationProvider';
 import * as Notifications from 'expo-notifications';
 import migrations from '../drizzle/migrations';
+import { logger } from '@/lib/logger';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -72,6 +73,14 @@ function AppProviders() {
   const [queryClient] = useState(() => new QueryClient());
   const { t } = useLocalization();
   const router = useRouter();
+  const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+
+  // Log current theme info to trace dark mode propagation
+  useEffect(() => {
+    console.log('[Theme] colorScheme:', colorScheme);
+    console.log('[NavTheme] colors:', navTheme.colors);
+    console.log('[NavTheme] dark flag:', navTheme.dark);
+  }, [colorScheme, navTheme]);
 
   // Initialize notification handler and restore scheduled notifications
   useEffect(() => {
@@ -132,64 +141,76 @@ function AppProviders() {
       receivedSubscription.remove();
     };
   }, [router]);
-
+  logger.log('Rendering AppProviders with colorScheme:', colorScheme);
   return (
     <SafeAreaProvider>
       <NotificationProvider>
         <MigrationHandler>
           <QueryClientProvider client={queryClient}>
-            <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-              <Stack>
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="profile-selection" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                  name="feeding"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-                <Stack.Screen
-                  name="pumping"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-                <Stack.Screen
-                  name="diaper"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-                <Stack.Screen
-                  name="sleep"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-                <Stack.Screen
-                  name="health"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-                <Stack.Screen
-                  name="growth"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-                <Stack.Screen
-                  name="easy-schedule"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-                <Stack.Screen
-                  name="easy-schedule-info"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-                <Stack.Screen
-                  name="diary"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-                <Stack.Screen
-                  name="modal"
-                  options={{ presentation: 'modal', title: t('modal.title') }}
-                />
-                <Stack.Screen
-                  name="profile-edit"
-                  options={{ presentation: 'modal', headerShown: false }}
-                />
-              </Stack>
-              <StatusBar style="auto" />
-              <PortalHost />
+            <NavigationThemeProvider value={navTheme}>
+              <View className={colorScheme === 'dark' ? 'dark flex-1 bg-black' : 'flex-1 bg-white'}>
+                <Stack
+                  screenOptions={{
+                    // Render screens transparently so our wrapper View controls background via Tailwind
+                    contentStyle: { backgroundColor: 'transparent' },
+                  }}>
+                  <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen name="profile-selection" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="feeding"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="pumping"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="diaper"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="sleep"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="health"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="growth"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="easy-schedule"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="easy-schedule-info"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="diary"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                  <Stack.Screen
+                    name="modal"
+                    options={{ presentation: 'modal', title: t('modal.title') }}
+                  />
+                  <Stack.Screen
+                    name="profile-edit"
+                    options={{ presentation: 'modal', headerShown: false }}
+                  />
+                </Stack>
+                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+                <PortalHost />
+                {__DEV__ && (
+                  // Lightweight inline debug overlay to confirm current scheme
+                  <View className="absolute bottom-2 right-2 rounded-md bg-muted px-2 py-1">
+                    <Text className="text-xs text-muted-foreground">scheme: {colorScheme}</Text>
+                  </View>
+                )}
+              </View>
             </NavigationThemeProvider>
           </QueryClientProvider>
         </MigrationHandler>

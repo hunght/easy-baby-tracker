@@ -123,7 +123,7 @@ export default function GrowthScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('growth.editTitle') : t('growth.title')}
         onSave={handleSave}
@@ -147,7 +147,7 @@ export default function GrowthScreen() {
           </View>
         </View>
         <TextInput
-          className="rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
+          className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
           value={weightKg}
           onChangeText={(text) => setWeightKg(formatNumericValue(text))}
           placeholder={t('growth.placeholder')}
@@ -166,7 +166,7 @@ export default function GrowthScreen() {
           </View>
         </View>
         <TextInput
-          className="rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
+          className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
           value={heightCm}
           onChangeText={(text) => setHeightCm(formatNumericValue(text))}
           placeholder={t('growth.placeholder')}
@@ -189,7 +189,7 @@ export default function GrowthScreen() {
           </View>
         </View>
         <TextInput
-          className="rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
+          className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
           value={headCircumferenceCm}
           onChangeText={(text) => setHeadCircumferenceCm(formatNumericValue(text))}
           placeholder={t('growth.placeholder')}

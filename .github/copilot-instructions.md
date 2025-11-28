@@ -272,16 +272,65 @@ Auth screens (sign-in, sign-up, etc.) should use:
 - `Button` variants: `default` (primary), `outline`, `link`
 - `SocialConnections` component for OAuth buttons
 
+## Common Use Cases
+
+### Edit Mode Pattern
+
+When loading existing data for editing:
+
+```tsx
+const { id } = useLocalSearchParams<{ id: string }>();
+const isEditing = !!id;
+
+const { data: existingData } = useQuery({
+  queryKey: feedingByIdKey(parseInt(id)),
+  queryFn: () => getFeedingById(parseInt(id)),
+  enabled: isEditing,
+});
+
+useEffect(() => {
+  if (existingData) {
+    setFeedingType(existingData.type);
+    // Populate other state from existingData
+  }
+}, [existingData]);
+```
+
+### Mutation with Update Support
+
+```tsx
+const mutation = useMutation({
+  mutationFn: async (payload: FeedingPayload) => {
+    if (isEditing && id) {
+      await updateFeeding(parseInt(id), payload);
+    } else {
+      await saveFeeding(payload);
+    }
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: FEEDINGS_QUERY_KEY });
+    showNotification(t('common.saveSuccess'), 'success');
+    setTimeout(() => router.back(), 500);
+  },
+  onError: (error) => {
+    console.error('Failed to save:', error);
+    showNotification(t('common.saveError'), 'error');
+  },
+});
+```
+
 ## Gotchas
 
-- **No StyleSheet**: Migration in progress - use Tailwind classes only in new/edited code
+- **No StyleSheet**: Migration complete - use Tailwind classes only
 - **className vs style**: Always use `className` prop, never inline `style={{ ... }}`
 - **cn() import**: Use `import { cn } from '@/lib/utils'` for merging classes
 - **Dark mode**: Test with `useColorScheme()` from `nativewind`, classes auto-switch
 - **Platform styles**: Wrap web-only hover/focus states in `Platform.select()`
 - **Clerk auth state**: Components re-render on auth state changes, use `useUser()` to check auth
 - **React Native Reusables**: Not all shadcn/ui components are available - check `docs/ui-components-library.md`
-- **Timestamps**: Still use seconds (same as BabyEase), not milliseconds
-- **Baby ID**: Database modules auto-inject `babyId` from active profile (same as BabyEase)
+- **Timestamps**: Unix seconds only (`Math.floor(Date.now() / 1000)`), never milliseconds
+- **Baby ID**: Database modules auto-inject `babyId` via `requireActiveBabyProfileId()` (same as BabyEase)
 - **Notification delay**: Add 500ms `setTimeout()` before `router.back()` after showing notifications to ensure visibility
 - **ScrollView className**: Use `contentContainerClassName` for scroll content styling, not `className`
+- **useNotification hook**: Import as `const { showNotification } = useNotification()` or use from provider context
+- **Edit mode queries**: Set `enabled: isEditing` to avoid fetching when creating new records

@@ -175,7 +175,7 @@ export default function PumpingScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('pumping.editTitle') : t('pumping.title')}
         onSave={handleSave}

@@ -364,7 +364,7 @@ export default function EasyScheduleScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-background">
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-border px-5 pb-4 pt-[60px]">
         <Pressable onPress={() => router.back()}>
@@ -484,7 +484,7 @@ export default function EasyScheduleScreen() {
         animationType="fade"
         onRequestClose={closePhaseModal}>
         <View className="flex-1 justify-center bg-black/25 p-6">
-          <View className="rounded-[20px] bg-white p-5">
+          <View className="rounded-[20px] bg-card p-5">
             {selectedPhase && (
               <>
                 <View className="mb-2 flex-row items-center justify-between">
@@ -560,7 +560,7 @@ export default function EasyScheduleScreen() {
       </Modal>
 
       {showTimePicker && (
-        <View className="rounded-t-[20px] bg-white pt-3">
+        <View className="rounded-t-[20px] bg-card pt-3">
           <Text className="mb-2 text-center text-sm font-semibold text-foreground">
             {t('easySchedule.firstWakeTimeTitle')}
           </Text>

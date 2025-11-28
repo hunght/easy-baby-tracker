@@ -91,7 +91,7 @@ export default function EasyScheduleInfoScreen() {
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border bg-white px-5 py-4">
+      <View className="flex-row items-center justify-between border-b border-border bg-card px-5 py-4">
         <Pressable
           onPress={() => router.back()}
           className="p-1"
@@ -105,7 +105,7 @@ export default function EasyScheduleInfoScreen() {
 
       <ScrollView className="flex-1" contentContainerClassName="p-5">
         {/* Title Card */}
-        <View className="mb-4 items-center rounded-2xl bg-white p-5">
+        <View className="mb-4 items-center rounded-2xl bg-card p-5">
           <View className="mb-3">
             <Text className="text-4xl font-bold" style={{ letterSpacing: 2 }}>
               <Text style={{ color: '#FF6B9D' }}>E.</Text>
@@ -140,7 +140,7 @@ export default function EasyScheduleInfoScreen() {
 
         {/* Logic Notes */}
         {logicNotes.length > 0 && (
-          <View className="mb-4 rounded-2xl bg-white p-5">
+          <View className="mb-4 rounded-2xl bg-card p-5">
             <Text className="mb-3 text-lg font-semibold text-foreground">
               {t('easySchedule.formulaTable.labels.logic')}
             </Text>
@@ -157,7 +157,7 @@ export default function EasyScheduleInfoScreen() {
         {/* Toddler-specific content */}
         {formulaRule.id === 'toddler' && (
           <>
-            <View className="mb-4 rounded-2xl bg-white p-5">
+            <View className="mb-4 rounded-2xl bg-card p-5">
               <Text className="mb-3 text-lg font-semibold text-foreground">
                 {t('easySchedule.toddlerExtras.wakeWindowsHeading')}
               </Text>
@@ -168,7 +168,7 @@ export default function EasyScheduleInfoScreen() {
               ))}
             </View>
 
-            <View className="mb-4 rounded-2xl bg-white p-5">
+            <View className="mb-4 rounded-2xl bg-card p-5">
               <Text className="mb-3 text-lg font-semibold text-foreground">
                 {t('easySchedule.toddlerExtras.sampleDayHeading')}
               </Text>
@@ -182,7 +182,7 @@ export default function EasyScheduleInfoScreen() {
               ))}
             </View>
 
-            <View className="mb-4 rounded-2xl bg-white p-5">
+            <View className="mb-4 rounded-2xl bg-card p-5">
               <Text className="mb-3 text-lg font-semibold text-foreground">
                 {t('easySchedule.toddlerExtras.sampleOutputsHeading')}
               </Text>
@@ -220,7 +220,7 @@ export default function EasyScheduleInfoScreen() {
               </View>
             </View>
 
-            <View className="mb-4 rounded-2xl bg-white p-5">
+            <View className="mb-4 rounded-2xl bg-card p-5">
               <Text className="mb-3 text-lg font-semibold text-foreground">
                 {t('easySchedule.toddlerExtras.notesHeading')}
               </Text>

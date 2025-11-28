@@ -11,7 +11,8 @@ import { useLocalization } from '@/localization/LocalizationProvider';
 function computeMonthsOld(birthDateIso: string) {
   const birth = new Date(birthDateIso);
   const now = new Date();
-  const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+  const months =
+    (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
   return Math.max(months, 0);
 }
 
@@ -45,8 +46,12 @@ export default function ProfileSelectionScreen() {
 
   return (
     <View className="flex-1 bg-pink-50 px-6 pb-10 pt-20">
-      <Text className="mb-2 text-center text-2xl font-bold text-neutral-900">{t('profileSelection.heading')}</Text>
-      <Text className="mb-6 text-center text-base text-neutral-500">{t('profileSelection.subheading')}</Text>
+      <Text className="mb-2 text-center text-2xl font-bold text-neutral-900">
+        {t('profileSelection.heading')}
+      </Text>
+      <Text className="mb-6 text-center text-base text-neutral-500">
+        {t('profileSelection.subheading')}
+      </Text>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View className="gap-4 pb-4">
           {profiles.map((profile) => {
@@ -55,8 +60,7 @@ export default function ProfileSelectionScreen() {
               <Pressable
                 key={profile.id}
                 onPress={() => handleSelectProfile(profile.id)}
-                className="gap-1 rounded-2xl bg-white p-5 shadow-sm"
-              >
+                className="gap-1 rounded-2xl bg-card p-5 shadow-sm">
                 <Text className="text-xl font-bold text-neutral-900">{profile.nickname}</Text>
                 <Text className="text-base text-neutral-500">
                   {t('common.monthsOld', { params: { count: monthsOld } })}
@@ -77,5 +81,3 @@ export default function ProfileSelectionScreen() {
     </View>
   );
 }
-
-

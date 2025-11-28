@@ -111,7 +111,7 @@ export default function ProfileEditScreen() {
         />
 
         <Label className="mt-2 font-semibold text-muted-foreground">{t('common.gender')}</Label>
-        <View className="mt-1 flex-row overflow-hidden rounded-2xl border border-input bg-white">
+        <View className="mt-1 flex-row overflow-hidden rounded-2xl border border-input bg-card">
           {genderSegments.map((segment) => (
             <Pressable
               key={segment.key}

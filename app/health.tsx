@@ -143,7 +143,7 @@ export default function HealthScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('health.editTitle') : t('health.title')}
         onSave={handleSave}
@@ -221,7 +221,7 @@ export default function HealthScreen() {
                 <MaterialCommunityIcons name="information-outline" size={16} color="#999" />
               </View>
             </View>
-            <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-white">
+            <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-card">
               <Pressable
                 onPress={() => setMedicineType('medication')}
                 className={`flex-1 flex-row items-center justify-center gap-1.5 py-3 ${
@@ -265,7 +265,7 @@ export default function HealthScreen() {
               </Text>
             </View>
             <TextInput
-              className="mb-6 rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
+              className="mb-6 rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
               value={medication}
               onChangeText={setMedication}
               placeholder={t('health.medicationPlaceholder')}

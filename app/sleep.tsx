@@ -244,7 +244,7 @@ export default function SleepScreen() {
   const pickerValue = pickerTarget === 'start' ? startTime : (endTime ?? new Date());
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('sleep.editTitle') : t('sleep.title')}
         onSave={handleSave}
@@ -254,7 +254,7 @@ export default function SleepScreen() {
       />
 
       <ScrollView contentContainerClassName="p-5 pb-10 gap-6" showsVerticalScrollIndicator={false}>
-        <View className="flex-row overflow-hidden rounded-xl border border-border bg-white">
+        <View className="flex-row overflow-hidden rounded-xl border border-border bg-card">
           {sleepKinds.map((kind, index) => (
             <Pressable
               key={kind.key}
@@ -298,7 +298,7 @@ export default function SleepScreen() {
           </View>
         )}
 
-        <View className="gap-4.5 rounded-2xl border border-gray-100 bg-white p-4">
+        <View className="gap-4.5 rounded-2xl border border-border bg-card p-4">
           <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-base font-medium text-muted-foreground">

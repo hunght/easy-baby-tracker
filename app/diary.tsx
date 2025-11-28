@@ -215,7 +215,7 @@ export default function DiaryScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('diary.editTitle') : t('diary.title')}
         onSave={handleSave}
@@ -226,7 +226,7 @@ export default function DiaryScreen() {
 
       <ScrollView contentContainerClassName="p-5 pb-15 gap-5" showsVerticalScrollIndicator={false}>
         <TextInput
-          className="rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
+          className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
           value={title}
           onChangeText={setTitle}
           placeholder={t('diary.titlePlaceholder')}
@@ -300,7 +300,7 @@ export default function DiaryScreen() {
           formattedEntries.map((entry) => (
             <View
               key={entry.id}
-              className="mt-3 gap-3 rounded-2xl border border-gray-100 bg-white p-4">
+              className="mt-3 gap-3 rounded-2xl border border-border bg-card p-4">
               <View className="flex-row items-center justify-between gap-3">
                 <Text className="flex-1 text-base font-semibold text-foreground">
                   {entry.title ?? t('diary.title')}

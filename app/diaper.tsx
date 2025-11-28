@@ -112,14 +112,14 @@ export default function DiaperScreen() {
 
   if (isEditing && isLoadingData) {
     return (
-      <View className="flex-1 items-center justify-center bg-white">
+      <View className="flex-1 items-center justify-center bg-background">
         <ActivityIndicator size="large" color="#FF5C8D" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-white">
+    <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('diaper.editTitle') : t('diaper.title')}
         onSave={handleSave}
@@ -130,7 +130,7 @@ export default function DiaperScreen() {
 
       <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
         {/* Diaper Type Selection */}
-        <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-white">
+        <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-card">
           {diaperTypes.map((type, index) => (
             <Pressable
               key={type.key}
