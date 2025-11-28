@@ -4,7 +4,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 import type { BabyProfileRecord } from '@/database/baby-profile';
@@ -52,7 +52,6 @@ function minutesToTimeString(totalMinutes: number): string {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 }
 
-
 export default function EasyScheduleScreen() {
   const router = useRouter();
   const { t, locale } = useLocalization();
@@ -72,7 +71,6 @@ export default function EasyScheduleScreen() {
   } | null>(null);
   const [adjustPickerVisible, setAdjustPickerVisible] = useState(false);
   const [adjustPickerValue, setAdjustPickerValue] = useState(new Date());
-
 
   const { data: babyProfile } = useQuery({
     queryKey: BABY_PROFILE_QUERY_KEY,
@@ -98,7 +96,8 @@ export default function EasyScheduleScreen() {
     () => ({
       eat: t('easySchedule.activityLabels.eat'),
       activity: t('easySchedule.activityLabels.activity'),
-      sleep: (napNumber: number) => t('easySchedule.activityLabels.sleep').replace('{{number}}', String(napNumber)),
+      sleep: (napNumber: number) =>
+        t('easySchedule.activityLabels.sleep').replace('{{number}}', String(napNumber)),
       yourTime: t('easySchedule.activityLabels.yourTime'),
     }),
     [locale, t]
@@ -132,7 +131,9 @@ export default function EasyScheduleScreen() {
       offset += item.durationMinutes;
     });
 
-    const spansOvernight = Array.from(map.values()).some((timing) => timing.endMinutes > MINUTES_IN_DAY);
+    const spansOvernight = Array.from(map.values()).some(
+      (timing) => timing.endMinutes > MINUTES_IN_DAY
+    );
 
     return { phaseTimingMap: map, spansOvernight };
   }, [scheduleItems, baseMinutes]);
@@ -363,48 +364,62 @@ export default function EasyScheduleScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-white">
       {/* Header */}
-      <View style={styles.header}>
+      <View className="flex-row items-center justify-between border-b border-border px-5 pb-4 pt-[60px]">
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.closeButton}>{t('common.close')}</Text>
+          <Text className="text-base font-semibold text-accent">{t('common.close')}</Text>
         </Pressable>
-        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+        <Text
+          className="mx-3 flex-1 text-center text-xl font-bold text-foreground"
+          numberOfLines={1}
+          ellipsizeMode="tail">
           {t('easySchedule.title')}
         </Text>
-        <TouchableOpacity onPress={openTimePicker} style={styles.headerIconButton} accessibilityRole="button">
+        <TouchableOpacity onPress={openTimePicker} className="p-1" accessibilityRole="button">
           <Ionicons name="time-outline" size={24} color="#9B7EBD" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.quickActions}>
+      <ScrollView contentContainerClassName="p-5 pb-10 gap-3" showsVerticalScrollIndicator={false}>
+        <View className="flex-row gap-3">
           <TouchableOpacity
-            style={styles.ruleChip}
-            onPress={() => router.push({ pathname: '/easy-schedule-info', params: { ruleId: formulaRule.id } })}
+            className="flex-1 flex-row items-center gap-2.5 rounded-2xl bg-[#F5EFFA] p-3"
+            onPress={() =>
+              router.push({ pathname: '/easy-schedule-info', params: { ruleId: formulaRule.id } })
+            }
             accessibilityRole="button"
-            accessibilityLabel={t('easySchedule.viewDetails')}
-          >
-            <Ionicons name="information-circle-outline" size={18} color="#6D4F91" style={styles.quickIcon} />
-            <View style={styles.chipTextContainer}>
-              <Text style={styles.ruleChipTitle} numberOfLines={1} ellipsizeMode="tail">
+            accessibilityLabel={t('easySchedule.viewDetails')}>
+            <Ionicons
+              name="information-circle-outline"
+              size={18}
+              color="#6D4F91"
+              className="mr-2.5"
+            />
+            <View className="flex-1">
+              <Text
+                className="text-sm font-semibold text-[#4C3A6D]"
+                numberOfLines={1}
+                ellipsizeMode="tail">
                 {t(formulaRule.labelKey)}
               </Text>
-              <Text style={styles.ruleChipSub} numberOfLines={1} ellipsizeMode="tail">
+              <Text className="text-xs text-[#7B6F9D]" numberOfLines={1} ellipsizeMode="tail">
                 {t(formulaRule.ageRangeKey)}
               </Text>
             </View>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.noticeText} numberOfLines={1} ellipsizeMode="tail">
+        <Text className="text-xs text-[#7B6F9D]" numberOfLines={1} ellipsizeMode="tail">
           {formulaNotice}
         </Text>
 
         {groupedSchedule.map((group) => {
           const phases = group.items.filter((item) => item.activityType !== 'Y');
           return (
-            <View key={group.number} style={styles.compactCard}>
+            <View
+              key={group.number}
+              className="flex-row justify-between gap-2 rounded-2xl border border-[#F0E9FA] p-3">
               {phases.map((item) => {
                 const endTime = calculateEndTime(item.startTime, item.durationMinutes);
                 const duration = formatDuration(item.durationMinutes);
@@ -425,35 +440,35 @@ export default function EasyScheduleScreen() {
                 return (
                   <TouchableOpacity
                     key={`${group.number}-${item.order}`}
-                    style={[
-                      styles.compactPhase,
-                      phaseStyles.container,
-                      isCurrentPhase && styles.compactPhaseActive,
-                      !isCurrentPhase && isPastPhase && styles.compactPhasePast,
-                    ]}
+                    className={`relative min-h-[94px] flex-1 items-start justify-center overflow-hidden rounded-xl px-2.5 py-2.5 ${
+                      isCurrentPhase ? 'border border-[#7B5AB1] shadow-md shadow-[#7B5AB1]/15' : ''
+                    } ${!isCurrentPhase && isPastPhase ? 'opacity-60' : ''}`}
+                    style={{ backgroundColor: phaseStyles.container.backgroundColor }}
                     activeOpacity={0.9}
-                    onPress={() => openPhaseModal(item, { startMinutes, endMinutes }, endTime, duration)}
-                  >
+                    onPress={() =>
+                      openPhaseModal(item, { startMinutes, endMinutes }, endTime, duration)
+                    }>
                     {isCurrentPhase && (
                       <View
                         pointerEvents="none"
-                        style={[styles.phaseProgressFill, { width: `${clampedProgress * 100}%` }]}
+                        className="absolute bottom-0 left-0 top-0 z-0 bg-[rgba(109,79,145,0.16)]"
+                        style={{ width: `${clampedProgress * 100}%` }}
                       />
                     )}
                     <TouchableOpacity
                       onPress={() => showPhaseInfo(item, endTime, duration)}
-                      style={styles.phaseInfoButton}
+                      className="absolute right-1.5 top-1.5 z-[2] p-1"
                       accessibilityRole="button"
-                      accessibilityLabel={item.label}
-                    >
+                      accessibilityLabel={item.label}>
                       <Ionicons name="information-circle-outline" size={16} color="#6D4F91" />
                     </TouchableOpacity>
-                    <Text style={styles.phaseIcon}>{getActivityIcon(item.activityType)}</Text>
-                    <View style={styles.phaseTextWrap}>
-                      <Text style={[styles.phaseTime, isCurrentPhase && styles.phaseTimeActive]}>
+                    <Text className="mb-1 text-lg">{getActivityIcon(item.activityType)}</Text>
+                    <View className="w-full">
+                      <Text
+                        className={`text-sm font-semibold ${isCurrentPhase ? 'text-[#4C3A6D]' : 'text-foreground'}`}>
                         {item.startTime} → {endTime}
                       </Text>
-                      <Text style={styles.phaseDuration}>{duration}</Text>
+                      <Text className="mt-0.5 text-xs text-muted-foreground">{duration}</Text>
                     </View>
                   </TouchableOpacity>
                 );
@@ -467,48 +482,52 @@ export default function EasyScheduleScreen() {
         transparent
         visible={phaseModalVisible}
         animationType="fade"
-        onRequestClose={closePhaseModal}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+        onRequestClose={closePhaseModal}>
+        <View className="flex-1 justify-center bg-black/25 p-6">
+          <View className="rounded-[20px] bg-white p-5">
             {selectedPhase && (
               <>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>{selectedPhase.item.label}</Text>
+                <View className="mb-2 flex-row items-center justify-between">
+                  <Text className="text-lg font-bold text-foreground">
+                    {selectedPhase.item.label}
+                  </Text>
                   <TouchableOpacity onPress={closePhaseModal}>
                     <Ionicons name="close" size={22} color="#2D2D2D" />
                   </TouchableOpacity>
                 </View>
-                <Text style={styles.modalTime}>
+                <Text className="text-base font-semibold text-[#4C3A6D]">
                   {selectedPhase.item.startTime} → {selectedPhase.endTimeLabel}
                 </Text>
-                <Text style={styles.modalDuration}>{selectedPhase.durationLabel}</Text>
-                <View style={styles.modalActions}>
+                <Text className="mb-4 text-[13px] text-muted-foreground">
+                  {selectedPhase.durationLabel}
+                </Text>
+                <View className="gap-3">
                   <TouchableOpacity
-                    style={styles.modalActionPrimary}
+                    className="flex-row items-center justify-center gap-2 rounded-xl bg-[#7B5AB1] py-3"
                     onPress={() =>
                       handleScheduleReminder(
                         selectedPhase.item,
                         selectedPhase.timing.endMinutes,
                         selectedPhase.endTimeLabel
                       )
-                    }
-                  >
+                    }>
                     <Ionicons name="alarm-outline" size={18} color="#FFF" />
-                    <Text style={styles.modalActionPrimaryText}>
+                    <Text className="font-semibold text-white">
                       {t('easySchedule.phaseModal.setReminder')}
                     </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.modalActionSecondary} onPress={openAdjustPicker}>
+                  <TouchableOpacity
+                    className="flex-row items-center justify-center gap-2 rounded-xl border border-[#E5DDF4] py-3"
+                    onPress={openAdjustPicker}>
                     <Ionicons name="time-outline" size={18} color="#6D4F91" />
-                    <Text style={styles.modalActionSecondaryText}>
+                    <Text className="font-semibold text-[#6D4F91]">
                       {t('easySchedule.phaseModal.adjustTime')}
                     </Text>
                   </TouchableOpacity>
                 </View>
                 {adjustPickerVisible && (
-                  <View style={styles.adjustPickerCard}>
-                    <Text style={styles.adjustPickerTitle}>
+                  <View className="mt-5 rounded-2xl border border-[#F0E9FA] p-4">
+                    <Text className="mb-2 text-center text-sm font-semibold text-foreground">
                       {t('easySchedule.phaseModal.adjustHeading')}
                     </Text>
                     <DateTimePicker
@@ -518,22 +537,18 @@ export default function EasyScheduleScreen() {
                       display="spinner"
                       onChange={handleAdjustPickerChange}
                     />
-                    <View style={styles.adjustPickerActions}>
+                    <View className="mt-3 flex-row justify-between gap-3">
                       <TouchableOpacity
-                        style={styles.adjustPickerButtonSecondary}
-                        onPress={() => setAdjustPickerVisible(false)}
-                      >
-                        <Text style={styles.adjustPickerButtonSecondaryText}>
+                        className="flex-1 items-center rounded-[10px] border border-border py-2.5"
+                        onPress={() => setAdjustPickerVisible(false)}>
+                        <Text className="font-semibold text-muted-foreground">
                           {t('common.cancel')}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={styles.adjustPickerButtonPrimary}
-                        onPress={applyAdjustment}
-                      >
-                        <Text style={styles.adjustPickerButtonPrimaryText}>
-                          {t('common.save')}
-                        </Text>
+                        className="flex-1 items-center rounded-[10px] bg-[#7B5AB1] py-2.5"
+                        onPress={applyAdjustment}>
+                        <Text className="font-semibold text-white">{t('common.save')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -544,275 +559,20 @@ export default function EasyScheduleScreen() {
         </View>
       </Modal>
 
-      {
-        showTimePicker && (
-          <View style={styles.timePickerSheet}>
-            <Text style={styles.timePickerTitle}>{t('easySchedule.firstWakeTimeTitle')}</Text>
-            <DateTimePicker
-              value={tempTime}
-              mode="time"
-              is24Hour={true}
-              display="spinner"
-              onChange={handleTimeChange}
-            />
-          </View>
-        )
-      }
-    </View >
+      {showTimePicker && (
+        <View className="rounded-t-[20px] bg-white pt-3">
+          <Text className="mb-2 text-center text-sm font-semibold text-foreground">
+            {t('easySchedule.firstWakeTimeTitle')}
+          </Text>
+          <DateTimePicker
+            value={tempTime}
+            mode="time"
+            is24Hour={true}
+            display="spinner"
+            onChange={handleTimeChange}
+          />
+        </View>
+      )}
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  closeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D2D2D',
-    flex: 1,
-    textAlign: 'center',
-    marginHorizontal: 12,
-  },
-  headerIconButton: {
-    padding: 4,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-    gap: 12,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickIcon: {
-    marginRight: 10,
-  },
-  ruleChip: {
-    flex: 1,
-    borderRadius: 16,
-    backgroundColor: '#F5EFFA',
-    padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  chipTextContainer: {
-    flex: 1,
-  },
-  ruleChipTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#4C3A6D',
-  },
-  ruleChipSub: {
-    fontSize: 12,
-    color: '#7B6F9D',
-  },
-  noticeText: {
-    fontSize: 12,
-    color: '#7B6F9D',
-  },
-  compactCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F0E9FA',
-    padding: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  compactPhase: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    position: 'relative',
-    minHeight: 94,
-    overflow: 'hidden',
-  },
-  compactPhaseActive: {
-    borderWidth: 1,
-    borderColor: '#7B5AB1',
-    shadowColor: '#7B5AB1',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  compactPhasePast: {
-    opacity: 0.6,
-  },
-  phaseIcon: {
-    fontSize: 18,
-    marginBottom: 4,
-  },
-  phaseTextWrap: {
-    width: '100%',
-  },
-  phaseTime: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2D2D2D',
-  },
-  phaseTimeActive: {
-    color: '#4C3A6D',
-  },
-  phaseDuration: {
-    fontSize: 12,
-    color: '#6B6B6B',
-    marginTop: 2,
-  },
-  phaseInfoButton: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    padding: 4,
-    zIndex: 2,
-  },
-  phaseProgressFill: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(109, 79, 145, 0.16)',
-    zIndex: 0,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modalCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 20,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  modalTime: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4C3A6D',
-  },
-  modalDuration: {
-    fontSize: 13,
-    color: '#6B6B6B',
-    marginBottom: 16,
-  },
-  modalActions: {
-    gap: 12,
-  },
-  modalActionPrimary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#7B5AB1',
-    borderRadius: 12,
-    paddingVertical: 12,
-  },
-  modalActionPrimaryText: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  modalActionSecondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: '#E5DDF4',
-    borderRadius: 12,
-    paddingVertical: 12,
-  },
-  modalActionSecondaryText: {
-    color: '#6D4F91',
-    fontWeight: '600',
-  },
-  adjustPickerCard: {
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#F0E9FA',
-    borderRadius: 16,
-    padding: 16,
-  },
-  adjustPickerTitle: {
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2D2D2D',
-    marginBottom: 8,
-  },
-  adjustPickerActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    gap: 12,
-  },
-  adjustPickerButtonSecondary: {
-    flex: 1,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  adjustPickerButtonSecondaryText: {
-    color: '#6B6B6B',
-    fontWeight: '600',
-  },
-  adjustPickerButtonPrimary: {
-    flex: 1,
-    borderRadius: 10,
-    backgroundColor: '#7B5AB1',
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  adjustPickerButtonPrimaryText: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  timePickerSheet: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 12,
-  },
-  timePickerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2D2D2D',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-});
