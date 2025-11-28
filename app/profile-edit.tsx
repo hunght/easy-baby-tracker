@@ -1,14 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/ui/button';
 import { DatePickerField } from '@/components/DatePickerField';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
   BABY_PROFILES_QUERY_KEY,
   BABY_PROFILE_QUERY_KEY,
@@ -21,6 +23,7 @@ import {
   saveBabyProfile,
 } from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import { ModalHeader } from '@/components/ModalHeader';
 
 const genderSegments: { key: Gender; labelKey: string }[] = [
   { key: 'unknown', labelKey: 'onboarding.babyProfile.genderOptions.unknown' },
@@ -94,9 +97,9 @@ export default function ProfileEditScreen() {
       <ScrollView
         contentContainerClassName="pt-15 pb-10 px-6 gap-3"
         showsVerticalScrollIndicator={false}>
-        <Text className="mb-3 text-center text-3xl font-bold text-foreground">
-          {numericBabyId ? t('profileEdit.editTitle') : t('profileEdit.createTitle')}
-        </Text>
+        <ModalHeader
+          title={numericBabyId ? t('profileEdit.editTitle') : t('profileEdit.createTitle')}
+        />
         <View className="mb-3 items-center">
           <Image source={require('@/assets/images/icon.png')} className="w-30 h-30" />
           <Text className="mt-2 text-accent">{t('common.addPhoto')}</Text>
@@ -111,21 +114,29 @@ export default function ProfileEditScreen() {
         />
 
         <Label className="mt-2 font-semibold text-muted-foreground">{t('common.gender')}</Label>
-        <View className="mt-1 flex-row overflow-hidden rounded-2xl border border-input bg-card">
-          {genderSegments.map((segment) => (
-            <Pressable
+        <ToggleGroup
+          type="single"
+          value={gender}
+          onValueChange={(value) => {
+            if (value) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setGender(value as Gender);
+            }
+          }}
+          variant="outline"
+          className="mt-1 w-full">
+          {genderSegments.map((segment, index) => (
+            <ToggleGroupItem
               key={segment.key}
-              onPress={() => setGender(segment.key)}
-              className={`flex-1 items-center py-2.5 ${gender === segment.key ? 'bg-accent' : ''}`}
-              accessibilityRole="button"
-              accessibilityState={{ selected: gender === segment.key }}>
-              <Text
-                className={`font-semibold ${gender === segment.key ? 'text-white' : 'text-muted-foreground'}`}>
-                {t(segment.labelKey)}
-              </Text>
-            </Pressable>
+              value={segment.key}
+              isFirst={index === 0}
+              isLast={index === genderSegments.length - 1}
+              className="flex-1"
+              aria-label={t(segment.labelKey)}>
+              <Text className="font-semibold">{t(segment.labelKey)}</Text>
+            </ToggleGroupItem>
           ))}
-        </View>
+        </ToggleGroup>
 
         <DatePickerField label={t('common.birthdate')} value={birthDate} onChange={setBirthDate} />
 
