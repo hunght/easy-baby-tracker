@@ -8,7 +8,10 @@
     "ios": "expo start -c --ios",
     "web": "expo start -c --web",
     "clean": "rm -rf .expo node_modules",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "prepare": "husky"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.16.1",
@@ -62,9 +65,16 @@
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@types/react": "~19.1.10",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
     "babel-plugin-inline-import": "^3.0.0",
     "babel-plugin-module-resolver": "^5.0.2",
     "drizzle-kit": "^0.31.7",
+    "eslint": "^9.39.1",
+    "eslint-config-expo": "^10.0.0",
+    "eslint-plugin-react-native": "^5.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "typescript": "~5.9.2"
