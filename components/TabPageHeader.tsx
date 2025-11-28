@@ -15,7 +15,7 @@ export function TabPageHeader({ title, subtitle, accessory }: TabPageHeaderProps
 
   return (
     <View
-      className="rounded-b-2xl bg-white px-5 pb-3 shadow-sm shadow-black/5"
+      className="rounded-b-2xl bg-background px-5 pb-3 shadow-sm shadow-black/5"
       style={{ paddingTop: insets.top + 6 }}>
       <View className="flex-row items-center gap-4">
         <View className="flex-1">

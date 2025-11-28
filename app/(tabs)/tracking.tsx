@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
 import { Badge } from '@/components/ui/badge';
@@ -173,19 +173,20 @@ export default function TrackingScreen() {
                 <Badge
                   key={baby.id}
                   variant={isActive ? 'default' : 'secondary'}
-                  onPress={() => handleSelectBaby(baby.id)}
                   className="px-4 py-2.5"
                   accessibilityLabel={t('tracking.accessibility.selectBaby', {
                     defaultValue: 'Select %{name}',
                     params: { name: baby.nickname },
                   })}
                   accessibilityState={{ selected: isActive, disabled: switchingBabyId != null }}>
-                  <View className="gap-0.5">
-                    <Text className="text-sm font-semibold">{baby.nickname}</Text>
-                    <Text className="text-xs opacity-80">
-                      {t('common.monthsOld', { params: { count: tabMonths } })}
-                    </Text>
-                  </View>
+                  <Pressable key={baby.id} onPress={() => handleSelectBaby(baby.id)}>
+                    <View className="gap-0.5">
+                      <Text className="text-sm font-semibold">{baby.nickname}</Text>
+                      <Text className="text-xs opacity-80">
+                        {t('common.monthsOld', { params: { count: tabMonths } })}
+                      </Text>
+                    </View>
+                  </Pressable>
                 </Badge>
               );
             })}

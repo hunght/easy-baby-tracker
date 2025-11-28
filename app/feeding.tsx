@@ -279,31 +279,32 @@ export default function FeedingScreen() {
             <Badge
               key={type.key}
               variant={feedingType === type.key ? 'default' : 'secondary'}
-              onPress={() => setFeedingType(type.key)}
               className={`flex-1 rounded-none ${index > 0 ? 'border-l border-border' : ''} ${feedingType === type.key ? 'bg-primary' : 'bg-card'}`}
               accessibilityLabel={t(type.labelKey)}
               accessibilityState={{ selected: feedingType === type.key }}>
-              <View className="flex-row items-center justify-center gap-1.5 py-3">
-                <MaterialCommunityIcons
-                  name={type.icon}
-                  size={20}
-                  color={
-                    feedingType === type.key
-                      ? '#FFFFFF'
-                      : colorScheme === 'dark'
-                        ? '#9CA3AF'
-                        : '#666666'
-                  }
-                />
-                <Text
-                  className={
-                    feedingType === type.key
-                      ? 'text-sm font-semibold text-white'
-                      : 'text-sm font-semibold text-muted-foreground'
-                  }>
-                  {t(type.labelKey)}
-                </Text>
-              </View>
+              <Pressable key={type.key} onPress={() => setFeedingType(type.key)}>
+                <View className="flex-row items-center justify-center gap-1.5 py-3">
+                  <MaterialCommunityIcons
+                    name={type.icon}
+                    size={20}
+                    color={
+                      feedingType === type.key
+                        ? '#FFFFFF'
+                        : colorScheme === 'dark'
+                          ? '#9CA3AF'
+                          : '#666666'
+                    }
+                  />
+                  <Text
+                    className={
+                      feedingType === type.key
+                        ? 'text-sm font-semibold text-white'
+                        : 'text-sm font-semibold text-muted-foreground'
+                    }>
+                    {t(type.labelKey)}
+                  </Text>
+                </View>
+              </Pressable>
             </Badge>
           ))}
         </View>

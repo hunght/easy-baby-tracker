@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Badge } from '@/components/ui/badge';
 import { TimelineActivityType } from '@/database/timeline';
@@ -22,7 +22,7 @@ type Props = {
 
 export const TimelineFilters = ({ selectedFilter, onSelectFilter }: Props) => {
   return (
-    <View className="bg-[#F6F2FF] py-3">
+    <View className="bg-background py-3">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -33,12 +33,13 @@ export const TimelineFilters = ({ selectedFilter, onSelectFilter }: Props) => {
             <Badge
               key={filter.value}
               variant={isSelected ? 'default' : 'outline'}
-              onPress={() => onSelectFilter(filter.value)}
               className="h-8 px-4"
               accessibilityState={{ selected: isSelected }}>
-              <Text className={isSelected ? 'text-primary-foreground' : 'text-foreground'}>
-                {filter.label}
-              </Text>
+              <Pressable key={filter.value} onPress={() => onSelectFilter(filter.value)}>
+                <Text className={isSelected ? 'text-primary-foreground' : 'text-foreground'}>
+                  {filter.label}
+                </Text>
+              </Pressable>
             </Badge>
           );
         })}
