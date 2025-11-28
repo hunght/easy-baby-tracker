@@ -67,7 +67,7 @@ export default function SettingsScreen() {
             );
           })}
           <Button
-            className="mt-2 rounded-3xl py-4"
+            className="mt-2 rounded-3xl"
             onPress={() => router.push({ pathname: '/profile-edit', params: {} })}>
             <Text className="text-[17px] font-bold text-primary-foreground">
               {t('common.addNewBaby')}

@@ -1,5 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useColorScheme as useNativewindColorScheme } from 'nativewind';
 import { useColorScheme as useDeviceColorScheme } from 'react-native';
 
 type ColorScheme = 'light' | 'dark';
@@ -18,6 +19,7 @@ const THEME_STORAGE_KEY = 'theme_mode';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const deviceColorScheme = useDeviceColorScheme();
+  const nativewindColorScheme = useNativewindColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -46,6 +48,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     themeMode === 'system' ? (deviceColorScheme === 'dark' ? 'dark' : 'light') : themeMode;
 
   const isDark = colorScheme === 'dark';
+
+  // Keep NativeWind's internal color scheme aligned with our provider so classnames stay in sync.
+  useEffect(() => {
+    const targetScheme = colorScheme;
+    if (nativewindColorScheme?.colorScheme !== targetScheme) {
+      nativewindColorScheme?.setColorScheme(targetScheme);
+    }
+  }, [colorScheme, nativewindColorScheme]);
 
   // Apply dark class to document root for web
   useEffect(() => {

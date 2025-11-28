@@ -8,7 +8,7 @@ import { PortalHost } from '@rn-primitives/portal';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useNavigationContainerRef, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
@@ -73,6 +73,7 @@ function AppProviders() {
   const [queryClient] = useState(() => new QueryClient());
   const { t } = useLocalization();
   const router = useRouter();
+  const navigationRef = useNavigationContainerRef();
   const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
   // Get the background color from THEME
@@ -144,6 +145,26 @@ function AppProviders() {
       receivedSubscription.remove();
     };
   }, [router]);
+
+  useEffect(() => {
+    const logCurrentRoute = () => {
+      const route = navigationRef.getCurrentRoute();
+
+      if (route) {
+        logger.log('[Navigation] current screen:', route.name, route.params ?? {});
+      } else {
+        logger.log('[Navigation] awaiting initial route...');
+      }
+    };
+
+    const unsubscribeReady = navigationRef.addListener('ready', logCurrentRoute);
+    const unsubscribeState = navigationRef.addListener('state', logCurrentRoute);
+
+    return () => {
+      unsubscribeReady();
+      unsubscribeState();
+    };
+  }, [navigationRef]);
   logger.log('Rendering AppProviders with colorScheme:', colorScheme);
 
   return (
@@ -154,6 +175,7 @@ function AppProviders() {
             <NavigationThemeProvider value={navTheme}>
               <View style={{ backgroundColor, flex: 1 }} className="flex-1">
                 <Stack
+                  ref={navigationRef}
                   screenOptions={{
                     // Render screens transparently so our wrapper View controls background via Tailwind
                     contentStyle: { backgroundColor: 'transparent' },
