@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { z } from 'zod';
 
 import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -20,22 +21,16 @@ type DiaperTypeOption = {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 };
 
-// Type guard to check if a value is a valid PoopColor
-function isPoopColor(value: unknown): value is PoopColor {
-  if (typeof value !== 'string') {
-    return false;
-  }
-  const validColors: string[] = [
-    'yellow',
-    'brown',
-    'olive_green',
-    'dark_green',
-    'red',
-    'black',
-    'white',
-  ];
-  return validColors.includes(value);
-}
+// Zod schema for PoopColor validation
+const poopColorSchema = z.enum([
+  'yellow',
+  'brown',
+  'olive_green',
+  'dark_green',
+  'red',
+  'black',
+  'white',
+]);
 
 const diaperTypes: DiaperTypeOption[] = [
   { key: 'wet', labelKey: 'diaper.types.wet', icon: 'water-outline' },
@@ -84,7 +79,7 @@ export default function DiaperScreen() {
       setTime(new Date(existingData.time * 1000));
       setWetness(existingData.wetness ?? undefined);
       // Use type guard to safely check if color is valid PoopColor
-      const loadedColor = isPoopColor(existingData.color) ? existingData.color : undefined;
+      const loadedColor = poopColorSchema.safeParse(existingData.color).data;
       setColor(loadedColor);
       setNotes(existingData.notes ?? '');
     }
