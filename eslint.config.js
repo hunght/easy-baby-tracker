@@ -22,7 +22,20 @@ module.exports = defineConfig([
           message: 'Classes are not allowed. Please use functional programming patterns instead.',
         },
       ],
-      // Detect unused StyleSheet properties
+      // Ban StyleSheet.create - use NativeWind/Tailwind classes instead
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react-native',
+              importNames: ['StyleSheet'],
+              message: 'StyleSheet is not allowed. Use NativeWind/Tailwind className instead.',
+            },
+          ],
+        },
+      ],
+      // Detect unused StyleSheet properties (will error if StyleSheet is somehow used)
       'react-native/no-unused-styles': 'error',
       // Detect unused imports and exports
       'unused-imports/no-unused-imports': 'error',
