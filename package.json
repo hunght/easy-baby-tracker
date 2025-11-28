@@ -20,7 +20,7 @@
   "dependencies": {
     "@clerk/clerk-expo": "^2.16.1",
     "@react-native-community/datetimepicker": "8.4.4",
-    "@react-native-community/slider": "^5.1.1",
+    "@react-native-community/slider": "5.0.1",
     "@react-navigation/native": "^7.0.0",
     "@rn-primitives/avatar": "^1.2.0",
     "@rn-primitives/label": "^1.2.0",
@@ -37,6 +37,7 @@
     "drizzle-orm": "^0.44.7",
     "expo": "^54.0.0",
     "expo-auth-session": "~7.0.8",
+    "expo-constants": "~18.0.10",
     "expo-drizzle-studio-plugin": "^0.2.1",
     "expo-haptics": "~15.0.7",
     "expo-image": "~3.0.10",
