@@ -4,12 +4,13 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
 import { SCHEDULED_NOTIFICATIONS_QUERY_KEY } from '@/constants/query-keys';
 import {
-    getActiveScheduledNotifications,
-    type ScheduledNotificationRecord,
+  getActiveScheduledNotifications,
+  type ScheduledNotificationRecord,
 } from '@/database/scheduled-notifications';
 import { cancelScheduledNotification } from '@/lib/notification-scheduler';
 import { useLocalization } from '@/localization/LocalizationProvider';
@@ -106,9 +107,11 @@ export default function SchedulingScreen() {
       >
         <View className="flex-row items-center justify-between mb-2">
           <Text className="text-base font-semibold text-foreground flex-1 mr-3">{label}</Text>
-          <Text className="text-xs font-semibold text-muted-foreground">
-            {typeLabels[record.notificationType as keyof typeof typeLabels] ?? typeLabels.default}
-          </Text>
+          <Badge variant="secondary">
+            <Text>
+              {typeLabels[record.notificationType as keyof typeof typeLabels] ?? typeLabels.default}
+            </Text>
+          </Badge>
         </View>
         <Text className="text-sm text-foreground/80">
           {t('scheduling.dueAt', { params: { date: dateString, time: timeString } })}
@@ -121,6 +124,7 @@ export default function SchedulingScreen() {
           className="mt-3 rounded-xl"
           onPress={() => handleCancel(record.notificationId)}
           disabled={pendingId === record.notificationId}
+          accessibilityLabel={t('scheduling.accessibility.cancelNotification', { defaultValue: 'Cancel %{label} notification', params: { label } })}
         >
           <Text className="text-destructive/80 font-semibold">
             {t('scheduling.cancel')}
@@ -188,4 +192,3 @@ export default function SchedulingScreen() {
     </View>
   );
 }
-

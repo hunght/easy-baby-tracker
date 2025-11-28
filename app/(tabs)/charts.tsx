@@ -57,6 +57,7 @@ export default function ChartsScreen() {
                   onPress={() => setSelectedCategory(cat.id)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
+                  accessibilityLabel={t('charts.accessibility.selectCategory', { defaultValue: 'Show %{category} charts', params: { category: cat.label } })}
                 >
                   <Text className="text-sm font-semibold">{cat.label}</Text>
                 </Pressable>
