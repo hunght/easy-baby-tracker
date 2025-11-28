@@ -3,10 +3,10 @@ import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 
-import { BabyProfileStep } from '@/components/BabyProfileStep';
-import { ConcernsStep } from '@/components/ConcernsStep';
-import { FeaturesStep } from '@/components/FeaturesStep';
-import { WelcomeStep } from '@/components/WelcomeStep';
+import { BabyProfileStep } from '@/features/onboarding/components/BabyProfileStep';
+import { ConcernsStep } from '@/features/onboarding/components/ConcernsStep';
+import { FeaturesStep } from '@/features/onboarding/components/FeaturesStep';
+import { WelcomeStep } from '@/features/onboarding/components/WelcomeStep';
 import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
 import {

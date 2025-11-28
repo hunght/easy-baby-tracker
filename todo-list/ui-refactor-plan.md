@@ -41,11 +41,11 @@ This document outlines a comprehensive plan to refactor the entire project to us
 
 #### Lower Priority - Components (Phase 4)
 
-**Timeline Components** 16. `components/timeline/TimelineItem.tsx` 17. `components/timeline/ActivityCards.tsx`
+**Timeline Components** 16. `features/timeline/components/TimelineItem.tsx` 17. `features/timeline/components/ActivityCards.tsx`
 
-**Feeding Components** 18. `components/feeding/BreastFeedingForm.tsx` 19. `components/feeding/BottleFeedingForm.tsx` 20. `components/feeding/SolidsFeedingForm.tsx`
+**Feeding Components** 18. `features/feeding/components/BreastFeedingForm.tsx` 19. `features/feeding/components/BottleFeedingForm.tsx` 20. `features/feeding/components/SolidsFeedingForm.tsx`
 
-**Chart Components** 21. `components/charts/DiaperCharts.tsx` 22. `components/charts/SleepCharts.tsx` 23. `components/charts/FeedingCharts.tsx` 24. `components/charts/GrowthCharts.tsx` 25. `components/charts/ChartCard.tsx` 26. `components/charts/SummaryCard.tsx`
+**Chart Components** 21. `features/charts/components/DiaperCharts.tsx` 22. `features/charts/components/SleepCharts.tsx` 23. `features/charts/components/FeedingCharts.tsx` 24. `features/charts/components/GrowthCharts.tsx` 25. `features/charts/components/ChartCard.tsx` 26. `features/charts/components/SummaryCard.tsx`
 
 **UI Components** 27. `components/TabPageHeader.tsx` 28. `components/ui/TimePickerField.tsx` 29. `components/ui/TimeField.tsx` 30. `components/ui/DatePickerField.tsx` 31. `components/ui/DateTimePickerModal.tsx` 32. `components/ui/NotificationBar.tsx` 33. `components/ui/PrimaryButton.tsx` 34. `components/ui/collapsible.tsx`
 
@@ -136,9 +136,9 @@ const styles = StyleSheet.create({
 
 #### 4.2 Feeding Components
 
-- [ ] Migrate `components/feeding/BreastFeedingForm.tsx`
-- [ ] Migrate `components/feeding/BottleFeedingForm.tsx`
-- [ ] Migrate `components/feeding/SolidsFeedingForm.tsx`
+- [ ] Migrate `features/feeding/components/BreastFeedingForm.tsx`
+- [ ] Migrate `features/feeding/components/BottleFeedingForm.tsx`
+- [ ] Migrate `features/feeding/components/SolidsFeedingForm.tsx`
 
 #### 4.3 Chart Components
 

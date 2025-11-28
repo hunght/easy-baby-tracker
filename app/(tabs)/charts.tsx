@@ -4,10 +4,10 @@ import { Text } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
-import { DiaperCharts } from '@/components/charts/DiaperCharts';
-import { FeedingCharts } from '@/components/charts/FeedingCharts';
-import { GrowthCharts } from '@/components/charts/GrowthCharts';
-import { SleepCharts } from '@/components/charts/SleepCharts';
+import { DiaperCharts } from '@/features/charts/components/DiaperCharts';
+import { FeedingCharts } from '@/features/charts/components/FeedingCharts';
+import { GrowthCharts } from '@/features/charts/components/GrowthCharts';
+import { SleepCharts } from '@/features/charts/components/SleepCharts';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 type ChartCategory = 'feeding' | 'sleep' | 'growth' | 'diaper';
@@ -42,8 +42,11 @@ export default function ChartsScreen() {
     <View className="flex-1 bg-background">
       <TabPageHeader title={t('charts.title')} />
 
-      <View className="py-3 border-b border-border">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="px-5 gap-3">
+      <View className="border-b border-border py-3">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="px-5 gap-3">
           {categories.map((cat) => {
             const active = selectedCategory === cat.id;
             return (
@@ -51,14 +54,15 @@ export default function ChartsScreen() {
                 key={cat.id}
                 asChild
                 variant={active ? 'default' : 'outline'}
-                className={active ? '' : 'bg-accent border-border'}
-              >
+                className={active ? '' : 'border-border bg-accent'}>
                 <Pressable
                   onPress={() => setSelectedCategory(cat.id)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: active }}
-                  accessibilityLabel={t('charts.accessibility.selectCategory', { defaultValue: 'Show %{category} charts', params: { category: cat.label } })}
-                >
+                  accessibilityLabel={t('charts.accessibility.selectCategory', {
+                    defaultValue: 'Show %{category} charts',
+                    params: { category: cat.label },
+                  })}>
                   <Text className="text-sm font-semibold">{cat.label}</Text>
                 </Pressable>
               </Badge>
@@ -74,4 +78,3 @@ export default function ChartsScreen() {
     </View>
   );
 }
-

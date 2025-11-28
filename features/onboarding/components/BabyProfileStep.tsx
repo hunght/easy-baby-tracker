@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 import { BabyProfilePayload, Gender } from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
-import { DatePickerField } from './ui/DatePickerField';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 
 type BabyProfileStepProps = {
   headerText: string;
