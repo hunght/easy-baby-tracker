@@ -1,9 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, TextInput, View } from 'react-native';
 
+import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/ui/NotificationContext';
+import { Text } from '@/components/ui/text';
 import { TimePickerField } from '@/components/ui/TimePickerField';
 import { GROWTH_RECORDS_QUERY_KEY } from '@/constants/query-keys';
 import type { GrowthRecordPayload } from '@/database/growth';
@@ -47,7 +49,6 @@ export default function GrowthScreen() {
       setNotes(existingData.notes ?? '');
     }
   }, [existingData]);
-
 
   const parseNumericValue = (value: string): number | undefined => {
     const parsed = parseFloat(value.replace(',', '.'));
@@ -122,36 +123,31 @@ export default function GrowthScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.closeButton}>{t('common.close')}</Text>
-        </Pressable>
-        <Text style={styles.title}>{isEditing ? t('growth.editTitle') : t('growth.title')}</Text>
-        <Pressable onPress={handleSave} disabled={isSaving || !canSave()}>
-          <Text style={[styles.saveButton, (isSaving || !canSave()) && styles.saveButtonDisabled]}>
-            {t('common.save')}
-          </Text>
-        </Pressable>
-      </View>
+    <View className="flex-1 bg-white">
+      <ModalHeader
+        title={isEditing ? t('growth.editTitle') : t('growth.title')}
+        onSave={handleSave}
+        isSaving={isSaving || !canSave()}
+        closeLabel={t('common.close')}
+        saveLabel={t('common.save')}
+      />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
         {/* Time */}
         <TimePickerField value={time} onChange={setTime} isEditing={isEditing} />
 
-        <View style={styles.divider} />
+        <View className="my-4 h-px bg-border" />
 
         {/* Weight */}
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{t('common.weight')}</Text>
-          <View style={styles.valueRow}>
-            <Text style={styles.valueText}>{displayValue(weightKg)}</Text>
-            <Text style={styles.unitText}>{t('common.unitKg')}</Text>
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="text-base font-medium text-muted-foreground">{t('common.weight')}</Text>
+          <View className="flex-row items-baseline gap-1">
+            <Text className="text-base font-semibold text-accent">{displayValue(weightKg)}</Text>
+            <Text className="text-base text-foreground">{t('common.unitKg')}</Text>
           </View>
         </View>
         <TextInput
-          style={styles.input}
+          className="rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
           value={weightKg}
           onChangeText={(text) => setWeightKg(formatNumericValue(text))}
           placeholder={t('growth.placeholder')}
@@ -159,18 +155,18 @@ export default function GrowthScreen() {
           keyboardType="decimal-pad"
         />
 
-        <View style={styles.divider} />
+        <View className="my-4 h-px bg-border" />
 
         {/* Height */}
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{t('common.height')}</Text>
-          <View style={styles.valueRow}>
-            <Text style={styles.valueText}>{displayValue(heightCm)}</Text>
-            <Text style={styles.unitText}>{t('common.unitCm')}</Text>
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="text-base font-medium text-muted-foreground">{t('common.height')}</Text>
+          <View className="flex-row items-baseline gap-1">
+            <Text className="text-base font-semibold text-accent">{displayValue(heightCm)}</Text>
+            <Text className="text-base text-foreground">{t('common.unitCm')}</Text>
           </View>
         </View>
         <TextInput
-          style={styles.input}
+          className="rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
           value={heightCm}
           onChangeText={(text) => setHeightCm(formatNumericValue(text))}
           placeholder={t('growth.placeholder')}
@@ -178,18 +174,22 @@ export default function GrowthScreen() {
           keyboardType="decimal-pad"
         />
 
-        <View style={styles.divider} />
+        <View className="my-4 h-px bg-border" />
 
         {/* Head Circumference */}
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{t('common.headCircumference')}</Text>
-          <View style={styles.valueRow}>
-            <Text style={styles.valueText}>{displayValue(headCircumferenceCm)}</Text>
-            <Text style={styles.unitText}>{t('common.unitCm')}</Text>
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="text-base font-medium text-muted-foreground">
+            {t('common.headCircumference')}
+          </Text>
+          <View className="flex-row items-baseline gap-1">
+            <Text className="text-base font-semibold text-accent">
+              {displayValue(headCircumferenceCm)}
+            </Text>
+            <Text className="text-base text-foreground">{t('common.unitCm')}</Text>
           </View>
         </View>
         <TextInput
-          style={styles.input}
+          className="rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
           value={headCircumferenceCm}
           onChangeText={(text) => setHeadCircumferenceCm(formatNumericValue(text))}
           placeholder={t('growth.placeholder')}
@@ -197,111 +197,19 @@ export default function GrowthScreen() {
           keyboardType="decimal-pad"
         />
 
-        <View style={styles.divider} />
+        <View className="my-4 h-px bg-border" />
 
         {/* Notes */}
         <TextInput
-          style={styles.notesInput}
+          className="mt-3 min-h-20 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
           placeholderTextColor="#C4C4C4"
           multiline
+          textAlignVertical="top"
         />
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  closeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  saveButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
-  valueText: {
-    fontSize: 16,
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  unitText: {
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 16,
-  },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFF',
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  notesInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F9F9F9',
-    minHeight: 80,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    color: '#2D2D2D',
-    marginTop: 12,
-  },
-});
-

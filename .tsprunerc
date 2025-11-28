@@ -1,0 +1,8 @@
+{
+  "ignore": [
+    "app/.*default$",
+    "app/\\(.*\\)/.*default$",
+    ".*\\.config\\..*default$",
+    "unstable_settings"
+  ]
+}

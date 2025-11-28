@@ -5,21 +5,20 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
-} from 'react-native';
+import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/ui/NotificationContext';
+import { Text } from '@/components/ui/text';
 
 import { DIARY_ENTRIES_QUERY_KEY } from '@/constants/query-keys';
 import type { DiaryEntryPayload, DiaryEntryRecord } from '@/database/diary';
-import { getDiaryEntries, getDiaryEntryById, saveDiaryEntry, updateDiaryEntry } from '@/database/diary';
+import {
+  getDiaryEntries,
+  getDiaryEntryById,
+  saveDiaryEntry,
+  updateDiaryEntry,
+} from '@/database/diary';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 const DIARY_PHOTO_DIR =
@@ -43,8 +42,7 @@ async function persistAsset(asset: ImagePicker.ImagePickerAsset) {
 
   const directory = await ensureDiaryPhotoDir();
   const extensionFromName =
-    asset.fileName?.split('.').pop()?.toLowerCase() ??
-    asset.uri.split('.').pop()?.split('?')[0];
+    asset.fileName?.split('.').pop()?.toLowerCase() ?? asset.uri.split('.').pop()?.split('?')[0];
   const ext = extensionFromName && extensionFromName.length <= 5 ? extensionFromName : 'jpg';
   const dest = `${directory}${Date.now()}-${Math.round(Math.random() * 1_000_000)}.${ext}`;
 
@@ -121,8 +119,7 @@ export default function DiaryScreen() {
     if (permission.status !== 'granted') {
       Alert.alert(
         t('common.permissionDenied') ?? 'Permission needed',
-        t('common.permissionDeniedDescription') ??
-        'Please grant access in Settings to continue.'
+        t('common.permissionDeniedDescription') ?? 'Please grant access in Settings to continue.'
       );
       return false;
     }
@@ -218,26 +215,18 @@ export default function DiaryScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.closeButton}>{t('common.close')}</Text>
-        </Pressable>
-        <Text style={styles.title}>{isEditing ? t('diary.editTitle') : t('diary.title')}</Text>
-        <Pressable onPress={handleSave} disabled={!hasContent || isSaving}>
-          <Text
-            style={[
-              styles.saveButton,
-              (!hasContent || isSaving) && styles.saveButtonDisabled,
-            ]}>
-            {isSaving ? t('common.saving') : t('common.save')}
-          </Text>
-        </Pressable>
-      </View>
+    <View className="flex-1 bg-white">
+      <ModalHeader
+        title={isEditing ? t('diary.editTitle') : t('diary.title')}
+        onSave={handleSave}
+        isSaving={!hasContent || isSaving}
+        closeLabel={t('common.close')}
+        saveLabel={isSaving ? t('common.saving') : t('common.save')}
+      />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerClassName="p-5 pb-15 gap-5" showsVerticalScrollIndicator={false}>
         <TextInput
-          style={styles.titleInput}
+          className="rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
           value={title}
           onChangeText={setTitle}
           placeholder={t('diary.titlePlaceholder')}
@@ -245,67 +234,78 @@ export default function DiaryScreen() {
         />
 
         <TextInput
-          style={styles.contentInput}
+          className="min-h-35 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
           value={content}
           onChangeText={setContent}
           placeholder={t('diary.contentPlaceholder')}
           placeholderTextColor="#C4C4C4"
           multiline
+          textAlignVertical="top"
         />
 
-        <View style={styles.photoCard}>
+        <View className="h-55 items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-violet-50">
           {photoUri ? (
-            <Image source={{ uri: photoUri }} style={styles.photo} contentFit="cover" />
+            <Image source={{ uri: photoUri }} className="h-full w-full" contentFit="cover" />
           ) : (
-            <View style={styles.photoPlaceholder}>
+            <View className="items-center justify-center gap-2.5">
               <MaterialCommunityIcons name="image-plus" color="#B49BFF" size={32} />
-              <Text style={styles.photoPlaceholderText}>{t('diary.addPhoto')}</Text>
+              <Text className="font-semibold text-violet-600">{t('diary.addPhoto')}</Text>
             </View>
           )}
         </View>
 
-        <View style={styles.photoActions}>
+        <View className="flex-row gap-3">
           <Pressable
-            style={[styles.actionButton, photoProcessing && styles.actionButtonDisabled]}
+            className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl bg-lavender py-3 ${
+              photoProcessing ? 'opacity-60' : ''
+            }`}
             onPress={handleTakePhoto}
             disabled={photoProcessing}>
             <MaterialCommunityIcons name="camera" color="#FFF" size={18} />
-            <Text style={styles.actionButtonText}>{t('diary.takePhoto')}</Text>
+            <Text className="font-semibold text-white">{t('diary.takePhoto')}</Text>
           </Pressable>
           <Pressable
-            style={[styles.actionButtonOutline, photoProcessing && styles.actionButtonDisabled]}
+            className={`flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-lavender py-3 ${
+              photoProcessing ? 'opacity-60' : ''
+            }`}
             onPress={handleChoosePhoto}
             disabled={photoProcessing}>
             <MaterialCommunityIcons name="image" color="#B49BFF" size={18} />
-            <Text style={styles.actionButtonOutlineText}>{t('diary.choosePhoto')}</Text>
+            <Text className="font-semibold text-lavender">{t('diary.choosePhoto')}</Text>
           </Pressable>
         </View>
 
         {photoUri && (
-          <Pressable style={styles.removePhotoButton} onPress={handleRemovePhoto}>
+          <Pressable
+            className="flex-row items-center gap-1.5 self-start"
+            onPress={handleRemovePhoto}>
             <MaterialCommunityIcons name="trash-can-outline" color="#FF7A9B" size={18} />
-            <Text style={styles.removePhotoText}>{t('diary.removePhoto')}</Text>
+            <Text className="font-semibold text-pink-400">{t('diary.removePhoto')}</Text>
           </Pressable>
         )}
 
-        <View style={styles.entriesHeader}>
-          <Text style={styles.entriesTitle}>{t('diary.entriesHeading')}</Text>
-          <Text style={styles.entriesCount}>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-lg font-bold text-foreground">{t('diary.entriesHeading')}</Text>
+          <Text className="font-semibold text-violet-600">
             {t('common.entriesCount', { params: { count: formattedEntries.length } })}
           </Text>
         </View>
 
         {formattedEntries.length === 0 ? (
-          <View style={styles.emptyState}>
+          <View className="items-center gap-3 rounded-2xl border border-gray-100 p-6">
             <MaterialCommunityIcons name="star-outline" size={36} color="#B49BFF" />
-            <Text style={styles.emptyStateText}>{t('diary.emptyState')}</Text>
+            <Text className="text-center text-violet-600">{t('diary.emptyState')}</Text>
           </View>
         ) : (
           formattedEntries.map((entry) => (
-            <View key={entry.id} style={styles.entryCard}>
-              <View style={styles.entryHeader}>
-                <Text style={styles.entryTitle}>{entry.title ?? t('diary.title')}</Text>
-                <Text style={styles.entryDate}>
+            <View
+              key={entry.id}
+              className="mt-3 gap-3 rounded-2xl border border-gray-100 bg-white p-4">
+              <View className="flex-row items-center justify-between gap-3">
+                <Text className="flex-1 text-base font-semibold text-foreground">
+                  {entry.title ?? t('diary.title')}
+                </Text>
+                <Text className="text-sm text-gray-400">
                   {entry.date.toLocaleString(undefined, {
                     month: 'short',
                     day: 'numeric',
@@ -315,9 +315,15 @@ export default function DiaryScreen() {
                 </Text>
               </View>
               {entry.photoUri ? (
-                <Image source={{ uri: entry.photoUri }} style={styles.entryPhoto} contentFit="cover" />
+                <Image
+                  source={{ uri: entry.photoUri }}
+                  className="h-40 w-full rounded-xl"
+                  contentFit="cover"
+                />
               ) : null}
-              {entry.content ? <Text style={styles.entryContent}>{entry.content}</Text> : null}
+              {entry.content ? (
+                <Text className="text-base text-gray-600">{entry.content}</Text>
+              ) : null}
             </View>
           ))
         )}
@@ -325,195 +331,3 @@ export default function DiaryScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  closeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  saveButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 60,
-    gap: 20,
-  },
-  titleInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#2D2D2D',
-    backgroundColor: '#FFF',
-  },
-  contentInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#2D2D2D',
-    minHeight: 140,
-    textAlignVertical: 'top',
-    backgroundColor: '#F9F9F9',
-  },
-  photoCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-    backgroundColor: '#F6F2FF',
-    height: 220,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
-  },
-  photoPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  photoPlaceholderText: {
-    color: '#7C6A99',
-    fontWeight: '600',
-  },
-  photoActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#B49BFF',
-    borderRadius: 12,
-    paddingVertical: 12,
-  },
-  actionButtonOutline: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderRadius: 12,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#B49BFF',
-  },
-  actionButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  actionButtonOutlineText: {
-    color: '#B49BFF',
-    fontWeight: '600',
-  },
-  actionButtonDisabled: {
-    opacity: 0.6,
-  },
-  removePhotoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-  },
-  removePhotoText: {
-    color: '#FF7A9B',
-    fontWeight: '600',
-  },
-  entriesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  entriesTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  entriesCount: {
-    color: '#7C6A99',
-    fontWeight: '600',
-  },
-  emptyState: {
-    padding: 24,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-    alignItems: 'center',
-    gap: 12,
-  },
-  emptyStateText: {
-    color: '#7C6A99',
-    textAlign: 'center',
-  },
-  entryCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-    padding: 16,
-    gap: 12,
-    backgroundColor: '#FFF',
-    marginTop: 12,
-  },
-  entryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-  },
-  entryTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    flex: 1,
-    color: '#2D2D2D',
-  },
-  entryDate: {
-    color: '#A4A4A4',
-    fontSize: 13,
-  },
-  entryPhoto: {
-    width: '100%',
-    height: 160,
-    borderRadius: 12,
-  },
-  entryContent: {
-    fontSize: 15,
-    color: '#4A4A4A',
-  },
-});
-

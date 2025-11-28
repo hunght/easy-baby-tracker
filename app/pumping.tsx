@@ -4,13 +4,20 @@ import Slider from '@react-native-community/slider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { ModalHeader } from '@/components/ModalHeader';
 import { DateTimePickerModal } from '@/components/ui/DateTimePickerModal';
 import { useNotification } from '@/components/ui/NotificationContext';
+import { Text } from '@/components/ui/text';
 import { PUMPING_INVENTORY_QUERY_KEY, PUMPINGS_QUERY_KEY } from '@/constants/query-keys';
 import type { PumpingPayload } from '@/database/pumping';
-import { getPumpingById, getPumpingInventory, savePumping, updatePumping } from '@/database/pumping';
+import {
+  getPumpingById,
+  getPumpingInventory,
+  savePumping,
+  updatePumping,
+} from '@/database/pumping';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 function formatTime(seconds: number): string {
@@ -168,35 +175,32 @@ export default function PumpingScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.closeButton}>{t('common.close')}</Text>
-        </Pressable>
-        <Text style={styles.title}>{isEditing ? t('pumping.editTitle') : t('pumping.title')}</Text>
-        <Pressable onPress={handleSave} disabled={isSaving || totalAmount === 0}>
-          <Text style={[styles.saveButton, (isSaving || totalAmount === 0) && styles.saveButtonDisabled]}>
-            {t('common.save')}
-          </Text>
-        </Pressable>
-      </View>
+    <View className="flex-1 bg-white">
+      <ModalHeader
+        title={isEditing ? t('pumping.editTitle') : t('pumping.title')}
+        onSave={handleSave}
+        isSaving={isSaving || totalAmount === 0}
+        closeLabel={t('common.close')}
+        saveLabel={t('common.save')}
+      />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
         {/* Inventory */}
-        <View style={styles.inventoryBox}>
+        <View className="mb-6 flex-row items-center gap-2 rounded-xl bg-gray-100 p-4">
           <MaterialCommunityIcons name="package-variant" size={20} color="#666" />
-          <Text style={styles.inventoryLabel}>{t('common.inventory')}</Text>
-          <Text style={styles.inventoryAmount}>
+          <Text className="flex-1 text-base font-medium text-muted-foreground">
+            {t('common.inventory')}
+          </Text>
+          <Text className="text-base font-semibold text-accent">
             {inventory.toFixed(1)} {t('common.unitMl')}
           </Text>
         </View>
 
         {/* Starts */}
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{t('common.starts')}</Text>
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="text-base font-medium text-muted-foreground">{t('common.starts')}</Text>
           <Pressable onPress={() => setShowTimePicker(true)}>
-            <Text style={styles.setTimeButton}>{t('common.setTime')}</Text>
+            <Text className="text-base font-semibold text-accent">{t('common.setTime')}</Text>
           </Pressable>
         </View>
 
@@ -208,23 +212,23 @@ export default function PumpingScreen() {
         />
 
         {/* Amount */}
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{t('common.amount')}</Text>
-          <Text style={styles.amountText}>
+        <View className="mb-3 flex-row items-center justify-between">
+          <Text className="text-base font-medium text-muted-foreground">{t('common.amount')}</Text>
+          <Text className="text-base font-semibold text-accent">
             {totalAmount.toFixed(1)} {t('common.unitMl')}
           </Text>
         </View>
 
         {/* Left Amount */}
-        <View style={styles.sideSection}>
-          <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>{t('pumping.left')}</Text>
-            <Text style={styles.amountText}>
+        <View className="mb-6">
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-base font-medium text-muted-foreground">{t('pumping.left')}</Text>
+            <Text className="text-base font-semibold text-accent">
               {leftAmountMl.toFixed(2)} {t('common.unitMl')}
             </Text>
           </View>
           <Slider
-            style={styles.slider}
+            style={{ width: '100%', height: 40 }}
             minimumValue={0}
             maximumValue={350}
             step={5}
@@ -234,9 +238,9 @@ export default function PumpingScreen() {
             maximumTrackTintColor="#E0E0E0"
             thumbTintColor="#FFF"
           />
-          <View style={styles.sliderLabels}>
+          <View className="flex-row justify-between px-1">
             {[0, 50, 100, 150, 200, 250, 300, 350].map((value) => (
-              <Text key={value} style={styles.sliderLabel}>
+              <Text key={value} className="text-xs text-gray-400">
                 {value}
               </Text>
             ))}
@@ -244,15 +248,17 @@ export default function PumpingScreen() {
         </View>
 
         {/* Right Amount */}
-        <View style={styles.sideSection}>
-          <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>{t('pumping.right')}</Text>
-            <Text style={styles.amountText}>
+        <View className="mb-6">
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-base font-medium text-muted-foreground">
+              {t('pumping.right')}
+            </Text>
+            <Text className="text-base font-semibold text-accent">
               {rightAmountMl.toFixed(2)} {t('common.unitMl')}
             </Text>
           </View>
           <Slider
-            style={styles.slider}
+            style={{ width: '100%', height: 40 }}
             minimumValue={0}
             maximumValue={350}
             step={5}
@@ -262,9 +268,9 @@ export default function PumpingScreen() {
             maximumTrackTintColor="#E0E0E0"
             thumbTintColor="#FFF"
           />
-          <View style={styles.sliderLabels}>
+          <View className="flex-row justify-between px-1">
             {[0, 50, 100, 150, 200, 250, 300, 350].map((value) => (
-              <Text key={value} style={styles.sliderLabel}>
+              <Text key={value} className="text-xs text-gray-400">
                 {value}
               </Text>
             ))}
@@ -274,12 +280,14 @@ export default function PumpingScreen() {
         {/* Duration */}
         {isEditing ? (
           // Edit Mode: Manual Inputs
-          <View style={styles.manualInputContainer}>
-            <View style={styles.manualInputRow}>
-              <Text style={styles.fieldLabel}>{t('common.leftShort')}</Text>
-              <View style={styles.durationInputWrapper}>
+          <View className="mb-6 gap-3">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.leftShort')}
+              </Text>
+              <View className="flex-row items-center gap-2">
                 <TextInput
-                  style={styles.durationInput}
+                  className="w-15 rounded-lg border border-border bg-gray-50 px-3 py-2 text-center text-base text-foreground"
                   value={Math.floor(leftDuration / 60).toString()}
                   onChangeText={(text) => {
                     const mins = parseInt(text) || 0;
@@ -288,14 +296,16 @@ export default function PumpingScreen() {
                   keyboardType="number-pad"
                   placeholder="0"
                 />
-                <Text style={styles.unitText}>{t('common.unitMin')}</Text>
+                <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
               </View>
             </View>
-            <View style={styles.manualInputRow}>
-              <Text style={styles.fieldLabel}>{t('common.rightShort')}</Text>
-              <View style={styles.durationInputWrapper}>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.rightShort')}
+              </Text>
+              <View className="flex-row items-center gap-2">
                 <TextInput
-                  style={styles.durationInput}
+                  className="w-15 rounded-lg border border-border bg-gray-50 px-3 py-2 text-center text-base text-foreground"
                   value={Math.floor(rightDuration / 60).toString()}
                   onChangeText={(text) => {
                     const mins = parseInt(text) || 0;
@@ -304,53 +314,59 @@ export default function PumpingScreen() {
                   keyboardType="number-pad"
                   placeholder="0"
                 />
-                <Text style={styles.unitText}>{t('common.unitMin')}</Text>
+                <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
               </View>
             </View>
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>{t('common.totalDuration')}</Text>
-              <Text style={styles.durationText}>
-                {formatTime(totalDuration)}
+            <View className="flex-row items-center justify-between">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.totalDuration')}
               </Text>
+              <Text className="text-base text-foreground">{formatTime(totalDuration)}</Text>
             </View>
           </View>
         ) : (
           // Create Mode: Timers
           <>
-            <View style={styles.fieldRow}>
+            <View className="mb-3 flex-row items-center justify-between">
               <View>
-                <Text style={styles.fieldLabel}>{t('common.duration')}</Text>
-                <Text style={styles.optionalLabel}>{t('common.optional')}</Text>
+                <Text className="text-base font-medium text-muted-foreground">
+                  {t('common.duration')}
+                </Text>
+                <Text className="mt-0.5 text-sm text-gray-400">{t('common.optional')}</Text>
               </View>
-              <Text style={styles.durationText}>
+              <Text className="text-base text-foreground">
                 {t('common.seconds', { params: { value: totalDuration } })}
               </Text>
             </View>
 
             {/* Timers */}
-            <View style={styles.timersContainer}>
-              <View style={styles.timerWrapper}>
-                <Pressable style={styles.timerButton} onPress={toggleLeftTimer}>
+            <View className="my-6 flex-row justify-around">
+              <View className="items-center gap-3">
+                <Pressable
+                  className="w-17.5 h-17.5 items-center justify-center rounded-full bg-accent"
+                  onPress={toggleLeftTimer}>
                   <MaterialCommunityIcons
                     name={leftTimerActive ? 'pause' : 'play'}
                     size={24}
                     color="#FFF"
                   />
                 </Pressable>
-                <Text style={styles.timerLabel}>
+                <Text className="text-base font-medium text-foreground">
                   {t('common.leftShort')}: {formatTime(leftDuration)}
                 </Text>
               </View>
 
-              <View style={styles.timerWrapper}>
-                <Pressable style={styles.timerButton} onPress={toggleRightTimer}>
+              <View className="items-center gap-3">
+                <Pressable
+                  className="w-17.5 h-17.5 items-center justify-center rounded-full bg-accent"
+                  onPress={toggleRightTimer}>
                   <MaterialCommunityIcons
                     name={rightTimerActive ? 'pause' : 'play'}
                     size={24}
                     color="#FFF"
                   />
                 </Pressable>
-                <Text style={styles.timerLabel}>
+                <Text className="text-base font-medium text-foreground">
                   {t('common.rightShort')}: {formatTime(rightDuration)}
                 </Text>
               </View>
@@ -360,186 +376,15 @@ export default function PumpingScreen() {
 
         {/* Notes */}
         <TextInput
-          style={styles.notesInput}
+          className="mt-3 min-h-20 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
           placeholderTextColor="#C4C4C4"
           multiline
+          textAlignVertical="top"
         />
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  closeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  saveButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  inventoryBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    gap: 8,
-  },
-  inventoryLabel: {
-    flex: 1,
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  inventoryAmount: {
-    fontSize: 16,
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  optionalLabel: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-  },
-  setTimeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  amountText: {
-    fontSize: 16,
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  durationText: {
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  sideSection: {
-    marginBottom: 24,
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-    marginBottom: 8,
-  },
-  sliderLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-  },
-  sliderLabel: {
-    fontSize: 10,
-    color: '#999',
-  },
-  timersContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 24,
-  },
-  timerWrapper: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  timerButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#FF5C8D',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timerLabel: {
-    fontSize: 16,
-    color: '#2D2D2D',
-    fontWeight: '500',
-  },
-  notesInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F9F9F9',
-    minHeight: 80,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    color: '#2D2D2D',
-    marginTop: 12,
-  },
-  manualInputContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  manualInputRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  durationInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  durationInput: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    width: 60,
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  unitText: {
-    fontSize: 16,
-    color: '#666',
-  },
-});
-

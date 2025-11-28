@@ -3,9 +3,11 @@ import Slider from '@react-native-community/slider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/ui/NotificationContext';
+import { Text } from '@/components/ui/text';
 import { TimePickerField } from '@/components/ui/TimePickerField';
 import { HEALTH_RECORDS_QUERY_KEY } from '@/constants/query-keys';
 import type { HealthRecordPayload, HealthRecordType, MedicineType } from '@/database/health';
@@ -74,7 +76,6 @@ export default function HealthScreen() {
     }
   }, [existingData]);
 
-
   const _mutation = useMutation({
     mutationFn: async (payload: HealthRecordPayload) => {
       // This is just a placeholder, the actual call is in handleSave
@@ -141,40 +142,33 @@ export default function HealthScreen() {
     return false;
   };
 
-
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.closeButton}>{t('common.close')}</Text>
-        </Pressable>
-        <Text style={styles.title}>{isEditing ? t('health.editTitle') : t('health.title')}</Text>
-        <Pressable onPress={handleSave} disabled={isSaving || !canSave()}>
-          <Text style={[styles.saveButton, (isSaving || !canSave()) && styles.saveButtonDisabled]}>
-            {t('common.save')}
-          </Text>
-        </Pressable>
-      </View>
+    <View className="flex-1 bg-white">
+      <ModalHeader
+        title={isEditing ? t('health.editTitle') : t('health.title')}
+        onSave={handleSave}
+        isSaving={isSaving || !canSave()}
+        closeLabel={t('common.close')}
+        saveLabel={t('common.save')}
+      />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
         {/* Tab Selection */}
-        <View style={styles.tabControl}>
+        <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-white">
           {healthTabs.map((tab, index) => (
             <Pressable
               key={tab.key}
               onPress={() => setActiveTab(tab.key)}
-              style={[
-                styles.tab,
-                activeTab === tab.key && styles.tabActive,
-                index > 0 && styles.tabBorder,
-              ]}>
+              className={`flex-1 flex-row items-center justify-center gap-1.5 py-3 ${
+                activeTab === tab.key ? 'bg-accent' : ''
+              } ${index > 0 ? 'border-l border-border' : ''}`}>
               <MaterialCommunityIcons
                 name={tab.icon}
                 size={20}
                 color={activeTab === tab.key ? '#FFF' : '#666'}
               />
-              <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+              <Text
+                className={`text-sm font-semibold ${activeTab === tab.key ? 'text-white' : 'text-muted-foreground'}`}>
                 {t(tab.labelKey)}
               </Text>
             </Pressable>
@@ -187,12 +181,16 @@ export default function HealthScreen() {
         {/* Temperature Tab */}
         {activeTab === 'temperature' && (
           <>
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>{t('common.temperature')}</Text>
-              <Text style={styles.temperatureText}>{temperature.toFixed(1)} °C</Text>
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.temperature')}
+              </Text>
+              <Text className="text-base font-semibold text-accent">
+                {temperature.toFixed(1)} °C
+              </Text>
             </View>
             <Slider
-              style={styles.slider}
+              style={{ width: '100%', height: 40 }}
               minimumValue={34}
               maximumValue={42}
               step={0.1}
@@ -202,9 +200,9 @@ export default function HealthScreen() {
               maximumTrackTintColor="#E0E0E0"
               thumbTintColor="#FFF"
             />
-            <View style={styles.sliderLabels}>
+            <View className="mb-6 flex-row justify-between px-1">
               {[34, 35, 36, 37, 38, 39, 40, 41, 42].map((value) => (
-                <Text key={value} style={styles.sliderLabel}>
+                <Text key={value} className="text-xs text-gray-400">
                   {value}
                 </Text>
               ))}
@@ -215,57 +213,59 @@ export default function HealthScreen() {
         {/* Medicine Tab */}
         {activeTab === 'medicine' && (
           <>
-            <View style={styles.fieldRow}>
-              <View style={styles.fieldLabelRow}>
-                <Text style={styles.fieldLabel}>{t('common.medicineType')}</Text>
+            <View className="mb-3 flex-row items-center justify-between">
+              <View className="flex-row items-center gap-1.5">
+                <Text className="text-base font-medium text-muted-foreground">
+                  {t('common.medicineType')}
+                </Text>
                 <MaterialCommunityIcons name="information-outline" size={16} color="#999" />
               </View>
             </View>
-            <View style={styles.segmentedControl}>
+            <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-white">
               <Pressable
                 onPress={() => setMedicineType('medication')}
-                style={[
-                  styles.segment,
-                  medicineType === 'medication' && styles.segmentActive,
-                ]}>
+                className={`flex-1 flex-row items-center justify-center gap-1.5 py-3 ${
+                  medicineType === 'medication' ? 'bg-accent' : ''
+                }`}>
                 <MaterialCommunityIcons
                   name="pill"
                   size={18}
                   color={medicineType === 'medication' ? '#FFF' : '#666'}
                 />
                 <Text
-                  style={[
-                    styles.segmentText,
-                    medicineType === 'medication' && styles.segmentTextActive,
-                  ]}>
+                  className={`text-sm font-semibold ${
+                    medicineType === 'medication' ? 'text-white' : 'text-muted-foreground'
+                  }`}>
                   {t('health.medicineTypes.medication')}
                 </Text>
               </Pressable>
               <Pressable
                 onPress={() => setMedicineType('vaccine')}
-                style={[
-                  styles.segment,
-                  medicineType === 'vaccine' && styles.segmentActive,
-                  styles.segmentBorder,
-                ]}>
+                className={`flex-1 flex-row items-center justify-center gap-1.5 border-l border-border py-3 ${
+                  medicineType === 'vaccine' ? 'bg-accent' : ''
+                }`}>
                 <MaterialCommunityIcons
                   name="needle"
                   size={18}
                   color={medicineType === 'vaccine' ? '#FFF' : '#666'}
                 />
                 <Text
-                  style={[styles.segmentText, medicineType === 'vaccine' && styles.segmentTextActive]}>
+                  className={`text-sm font-semibold ${medicineType === 'vaccine' ? 'text-white' : 'text-muted-foreground'}`}>
                   {t('health.medicineTypes.vaccine')}
                 </Text>
               </Pressable>
             </View>
 
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>{t('common.medication')}</Text>
-              <Text style={styles.undefinedText}>{medication || t('common.undefined')}</Text>
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.medication')}
+              </Text>
+              <Text className="text-base font-semibold text-accent">
+                {medication || t('common.undefined')}
+              </Text>
             </View>
             <TextInput
-              style={styles.input}
+              className="mb-6 rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
               value={medication}
               onChangeText={setMedication}
               placeholder={t('health.medicationPlaceholder')}
@@ -277,213 +277,34 @@ export default function HealthScreen() {
         {/* Symptoms Tab */}
         {activeTab === 'symptoms' && (
           <>
-            <View style={styles.fieldRow}>
-              <Text style={styles.fieldLabel}>{t('common.symptoms')}</Text>
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.symptoms')}
+              </Text>
             </View>
             <TextInput
-              style={styles.symptomsInput}
+              className="min-h-30 mb-6 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
               value={symptoms}
               onChangeText={setSymptoms}
               placeholder={t('health.symptomsPlaceholder')}
               placeholderTextColor="#C4C4C4"
               multiline
+              textAlignVertical="top"
             />
           </>
         )}
 
         {/* Notes */}
         <TextInput
-          style={styles.notesInput}
+          className="mt-3 min-h-20 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
           placeholderTextColor="#C4C4C4"
           multiline
+          textAlignVertical="top"
         />
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  closeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  saveButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  tabControl: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
-  },
-  tabActive: {
-    backgroundColor: '#FF5C8D',
-  },
-  tabBorder: {
-    borderLeftWidth: 1,
-    borderLeftColor: '#E0E0E0',
-  },
-  tabText: {
-    color: '#666',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  tabTextActive: {
-    color: '#FFF',
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  fieldLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  fieldLabel: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  temperatureText: {
-    fontSize: 16,
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  undefinedText: {
-    fontSize: 16,
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-    marginBottom: 8,
-  },
-  sliderLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-    marginBottom: 24,
-  },
-  sliderLabel: {
-    fontSize: 10,
-    color: '#999',
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  segment: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
-  },
-  segmentActive: {
-    backgroundColor: '#FF5C8D',
-  },
-  segmentBorder: {
-    borderLeftWidth: 1,
-    borderLeftColor: '#E0E0E0',
-  },
-  segmentText: {
-    color: '#666',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  segmentTextActive: {
-    color: '#FFF',
-  },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFF',
-    marginBottom: 24,
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  symptomsInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F9F9F9',
-    minHeight: 120,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    color: '#2D2D2D',
-    marginBottom: 24,
-  },
-  notesInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F9F9F9',
-    minHeight: 80,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    color: '#2D2D2D',
-    marginTop: 12,
-  },
-});
-
-

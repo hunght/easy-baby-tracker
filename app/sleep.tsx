@@ -3,16 +3,22 @@ import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 
+import { ModalHeader } from '@/components/ModalHeader';
 import { DateTimePickerModal } from '@/components/ui/DateTimePickerModal';
 import { useNotification } from '@/components/ui/NotificationContext';
+import { Text } from '@/components/ui/text';
 import { SLEEP_SESSIONS_QUERY_KEY } from '@/constants/query-keys';
 import type { SleepSessionKind, SleepSessionPayload } from '@/database/sleep';
 import { getSleepSessionById, saveSleepSession, updateSleepSession } from '@/database/sleep';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
-const sleepKinds: { key: SleepSessionKind; labelKey: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }[] = [
+const sleepKinds: {
+  key: SleepSessionKind;
+  labelKey: string;
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+}[] = [
   { key: 'nap', labelKey: 'sleep.kinds.nap', icon: 'white-balance-sunny' },
   { key: 'night', labelKey: 'sleep.kinds.night', icon: 'weather-night' },
 ];
@@ -170,7 +176,10 @@ export default function SleepScreen() {
 
   const stopTimer = () => {
     if (!timerActive) {
-      return { finalEnd: endTime, duration: endTime ? calculateDuration(startTime, endTime) : elapsedSeconds };
+      return {
+        finalEnd: endTime,
+        duration: endTime ? calculateDuration(startTime, endTime) : elapsedSeconds,
+      };
     }
 
     if (timerRef.current) {
@@ -232,39 +241,34 @@ export default function SleepScreen() {
     }
   };
 
-  const pickerValue = pickerTarget === 'start' ? startTime : endTime ?? new Date();
+  const pickerValue = pickerTarget === 'start' ? startTime : (endTime ?? new Date());
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.closeButton}>{t('common.close')}</Text>
-        </Pressable>
-        <Text style={styles.title}>{isEditing ? t('sleep.editTitle') : t('sleep.title')}</Text>
-        <Pressable onPress={handleSave} disabled={isSaving}>
-          <Text style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}>
-            {isSaving ? t('common.saving') : t('common.save')}
-          </Text>
-        </Pressable>
-      </View>
+    <View className="flex-1 bg-white">
+      <ModalHeader
+        title={isEditing ? t('sleep.editTitle') : t('sleep.title')}
+        onSave={handleSave}
+        isSaving={isSaving}
+        closeLabel={t('common.close')}
+        saveLabel={t('common.save')}
+      />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.segmentedControl}>
+      <ScrollView contentContainerClassName="p-5 pb-10 gap-6" showsVerticalScrollIndicator={false}>
+        <View className="flex-row overflow-hidden rounded-xl border border-border bg-white">
           {sleepKinds.map((kind, index) => (
             <Pressable
               key={kind.key}
               onPress={() => setSleepKind(kind.key)}
-              style={[
-                styles.segment,
-                sleepKind === kind.key && styles.segmentActive,
-                index > 0 && styles.segmentBorder,
-              ]}>
+              className={`flex-1 flex-row items-center justify-center gap-1.5 py-3 ${
+                sleepKind === kind.key ? 'bg-lavender' : ''
+              } ${index > 0 ? 'border-l border-border' : ''}`}>
               <MaterialCommunityIcons
                 name={kind.icon}
                 size={20}
                 color={sleepKind === kind.key ? '#FFF' : '#666'}
               />
-              <Text style={[styles.segmentText, sleepKind === kind.key && styles.segmentTextActive]}>
+              <Text
+                className={`text-sm font-semibold ${sleepKind === kind.key ? 'text-white' : 'text-muted-foreground'}`}>
                 {t(kind.labelKey)}
               </Text>
             </Pressable>
@@ -272,65 +276,81 @@ export default function SleepScreen() {
         </View>
 
         {!isEditing && (
-          <View style={styles.timerCard}>
-            <Text style={styles.timerValue}>{formatClock(resolvedDuration)}</Text>
+          <View className="items-center gap-3 rounded-2xl bg-violet-50 p-5">
+            <Text className="text-4xl font-bold text-foreground">
+              {formatClock(resolvedDuration)}
+            </Text>
             <Pressable
-              style={[styles.timerButton, timerActive ? styles.timerButtonStop : styles.timerButtonStart]}
+              className={`flex-row items-center gap-2.5 rounded-pill px-5 py-3 ${
+                timerActive ? 'bg-pink-400' : 'bg-lavender'
+              }`}
               onPress={handleTimerPress}>
               <MaterialCommunityIcons
                 name={timerActive ? 'pause' : 'play'}
                 size={22}
                 color="#FFF"
               />
-              <Text style={styles.timerButtonText}>
+              <Text className="text-base font-semibold text-white">
                 {t(timerActive ? 'sleep.timer.stop' : 'sleep.timer.start')}
               </Text>
             </Pressable>
-            <Text style={styles.timerHint}>{t('sleep.timerHint')}</Text>
+            <Text className="text-center text-sm text-violet-600">{t('sleep.timerHint')}</Text>
           </View>
         )}
 
-        <View style={styles.fieldGroup}>
-          <View style={styles.fieldRow}>
+        <View className="gap-4.5 rounded-2xl border border-gray-100 bg-white p-4">
+          <View className="flex-row items-center justify-between">
             <View>
-              <Text style={styles.fieldLabel}>{t('common.starts')}</Text>
-              <Text style={styles.fieldValue}>{formatDateTime(startTime)}</Text>
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.starts')}
+              </Text>
+              <Text className="mt-1 text-base text-foreground">{formatDateTime(startTime)}</Text>
             </View>
             <Pressable onPress={() => openPicker('start')} disabled={timerActive}>
-              <Text style={[styles.setTimeButton, timerActive && styles.disabledText]}>{t('common.setTime')}</Text>
+              <Text
+                className={`text-base font-semibold text-lavender ${timerActive ? 'opacity-60' : ''}`}>
+                {t('common.setTime')}
+              </Text>
             </Pressable>
           </View>
 
-          <View style={styles.fieldRow}>
+          <View className="flex-row items-center justify-between">
             <View>
-              <Text style={styles.fieldLabel}>{t('sleep.ends')}</Text>
-              <Text style={styles.fieldValue}>{endTime ? formatDateTime(endTime) : t('sleep.unset')}</Text>
+              <Text className="text-base font-medium text-muted-foreground">{t('sleep.ends')}</Text>
+              <Text className="mt-1 text-base text-foreground">
+                {endTime ? formatDateTime(endTime) : t('sleep.unset')}
+              </Text>
             </View>
-            <View style={styles.endActions}>
+            <View className="items-end gap-1">
               {endTime && !timerActive && (
                 <Pressable onPress={clearEndTime}>
-                  <Text style={styles.clearButton}>{t('sleep.clearEnd')}</Text>
+                  <Text className="text-sm font-semibold text-pink-400">{t('sleep.clearEnd')}</Text>
                 </Pressable>
               )}
               <Pressable onPress={() => openPicker('end')}>
-                <Text style={styles.setTimeButton}>{t('common.setTime')}</Text>
+                <Text className="text-base font-semibold text-lavender">{t('common.setTime')}</Text>
               </Pressable>
             </View>
           </View>
 
-          <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>{t('common.duration')}</Text>
-            <Text style={styles.durationText}>{formatClock(resolvedDuration)}</Text>
+          <View className="flex-row items-center justify-between">
+            <Text className="text-base font-medium text-muted-foreground">
+              {t('common.duration')}
+            </Text>
+            <Text className="text-lg font-semibold text-foreground">
+              {formatClock(resolvedDuration)}
+            </Text>
           </View>
         </View>
 
         <TextInput
-          style={styles.notesInput}
+          className="min-h-25 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
           placeholderTextColor="#C4C4C4"
           multiline
+          textAlignVertical="top"
         />
       </ScrollView>
 
@@ -343,168 +363,3 @@ export default function SleepScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  closeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  saveButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-    gap: 24,
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    overflow: 'hidden',
-  },
-  segment: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
-  },
-  segmentActive: {
-    backgroundColor: '#B49BFF',
-  },
-  segmentBorder: {
-    borderLeftWidth: 1,
-    borderLeftColor: '#E0E0E0',
-  },
-  segmentText: {
-    color: '#666',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  segmentTextActive: {
-    color: '#FFF',
-  },
-  timerCard: {
-    borderRadius: 16,
-    backgroundColor: '#F6F2FF',
-    padding: 20,
-    alignItems: 'center',
-    gap: 12,
-  },
-  timerValue: {
-    fontSize: 40,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  timerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
-  },
-  timerButtonStart: {
-    backgroundColor: '#B49BFF',
-  },
-  timerButtonStop: {
-    backgroundColor: '#FF7A9B',
-  },
-  timerButtonText: {
-    color: '#FFF',
-    fontWeight: '600',
-    fontSize: 15,
-  },
-  timerHint: {
-    fontSize: 13,
-    color: '#7C6A99',
-    textAlign: 'center',
-  },
-  fieldGroup: {
-    borderRadius: 16,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#EFEFEF',
-    padding: 16,
-    gap: 18,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  fieldLabel: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  fieldValue: {
-    fontSize: 15,
-    color: '#2D2D2D',
-    marginTop: 4,
-  },
-  setTimeButton: {
-    color: '#B49BFF',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  disabledText: {
-    opacity: 0.6,
-  },
-  endActions: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  clearButton: {
-    color: '#FF7A9B',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  durationText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#2D2D2D',
-  },
-  notesInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F9F9F9',
-    minHeight: 100,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-});
-

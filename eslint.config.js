@@ -3,6 +3,7 @@ const { defineConfig } = require('eslint/config');
 const expoConfig = require('eslint-config-expo/flat');
 const reactNativePlugin = require('eslint-plugin-react-native');
 const typescriptPlugin = require('@typescript-eslint/eslint-plugin');
+const unusedImportsPlugin = require('eslint-plugin-unused-imports');
 
 module.exports = defineConfig([
   ...expoConfig,
@@ -11,6 +12,7 @@ module.exports = defineConfig([
     plugins: {
       'react-native': reactNativePlugin,
       '@typescript-eslint': typescriptPlugin,
+      'unused-imports': unusedImportsPlugin,
     },
     rules: {
       'no-restricted-syntax': [
@@ -22,6 +24,17 @@ module.exports = defineConfig([
       ],
       // Detect unused StyleSheet properties
       'react-native/no-unused-styles': 'error',
+      // Detect unused imports and exports
+      'unused-imports/no-unused-imports': 'error',
+      'unused-imports/no-unused-vars': [
+        'warn',
+        {
+          vars: 'all',
+          varsIgnorePattern: '^_',
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+        },
+      ],
       // Detect unused variables and properties
       '@typescript-eslint/no-unused-vars': [
         'error',
