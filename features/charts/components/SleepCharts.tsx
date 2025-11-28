@@ -9,6 +9,7 @@ import { SummaryCard } from './SummaryCard';
 import { SLEEP_SESSIONS_QUERY_KEY } from '@/constants/query-keys';
 import { getSleepSessions } from '@/database/sleep';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import { useBrandColor } from '@/hooks/use-brand-color';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -19,6 +20,7 @@ interface SleepChartsProps {
 
 export function SleepCharts({ startDate, endDate }: SleepChartsProps) {
   const { t } = useLocalization();
+  const brandColors = useBrandColor();
 
   const { data: sessions = [] } = useQuery({
     queryKey: [...SLEEP_SESSIONS_QUERY_KEY, { startDate, endDate }],
@@ -56,8 +58,8 @@ export function SleepCharts({ startDate, endDate }: SleepChartsProps) {
     const sData = Object.entries(dailySleep)
       .map(([date, counts]) => ({
         stacks: [
-          { value: counts.night, color: '#4A90E2', marginBottom: 2 },
-          { value: counts.nap, color: '#FFB347', marginBottom: 2 },
+          { value: counts.night, color: brandColors.colors.info, marginBottom: 2 },
+          { value: counts.nap, color: brandColors.colors.secondary, marginBottom: 2 },
         ],
         label: new Date(date).toLocaleDateString(undefined, { weekday: 'short' }),
       }))
@@ -78,7 +80,7 @@ export function SleepCharts({ startDate, endDate }: SleepChartsProps) {
             title={t('sleep.avgTotal')}
             value={`${avgSleep} h`}
             icon="moon-outline"
-            color="#4A90E2"
+            color={brandColors.colors.info}
           />
         </View>
         <View className="ml-2 flex-1">
@@ -86,7 +88,7 @@ export function SleepCharts({ startDate, endDate }: SleepChartsProps) {
             title={t('sleep.avgNap')}
             value={`${avgNap} h`}
             icon="sunny-outline"
-            color="#FFB347"
+            color={brandColors.colors.secondary}
           />
         </View>
       </View>

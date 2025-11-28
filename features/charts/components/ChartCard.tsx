@@ -10,7 +10,7 @@ interface ChartCardProps {
 
 export function ChartCard({ title, subtitle, children, style }: ChartCardProps) {
   return (
-    <View className="mb-4 rounded-2xl bg-white p-4 shadow-sm shadow-black/5" style={style}>
+    <View className="mb-4 rounded-lg bg-card p-4 shadow-sm shadow-black/5" style={style}>
       <View className="mb-4">
         <Text className="text-lg font-semibold text-foreground">{title}</Text>
         {subtitle && <Text className="mt-1 text-sm text-muted-foreground">{subtitle}</Text>}

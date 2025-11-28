@@ -1,7 +1,8 @@
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { Badge } from '@/components/ui/badge';
+import { Text } from '@/components/ui/text';
 import { TimelineActivityType } from '@/database/timeline';
 
 const FILTERS: { label: string; value: TimelineActivityType | 'all' }[] = [

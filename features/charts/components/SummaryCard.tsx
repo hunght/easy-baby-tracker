@@ -1,8 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Text, View } from 'react-native';
-import { getBrandColor } from '@/lib/utils';
-import { useTheme } from '@/lib/ThemeContext';
+import { useBrandColor } from '@/hooks/use-brand-color';
 
 interface SummaryCardProps {
   title: string;
@@ -12,10 +11,10 @@ interface SummaryCardProps {
 }
 
 export function SummaryCard({ title, value, icon, color }: SummaryCardProps) {
-  const { colorScheme } = useTheme();
-  const backgroundColor = color || getBrandColor('primary', colorScheme);
+  const brandColors = useBrandColor();
+  const backgroundColor = color || brandColors.colors.primary;
   return (
-    <View className="mb-3 flex-row items-center rounded-2xl bg-white p-4 shadow-sm shadow-black/5">
+    <View className="mb-3 flex-row items-center rounded-lg bg-card p-4 shadow-sm shadow-black/5">
       <View
         className="mr-4 h-12 w-12 items-center justify-center rounded-full"
         style={{ backgroundColor: backgroundColor + '20' }}>

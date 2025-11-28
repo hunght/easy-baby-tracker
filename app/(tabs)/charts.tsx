@@ -54,7 +54,7 @@ export default function ChartsScreen() {
                 key={cat.id}
                 asChild
                 variant={active ? 'default' : 'outline'}
-                className={active ? '' : 'border-border bg-accent'}>
+                className={active ? 'bg-primary' : ''}>
                 <Pressable
                   onPress={() => setSelectedCategory(cat.id)}
                   accessibilityRole="button"
@@ -63,7 +63,10 @@ export default function ChartsScreen() {
                     defaultValue: 'Show %{category} charts',
                     params: { category: cat.label },
                   })}>
-                  <Text className="text-sm font-semibold">{cat.label}</Text>
+                  <Text
+                    className={`text-sm font-semibold ${active ? 'text-primary-foreground' : ''}`}>
+                    {cat.label}
+                  </Text>
                 </Pressable>
               </Badge>
             );

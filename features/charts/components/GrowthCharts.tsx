@@ -7,10 +7,9 @@ import { ChartCard } from './ChartCard';
 import { SummaryCard } from './SummaryCard';
 
 import { GROWTH_RECORDS_QUERY_KEY } from '@/constants/query-keys';
-import { getBrandColor } from '@/lib/utils';
-import { useTheme } from '@/lib/ThemeContext';
 import { getGrowthRecords } from '@/database/growth';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import { useBrandColor } from '@/hooks/use-brand-color';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -21,7 +20,7 @@ interface GrowthChartsProps {
 
 export function GrowthCharts({ startDate, endDate }: GrowthChartsProps) {
   const { t } = useLocalization();
-  const { colorScheme } = useTheme();
+  const brandColors = useBrandColor();
 
   const { data: records = [] } = useQuery({
     queryKey: [...GROWTH_RECORDS_QUERY_KEY, { startDate, endDate }],
@@ -71,7 +70,7 @@ export function GrowthCharts({ startDate, endDate }: GrowthChartsProps) {
             title={t('growth.weight')}
             value={`${latestWeight} kg`}
             icon="scale-outline"
-            color={getBrandColor('accent', colorScheme)}
+            color={brandColors.colors.accent}
           />
         </View>
         <View className="ml-2 flex-1">
@@ -79,7 +78,7 @@ export function GrowthCharts({ startDate, endDate }: GrowthChartsProps) {
             title={t('growth.height')}
             value={`${latestHeight} cm`}
             icon="resize-outline"
-            color={getBrandColor('info', colorScheme)}
+            color={brandColors.colors.info}
           />
         </View>
       </View>
@@ -88,11 +87,11 @@ export function GrowthCharts({ startDate, endDate }: GrowthChartsProps) {
         {weightData.length > 0 ? (
           <LineChart
             data={weightData}
-            color={getBrandColor('info', colorScheme)}
+            color={brandColors.colors.info}
             thickness={3}
-            dataPointsColor={getBrandColor('info', colorScheme)}
-            startFillColor={getBrandColor('info', colorScheme)}
-            endFillColor={getBrandColor('info', colorScheme) + '10'}
+            dataPointsColor={brandColors.colors.info}
+            startFillColor={brandColors.colors.info}
+            endFillColor={brandColors.colors.info + '10'}
             startOpacity={0.9}
             endOpacity={0.2}
             initialSpacing={20}
@@ -114,11 +113,11 @@ export function GrowthCharts({ startDate, endDate }: GrowthChartsProps) {
         {heightData.length > 0 ? (
           <LineChart
             data={heightData}
-            color={getBrandColor('accent', colorScheme)}
+            color={brandColors.colors.accent}
             thickness={3}
-            dataPointsColor={getBrandColor('accent', colorScheme)}
-            startFillColor={getBrandColor('accent', colorScheme)}
-            endFillColor={getBrandColor('accent', colorScheme) + '10'}
+            dataPointsColor={brandColors.colors.accent}
+            startFillColor={brandColors.colors.accent}
+            endFillColor={brandColors.colors.accent + '10'}
             startOpacity={0.9}
             endOpacity={0.2}
             initialSpacing={20}

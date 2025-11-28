@@ -76,7 +76,7 @@ export const TimelineItem = ({
   return (
     <View className="flex-row px-4">
       <View className="w-[60px] items-center pt-4">
-        <Text className="mb-2 text-xs font-semibold text-[#888]">{timeString}</Text>
+        <Text className="mb-2 text-xs font-semibold text-muted-foreground">{timeString}</Text>
         <View className="w-px flex-1 bg-border" />
       </View>
       <View className="flex-1 pb-4">

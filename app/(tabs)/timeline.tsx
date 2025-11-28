@@ -8,6 +8,7 @@ import { TimelineFilters } from '@/features/timeline/components/TimelineFilters'
 import { TimelineItem } from '@/features/timeline/components/TimelineItem';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import {
   DIAPER_CHANGES_QUERY_KEY,
   DIARY_ENTRIES_QUERY_KEY,
@@ -30,7 +31,10 @@ export default function TimelineScreen() {
   const { t } = useLocalization();
   const queryClient = useQueryClient();
   const { showNotification } = useNotification();
+  const brandColors = useBrandColor();
   const [filter, setFilter] = React.useState<TimelineActivityType | 'all'>('all');
+
+  const initialPageParam: number | undefined = undefined;
 
   const {
     data,
@@ -42,7 +46,7 @@ export default function TimelineScreen() {
     isRefetching,
   } = useInfiniteQuery({
     queryKey: [...TIMELINE_ACTIVITIES_QUERY_KEY, filter],
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam }: { pageParam: number | undefined }) => {
       const beforeTime = pageParam ?? Math.floor(Date.now() / 1000) + 86400; // Future buffer
       return getTimelineActivities({
         beforeTime,
@@ -57,7 +61,7 @@ export default function TimelineScreen() {
       // Return the timestamp of the last item for the next page
       return lastPage[lastPage.length - 1]?.timestamp;
     },
-    initialPageParam: undefined as number | undefined,
+    initialPageParam,
   });
 
   // Flatten all pages into a single array
@@ -163,7 +167,7 @@ export default function TimelineScreen() {
 
       {isFetching && !isRefetching && activities.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#6200EE" />
+          <ActivityIndicator size="large" color={brandColors.colors.primary} />
         </View>
       ) : (
         <SectionList
@@ -185,7 +189,7 @@ export default function TimelineScreen() {
           ListFooterComponent={
             isFetchingNextPage ? (
               <View className="items-center py-4">
-                <ActivityIndicator size="small" color="#6200EE" />
+                <ActivityIndicator size="small" color={brandColors.colors.primary} />
               </View>
             ) : null
           }

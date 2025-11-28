@@ -1,7 +1,9 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
+import { Text } from '@/components/ui/text';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import { DiaperChangeRecord } from '@/database/diaper';
 import { DiaryEntryRecord } from '@/database/diary';
 import { FeedingRecord } from '@/database/feeding';
@@ -13,16 +15,16 @@ import { SleepSessionRecord } from '@/database/sleep';
 const CardContainer = ({
   children,
   icon,
-  color,
+  backgroundColor,
 }: {
   children: React.ReactNode;
   icon: React.ReactNode;
-  color: string;
+  backgroundColor: string;
 }) => (
-  <View className="mb-3 flex-row items-start rounded-2xl bg-white p-3 shadow-sm shadow-black/5">
+  <View className="mb-3 flex-row items-start rounded-lg bg-card p-3 shadow-sm shadow-black/5">
     <View
       className="mr-3 h-10 w-10 items-center justify-center rounded-full"
-      style={{ backgroundColor: color }}>
+      style={{ backgroundColor }}>
       {icon}
     </View>
     <View className="flex-1">{children}</View>
@@ -30,40 +32,46 @@ const CardContainer = ({
 );
 
 export const DiaperCard = ({ data }: { data: DiaperChangeRecord }) => {
+  const brandColors = useBrandColor();
   const isWet = data.kind === 'wet' || data.kind === 'mixed';
   const isDirty = data.kind === 'soiled' || data.kind === 'mixed';
+  const iconColor = brandColors.colors.info;
 
   return (
     <CardContainer
-      color="#E0F2F1"
-      icon={<MaterialCommunityIcons name="baby-face-outline" size={24} color="#00695C" />}>
-      <Text className="mb-1 text-base font-semibold text-[#333]">Diaper Change</Text>
+      backgroundColor={brandColors.colors.info + '20'}
+      icon={<MaterialCommunityIcons name="baby-face-outline" size={24} color={iconColor} />}>
+      <Text className="mb-1 text-base font-semibold text-foreground">Diaper Change</Text>
       <View className="mb-1 flex-row flex-wrap items-center gap-2">
         {isWet && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             💧 Wet
           </Text>
         )}
         {isDirty && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             💩 Dirty
           </Text>
         )}
         {data.color && (
           <View
-            className="h-3 w-3 rounded-full border border-[#ddd]"
+            className="h-3 w-3 rounded-full border border-border"
             style={{ backgroundColor: getColorHex(data.color) }}
           />
         )}
       </View>
-      {data.notes && <Text className="mt-1 text-sm italic text-[#888]">{data.notes}</Text>}
+      {data.notes && (
+        <Text className="mt-1 text-sm italic text-muted-foreground">{data.notes}</Text>
+      )}
     </CardContainer>
   );
 };
 
 export const FeedingCard = ({ data }: { data: FeedingRecord }) => {
+  const brandColors = useBrandColor();
   const isBottle = data.type === 'bottle';
   const isBreast = data.type === 'breast';
+  const iconColor = brandColors.colors.secondary;
 
   let details = '';
   if (isBreast) {
@@ -81,7 +89,7 @@ export const FeedingCard = ({ data }: { data: FeedingRecord }) => {
     rowItems.push(
       <Text
         key="amountMl"
-        className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+        className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
         {data.amountMl} ml
       </Text>
     );
@@ -90,7 +98,7 @@ export const FeedingCard = ({ data }: { data: FeedingRecord }) => {
     rowItems.push(
       <Text
         key="amountGrams"
-        className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+        className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
         {data.amountGrams} g
       </Text>
     );
@@ -99,7 +107,7 @@ export const FeedingCard = ({ data }: { data: FeedingRecord }) => {
     rowItems.push(
       <Text
         key="duration"
-        className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+        className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
         {Math.round(data.duration / 60)} mins
       </Text>
     );
@@ -108,7 +116,7 @@ export const FeedingCard = ({ data }: { data: FeedingRecord }) => {
     rowItems.push(
       <Text
         key="details"
-        className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+        className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
         {details}
       </Text>
     );
@@ -116,103 +124,121 @@ export const FeedingCard = ({ data }: { data: FeedingRecord }) => {
 
   return (
     <CardContainer
-      color="#FFF3E0"
-      icon={<MaterialCommunityIcons name="baby-bottle-outline" size={24} color="#EF6C00" />}>
-      <Text className="mb-1 text-base font-semibold text-[#333]">
+      backgroundColor={brandColors.colors.secondary + '20'}
+      icon={<MaterialCommunityIcons name="baby-bottle-outline" size={24} color={iconColor} />}>
+      <Text className="mb-1 text-base font-semibold text-foreground">
         {isBottle ? 'Bottle Feeding' : isBreast ? 'Breast Feeding' : 'Solids'}
       </Text>
       {rowItems.length > 0 && (
         <View className="mb-1 flex-row flex-wrap items-center gap-2">{rowItems}</View>
       )}
       {data.ingredient && (
-        <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+        <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
           {data.ingredient}
         </Text>
       )}
-      {data.notes && <Text className="mt-1 text-sm italic text-[#888]">{data.notes}</Text>}
+      {data.notes && (
+        <Text className="mt-1 text-sm italic text-muted-foreground">{data.notes}</Text>
+      )}
     </CardContainer>
   );
 };
 
 export const SleepCard = ({ data }: { data: SleepSessionRecord }) => {
+  const brandColors = useBrandColor();
   const durationMins = data.duration ? Math.round(data.duration / 60) : 0;
   const hours = Math.floor(durationMins / 60);
   const mins = durationMins % 60;
+  const iconColor = brandColors.colors.info;
 
   return (
     <CardContainer
-      color="#E8EAF6"
-      icon={<Ionicons name="moon-outline" size={24} color="#283593" />}>
-      <Text className="mb-1 text-base font-semibold text-[#333]">Sleep ({data.kind})</Text>
-      <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+      backgroundColor={brandColors.colors.info + '20'}
+      icon={<Ionicons name="moon-outline" size={24} color={iconColor} />}>
+      <Text className="mb-1 text-base font-semibold text-foreground">Sleep ({data.kind})</Text>
+      <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
         {hours > 0 ? `${hours}h ` : ''}
         {mins}m
       </Text>
-      {data.notes && <Text className="mt-1 text-sm italic text-[#888]">{data.notes}</Text>}
+      {data.notes && (
+        <Text className="mt-1 text-sm italic text-muted-foreground">{data.notes}</Text>
+      )}
     </CardContainer>
   );
 };
 
 export const GrowthCard = ({ data }: { data: GrowthRecord }) => {
+  const brandColors = useBrandColor();
+  const iconColor = brandColors.colors.accent;
+
   return (
     <CardContainer
-      color="#F3E5F5"
-      icon={<MaterialCommunityIcons name="ruler" size={24} color="#6A1B9A" />}>
-      <Text className="mb-1 text-base font-semibold text-[#333]">Growth Measurement</Text>
+      backgroundColor={brandColors.colors.accent + '20'}
+      icon={<MaterialCommunityIcons name="ruler" size={24} color={iconColor} />}>
+      <Text className="mb-1 text-base font-semibold text-foreground">Growth Measurement</Text>
       <View className="mb-1 flex-row flex-wrap items-center gap-2">
         {data.weightKg != null && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             {data.weightKg} kg
           </Text>
         )}
         {data.heightCm != null && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             {data.heightCm} cm
           </Text>
         )}
         {data.headCircumferenceCm != null && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             Head: {data.headCircumferenceCm} cm
           </Text>
         )}
       </View>
-      {data.notes && <Text className="mt-1 text-sm italic text-[#888]">{data.notes}</Text>}
+      {data.notes && (
+        <Text className="mt-1 text-sm italic text-muted-foreground">{data.notes}</Text>
+      )}
     </CardContainer>
   );
 };
 
 export const HealthCard = ({ data }: { data: HealthRecord }) => {
+  const brandColors = useBrandColor();
+  const iconColor = brandColors.colors.destructive;
+
   return (
     <CardContainer
-      color="#FFEBEE"
-      icon={<MaterialCommunityIcons name="medical-bag" size={24} color="#C62828" />}>
-      <Text className="mb-1 text-base font-semibold text-[#333]">Health - {data.type}</Text>
+      backgroundColor={brandColors.colors.destructive + '20'}
+      icon={<MaterialCommunityIcons name="medical-bag" size={24} color={iconColor} />}>
+      <Text className="mb-1 text-base font-semibold text-foreground">Health - {data.type}</Text>
       <View className="mb-1 flex-row flex-wrap items-center gap-2">
         {data.temperature != null && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             {data.temperature}°C
           </Text>
         )}
         {data.medicineType && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             {data.medicineType}
           </Text>
         )}
         {data.medication && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             {data.medication}
           </Text>
         )}
       </View>
       {data.symptoms && (
-        <Text className="mt-1 text-sm italic text-[#888]">Symptoms: {data.symptoms}</Text>
+        <Text className="mt-1 text-sm italic text-muted-foreground">Symptoms: {data.symptoms}</Text>
       )}
-      {data.notes && <Text className="mt-1 text-sm italic text-[#888]">{data.notes}</Text>}
+      {data.notes && (
+        <Text className="mt-1 text-sm italic text-muted-foreground">{data.notes}</Text>
+      )}
     </CardContainer>
   );
 };
 
 export const PumpingCard = ({ data }: { data: PumpingRecord }) => {
+  const brandColors = useBrandColor();
+  const iconColor = brandColors.colors.info;
   let details = '';
   if (data.leftAmountMl && data.rightAmountMl) {
     details = `L: ${data.leftAmountMl}ml, R: ${data.rightAmountMl}ml`;
@@ -224,44 +250,49 @@ export const PumpingCard = ({ data }: { data: PumpingRecord }) => {
 
   return (
     <CardContainer
-      color="#E1F5FE"
-      icon={<MaterialCommunityIcons name="pump" size={24} color="#0277BD" />}>
-      <Text className="mb-1 text-base font-semibold text-[#333]">Pumping</Text>
+      backgroundColor={brandColors.colors.info + '20'}
+      icon={<MaterialCommunityIcons name="pump" size={24} color={iconColor} />}>
+      <Text className="mb-1 text-base font-semibold text-foreground">Pumping</Text>
       <View className="mb-1 flex-row flex-wrap items-center gap-2">
         {data.amountMl != null && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             Total: {data.amountMl} ml
           </Text>
         )}
         {data.duration != null && (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             {Math.round(data.duration / 60)} mins
           </Text>
         )}
         {details ? (
-          <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+          <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
             {details}
           </Text>
         ) : null}
       </View>
-      {data.notes && <Text className="mt-1 text-sm italic text-[#888]">{data.notes}</Text>}
+      {data.notes && (
+        <Text className="mt-1 text-sm italic text-muted-foreground">{data.notes}</Text>
+      )}
     </CardContainer>
   );
 };
 
 export const DiaryCard = ({ data }: { data: DiaryEntryRecord }) => {
+  const brandColors = useBrandColor();
+  const iconColor = brandColors.colors.secondary;
+
   return (
     <CardContainer
-      color="#FFF8E1"
-      icon={<MaterialCommunityIcons name="book-open-variant" size={24} color="#FF8F00" />}>
-      <Text className="mb-1 text-base font-semibold text-[#333]">
+      backgroundColor={brandColors.colors.secondary + '20'}
+      icon={<MaterialCommunityIcons name="book-open-variant" size={24} color={iconColor} />}>
+      <Text className="mb-1 text-base font-semibold text-foreground">
         {data.title || 'Diary Entry'}
       </Text>
-      <Text className="mt-1 text-sm italic text-[#888]" numberOfLines={3}>
+      <Text className="mt-1 text-sm italic text-muted-foreground" numberOfLines={3}>
         {data.content}
       </Text>
       {data.photoUri && (
-        <Text className="overflow-hidden rounded bg-[#F5F5F5] px-2 py-0.5 text-sm text-[#666]">
+        <Text className="overflow-hidden rounded-sm bg-muted px-2 py-0.5 text-sm text-muted-foreground">
           📷 1 photo
         </Text>
       )}
