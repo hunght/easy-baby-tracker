@@ -5,9 +5,9 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { ModalHeader } from '@/components/ModalHeader';
-import { useNotification } from '@/components/ui/NotificationContext';
+import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
-import { TimePickerField } from '@/components/ui/TimePickerField';
+import { TimePickerField } from '@/components/TimePickerField';
 import { DIAPER_CHANGES_QUERY_KEY } from '@/constants/query-keys';
 import type { DiaperChangePayload, DiaperKind, PoopColor } from '@/database/diaper';
 import { getDiaperChangeById, saveDiaperChange, updateDiaperChange } from '@/database/diaper';

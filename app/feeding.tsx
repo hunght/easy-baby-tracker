@@ -10,9 +10,9 @@ import { SolidsFeedingForm } from '@/features/feeding/components/SolidsFeedingFo
 import { ModalHeader } from '@/components/ModalHeader';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { useNotification } from '@/components/ui/NotificationContext';
+import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
-import { TimeField } from '@/components/ui/TimeField';
+import { TimeField } from '@/components/TimeField';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { FEEDINGS_QUERY_KEY } from '@/constants/query-keys';

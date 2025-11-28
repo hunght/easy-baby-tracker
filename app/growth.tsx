@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 
 import { ModalHeader } from '@/components/ModalHeader';
-import { useNotification } from '@/components/ui/NotificationContext';
+import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
-import { TimePickerField } from '@/components/ui/TimePickerField';
+import { TimePickerField } from '@/components/TimePickerField';
 import { GROWTH_RECORDS_QUERY_KEY } from '@/constants/query-keys';
 import type { GrowthRecordPayload } from '@/database/growth';
 import { getGrowthRecordById, saveGrowthRecord, updateGrowthRecord } from '@/database/growth';

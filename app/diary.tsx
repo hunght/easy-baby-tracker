@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
 
 import { ModalHeader } from '@/components/ModalHeader';
-import { useNotification } from '@/components/ui/NotificationContext';
+import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
 
 import { DIARY_ENTRIES_QUERY_KEY } from '@/constants/query-keys';

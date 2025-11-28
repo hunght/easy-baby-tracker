@@ -15,7 +15,7 @@ import { Text, View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { NotificationProvider } from '@/components/ui/NotificationContext';
+import { NotificationProvider } from '@/components/NotificationContext';
 import { db, expoDb } from '@/database/db';
 import {
   cancelStoredScheduledNotification,
