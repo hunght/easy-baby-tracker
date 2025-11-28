@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, View, Pressable } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
 
@@ -49,14 +49,17 @@ export default function ChartsScreen() {
             return (
               <Badge
                 key={cat.id}
+                asChild
                 variant={active ? 'default' : 'outline'}
-                onPress={() => setSelectedCategory(cat.id)}
-                accessibilityState={{ selected: active }}
                 className={active ? '' : 'bg-accent border-border'}
               >
-                <Text className="text-sm font-semibold">
-                  {cat.label}
-                </Text>
+                <Pressable
+                  onPress={() => setSelectedCategory(cat.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                >
+                  <Text className="text-sm font-semibold">{cat.label}</Text>
+                </Pressable>
               </Badge>
             );
           })}
