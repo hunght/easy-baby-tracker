@@ -3,8 +3,9 @@ import Slider from '@react-native-community/slider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
+import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
@@ -264,12 +265,11 @@ export default function HealthScreen() {
                 {medication || t('common.undefined')}
               </Text>
             </View>
-            <TextInput
-              className="mb-6 rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
+            <Input
+              className="mb-6"
               value={medication}
               onChangeText={setMedication}
               placeholder={t('health.medicationPlaceholder')}
-              placeholderTextColor="#C4C4C4"
             />
           </>
         )}
@@ -282,12 +282,11 @@ export default function HealthScreen() {
                 {t('common.symptoms')}
               </Text>
             </View>
-            <TextInput
-              className="min-h-30 mb-6 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
+            <Input
+              className="mb-6 min-h-[120px]"
               value={symptoms}
               onChangeText={setSymptoms}
               placeholder={t('health.symptomsPlaceholder')}
-              placeholderTextColor="#C4C4C4"
               multiline
               textAlignVertical="top"
             />
@@ -295,12 +294,11 @@ export default function HealthScreen() {
         )}
 
         {/* Notes */}
-        <TextInput
-          className="mt-3 min-h-20 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
+        <Input
+          className="mt-3 min-h-20"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
-          placeholderTextColor="#C4C4C4"
           multiline
           textAlignVertical="top"
         />

@@ -3,8 +3,9 @@ import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 
+import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { DateTimePickerModal } from '@/components/DateTimePickerModal';
 import { useNotification } from '@/components/NotificationContext';
@@ -343,12 +344,11 @@ export default function SleepScreen() {
           </View>
         </View>
 
-        <TextInput
-          className="min-h-25 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
+        <Input
+          className="min-h-[100px]"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
-          placeholderTextColor="#C4C4C4"
           multiline
           textAlignVertical="top"
         />

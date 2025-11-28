@@ -1,7 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
+import { Input } from '@/components/ui/input';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 type BreastFeedingFormProps = {
@@ -27,6 +29,7 @@ export function BreastFeedingForm({
   onDataChange,
 }: BreastFeedingFormProps) {
   const { t } = useLocalization();
+  const brandColors = useBrandColor();
   const [leftDuration, setLeftDuration] = useState(initialLeftDuration);
   const [rightDuration, setRightDuration] = useState(initialRightDuration);
   const [leftTimerActive, setLeftTimerActive] = useState(false);
@@ -91,8 +94,8 @@ export function BreastFeedingForm({
             {t('common.leftShort')}
           </Text>
           <View className="flex-row items-center gap-2">
-            <TextInput
-              className="w-[60px] rounded-lg border border-border bg-[#F9F9F9] px-3 py-2 text-center text-base text-foreground"
+            <Input
+              className="w-[60px] text-center"
               value={Math.floor(leftDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -109,8 +112,8 @@ export function BreastFeedingForm({
             {t('common.rightShort')}
           </Text>
           <View className="flex-row items-center gap-2">
-            <TextInput
-              className="w-[60px] rounded-lg border border-border bg-[#F9F9F9] px-3 py-2 text-center text-base text-foreground"
+            <Input
+              className="w-[60px] text-center"
               value={Math.floor(rightDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -152,7 +155,7 @@ export function BreastFeedingForm({
             <MaterialCommunityIcons
               name={leftTimerActive ? 'pause' : 'play'}
               size={24}
-              color="#FFF"
+              color={brandColors.colors.white}
             />
           </Pressable>
           <Text className="text-base font-medium text-foreground">
@@ -167,7 +170,7 @@ export function BreastFeedingForm({
             <MaterialCommunityIcons
               name={rightTimerActive ? 'pause' : 'play'}
               size={24}
-              color="#FFF"
+              color={brandColors.colors.white}
             />
           </Pressable>
           <Text className="text-base font-medium text-foreground">

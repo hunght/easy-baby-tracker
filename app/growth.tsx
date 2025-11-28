@@ -1,8 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 
+import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
@@ -146,12 +147,10 @@ export default function GrowthScreen() {
             <Text className="text-base text-foreground">{t('common.unitKg')}</Text>
           </View>
         </View>
-        <TextInput
-          className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
+        <Input
           value={weightKg}
           onChangeText={(text) => setWeightKg(formatNumericValue(text))}
           placeholder={t('growth.placeholder')}
-          placeholderTextColor="#C4C4C4"
           keyboardType="decimal-pad"
         />
 
@@ -165,12 +164,10 @@ export default function GrowthScreen() {
             <Text className="text-base text-foreground">{t('common.unitCm')}</Text>
           </View>
         </View>
-        <TextInput
-          className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
+        <Input
           value={heightCm}
           onChangeText={(text) => setHeightCm(formatNumericValue(text))}
           placeholder={t('growth.placeholder')}
-          placeholderTextColor="#C4C4C4"
           keyboardType="decimal-pad"
         />
 
@@ -188,24 +185,21 @@ export default function GrowthScreen() {
             <Text className="text-base text-foreground">{t('common.unitCm')}</Text>
           </View>
         </View>
-        <TextInput
-          className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
+        <Input
           value={headCircumferenceCm}
           onChangeText={(text) => setHeadCircumferenceCm(formatNumericValue(text))}
           placeholder={t('growth.placeholder')}
-          placeholderTextColor="#C4C4C4"
           keyboardType="decimal-pad"
         />
 
         <View className="my-4 h-px bg-border" />
 
         {/* Notes */}
-        <TextInput
-          className="mt-3 min-h-20 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
+        <Input
+          className="mt-3 min-h-20"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
-          placeholderTextColor="#C4C4C4"
           multiline
           textAlignVertical="top"
         />

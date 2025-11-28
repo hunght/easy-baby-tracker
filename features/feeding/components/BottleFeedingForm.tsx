@@ -1,9 +1,11 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
+import { Input } from '@/components/ui/input';
 import type { IngredientType } from '@/database/feeding';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 type BottleFeedingFormProps = {
@@ -41,6 +43,7 @@ export function BottleFeedingForm({
   onDataChange,
 }: BottleFeedingFormProps) {
   const { t } = useLocalization();
+  const brandColors = useBrandColor();
   const [ingredientType, setIngredientType] = useState<IngredientType>(initialIngredientType);
   const [amountMl, setAmountMl] = useState(initialAmountMl);
   const [bottleDuration, setBottleDuration] = useState(initialDuration);
@@ -85,7 +88,7 @@ export function BottleFeedingForm({
           {t('common.ingredient')}
         </Text>
       </View>
-      <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-white">
+      <View className="mb-6 flex-row overflow-hidden rounded-lg border border-border bg-card">
         {ingredientTypes.map((ing, index) => (
           <Pressable
             key={ing.key}
@@ -95,7 +98,7 @@ export function BottleFeedingForm({
             } ${index > 0 ? 'border-l border-border' : ''}`}>
             <Text
               className={`text-sm font-semibold ${
-                ingredientType === ing.key ? 'text-white' : 'text-muted-foreground'
+                ingredientType === ing.key ? 'text-accent-foreground' : 'text-muted-foreground'
               }`}>
               {t(ing.labelKey)}
             </Text>
@@ -116,13 +119,13 @@ export function BottleFeedingForm({
         step={5}
         value={amountMl}
         onValueChange={setAmountMl}
-        minimumTrackTintColor="#FF5C8D"
+        minimumTrackTintColor={brandColors.colors.accent}
         maximumTrackTintColor="#E0E0E0"
-        thumbTintColor="#FFF"
+        thumbTintColor={brandColors.colors.white}
       />
       <View className="mb-6 flex-row justify-between px-1">
         {[0, 50, 100, 150, 200, 250, 300, 350].map((value) => (
-          <Text key={value} className="text-[10px] text-[#999]">
+          <Text key={value} className="text-xs text-muted-foreground">
             {value}
           </Text>
         ))}
@@ -132,8 +135,8 @@ export function BottleFeedingForm({
         <Text className="text-base font-medium text-muted-foreground">{t('common.duration')}</Text>
         {isEditing || isPast ? (
           <View className="flex-row items-center gap-2">
-            <TextInput
-              className="w-[60px] rounded-lg border border-border bg-[#F9F9F9] px-3 py-2 text-center text-base text-foreground"
+            <Input
+              className="w-[60px] text-center"
               value={Math.floor(bottleDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -158,7 +161,7 @@ export function BottleFeedingForm({
             <MaterialCommunityIcons
               name={bottleTimerActive ? 'pause' : 'play'}
               size={24}
-              color="#FFF"
+              color={brandColors.colors.white}
             />
           </Pressable>
           <Text className="text-base font-medium text-foreground">

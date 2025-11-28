@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, type Theme } from '@react-navigation/native';
 
 export const THEME = {
   light: {
+    /* BabyEase brand colors - Light mode */
     background: 'hsl(240 20% 98%)' /* #F5F7FA */,
     foreground: 'hsl(210 11% 7%)' /* #11181C */,
     card: 'hsl(0 0% 100%)' /* white */,
@@ -12,28 +13,30 @@ export const THEME = {
     primaryForeground: 'hsl(0 0% 100%)',
     secondary: '#FFB347' /* BabyEase warm accent */,
     secondaryForeground: 'hsl(210 11% 7%)',
-    muted: 'hsl(250 60% 88%)' /* #C7B9FF */,
+    muted: 'hsl(250 60% 88%)' /* #C7B9FF - Lavender */,
     mutedForeground: 'hsl(210 7% 26%)',
     accent: '#FF8AB8' /* BabyEase playful pink */,
-    accentForeground: 'hsl(210 11% 7%)',
+    accentForeground: 'hsl(0 0% 100%)',
     destructive: '#FF7A59' /* BabyEase warning */,
+    destructiveForeground: 'hsl(0 0% 100%)',
     border: 'hsl(240 10% 90%)',
     input: 'hsl(240 10% 90%)',
-    ring: '#5B7FFF',
-    radius: '0.75rem',
-    /* Additional brand colors */
+    ring: '#5B7FFF' /* Primary */,
+    radius: '0.75rem' /* 12px for cards */,
+    /* BabyEase brand-specific colors */
     mint: '#7FE3CC',
     info: '#4BA3C3',
     lavender: '#C7B9FF',
     warning: '#FF7A59' /* Alias for destructive */,
-    /* Chart colors */
-    chart1: '#5B7FFF',
-    chart2: '#FFB347',
-    chart3: '#FF8AB8',
-    chart4: '#7FE3CC',
-    chart5: '#FF7A59',
+    /* Chart colors - BabyEase brand palette */
+    chart1: '#5B7FFF' /* Primary */,
+    chart2: '#FFB347' /* Secondary */,
+    chart3: '#FF8AB8' /* Accent Pink */,
+    chart4: '#7FE3CC' /* Mint */,
+    chart5: '#FF7A59' /* Warning */,
   },
   dark: {
+    /* BabyEase brand colors - Dark mode */
     background: 'hsl(210 11% 7%)' /* #11181C */,
     foreground: 'hsl(210 17% 93%)' /* #ECEDEE */,
     card: 'hsl(210 10% 10%)',
@@ -47,23 +50,24 @@ export const THEME = {
     muted: 'hsl(210 10% 15%)',
     mutedForeground: 'hsl(210 10% 65%)',
     accent: '#FF8AB8' /* BabyEase accent */,
-    accentForeground: 'hsl(210 11% 7%)',
+    accentForeground: 'hsl(0 0% 100%)',
     destructive: '#FF9B7A' /* Warning (lighter for dark) */,
+    destructiveForeground: 'hsl(0 0% 100%)',
     border: 'hsl(210 10% 20%)',
     input: 'hsl(210 10% 20%)',
-    ring: '#6B9FFF',
-    radius: '0.75rem',
-    /* Additional brand colors */
+    ring: '#6B9FFF' /* Primary */,
+    radius: '0.75rem' /* 12px for cards */,
+    /* BabyEase brand-specific colors - Dark mode */
     mint: '#7FD4C1',
     info: '#6BA8D1',
     lavender: '#D4C9FF',
     warning: '#FF9B7A' /* Alias for destructive */,
-    /* Chart colors */
-    chart1: '#6B9FFF',
-    chart2: '#FFB86D',
-    chart3: '#FF8AB8',
-    chart4: '#7FD4C1',
-    chart5: '#FF9B7A',
+    /* Chart colors - BabyEase brand palette (lighter for dark mode) */
+    chart1: '#6B9FFF' /* Primary */,
+    chart2: '#FFB86D' /* Secondary */,
+    chart3: '#FF8AB8' /* Accent Pink */,
+    chart4: '#7FD4C1' /* Mint */,
+    chart5: '#FF9B7A' /* Warning */,
   },
 };
 

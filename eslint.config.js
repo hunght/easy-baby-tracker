@@ -21,6 +21,10 @@ module.exports = defineConfig([
           selector: 'ClassDeclaration',
           message: 'Classes are not allowed. Please use functional programming patterns instead.',
         },
+        {
+          selector: 'TSAsExpression',
+          message: 'Type assertions using "as" are not allowed. Use type guards or proper type narrowing instead.',
+        },
       ],
       // Ban StyleSheet.create - use NativeWind/Tailwind classes instead
       'no-restricted-imports': [
@@ -70,6 +74,18 @@ module.exports = defineConfig([
         {
           assertionStyle: 'as',
           objectLiteralTypeAssertions: 'never',
+        },
+      ],
+      // Ban the use of 'as' type assertions - use type guards instead
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ClassDeclaration',
+          message: 'Classes are not allowed. Please use functional programming patterns instead.',
+        },
+        {
+          selector: 'TSAsExpression',
+          message: 'Type assertions using "as" are not allowed. Use type guards or proper type narrowing instead.',
         },
       ],
       // Ban disabling comments - fix issues instead of disabling them

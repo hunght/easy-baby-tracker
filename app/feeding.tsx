@@ -35,6 +35,11 @@ const feedingTypes: FeedingTypeOption[] = [
   { key: 'solids', labelKey: 'feeding.types.solids', icon: 'bowl-mix-outline' },
 ];
 
+// Type guard to check if a string is a valid FeedingType
+function isFeedingType(value: string): value is FeedingType {
+  return feedingTypes.some((type) => type.key === value);
+}
+
 export default function FeedingScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -274,7 +279,11 @@ export default function FeedingScreen() {
         {/* Feeding Type Selection */}
         <Tabs
           value={feedingType}
-          onValueChange={(value) => setFeedingType(value as FeedingType)}
+          onValueChange={(value) => {
+            if (isFeedingType(value)) {
+              setFeedingType(value);
+            }
+          }}
           className="mb-6">
           <TabsList className="w-full">
             {feedingTypes.map((type) => (

@@ -5,8 +5,9 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 
+import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
@@ -225,20 +226,18 @@ export default function DiaryScreen() {
       />
 
       <ScrollView contentContainerClassName="p-5 pb-15 gap-5" showsVerticalScrollIndicator={false}>
-        <TextInput
-          className="rounded-xl border border-border bg-card px-4 py-3 text-base text-foreground"
+        <Input
+          className="mb-3"
           value={title}
           onChangeText={setTitle}
           placeholder={t('diary.titlePlaceholder')}
-          placeholderTextColor="#C4C4C4"
         />
 
-        <TextInput
-          className="min-h-35 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
+        <Input
+          className="min-h-[140px]"
           value={content}
           onChangeText={setContent}
           placeholder={t('diary.contentPlaceholder')}
-          placeholderTextColor="#C4C4C4"
           multiline
           textAlignVertical="top"
         />

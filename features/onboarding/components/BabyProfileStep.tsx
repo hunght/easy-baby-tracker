@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 import { BabyProfilePayload, Gender } from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
@@ -54,12 +55,10 @@ export function BabyProfileStep({ headerText, concerns, onSave }: BabyProfileSte
       </View>
 
       <Text className="font-semibold text-neutral-600">{t('common.nickname')}</Text>
-      <TextInput
+      <Input
         value={nickname}
         onChangeText={setNickname}
-        className="rounded-2xl border border-violet-200 bg-white px-4 py-3"
         placeholder={t('common.nicknamePlaceholder')}
-        placeholderTextColor="#C4C4C4"
       />
 
       <Text className="font-semibold text-neutral-600">{t('common.gender')}</Text>

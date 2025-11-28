@@ -4,8 +4,9 @@ import Slider from '@react-native-community/slider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View } from 'react-native';
 
+import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { DateTimePickerModal } from '@/components/DateTimePickerModal';
 import { useNotification } from '@/components/NotificationContext';
@@ -286,8 +287,8 @@ export default function PumpingScreen() {
                 {t('common.leftShort')}
               </Text>
               <View className="flex-row items-center gap-2">
-                <TextInput
-                  className="w-15 rounded-lg border border-border bg-gray-50 px-3 py-2 text-center text-base text-foreground"
+                <Input
+                  className="w-[60px] text-center"
                   value={Math.floor(leftDuration / 60).toString()}
                   onChangeText={(text) => {
                     const mins = parseInt(text) || 0;
@@ -304,8 +305,8 @@ export default function PumpingScreen() {
                 {t('common.rightShort')}
               </Text>
               <View className="flex-row items-center gap-2">
-                <TextInput
-                  className="w-15 rounded-lg border border-border bg-gray-50 px-3 py-2 text-center text-base text-foreground"
+                <Input
+                  className="w-[60px] text-center"
                   value={Math.floor(rightDuration / 60).toString()}
                   onChangeText={(text) => {
                     const mins = parseInt(text) || 0;
@@ -375,12 +376,11 @@ export default function PumpingScreen() {
         )}
 
         {/* Notes */}
-        <TextInput
-          className="mt-3 min-h-20 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
+        <Input
+          className="mt-3 min-h-20"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
-          placeholderTextColor="#C4C4C4"
           multiline
           textAlignVertical="top"
         />

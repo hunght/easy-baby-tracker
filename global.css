@@ -4,55 +4,69 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    /* BabyEase brand colors - Light mode */
+    --background: 240 20% 98%; /* #F5F7FA */
+    --foreground: 210 11% 7%; /* #11181C */
+    --card: 0 0% 100%; /* white */
+    --card-foreground: 210 11% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 63%;
-    --radius: 0.625rem;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --popover-foreground: 210 11% 7%;
+    --primary: 230 100% 68%; /* #5B7FFF - BabyEase brand primary */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 35 100% 64%; /* #FFB347 - BabyEase warm accent */
+    --secondary-foreground: 210 11% 7%;
+    --muted: 250 60% 88%; /* #C7B9FF - Lavender */
+    --muted-foreground: 210 7% 26%;
+    --accent: 340 100% 77%; /* #FF8AB8 - BabyEase playful pink */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 12 100% 67%; /* #FF7A59 - BabyEase warning */
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 10% 90%;
+    --input: 240 10% 90%;
+    --ring: 230 100% 68%; /* #5B7FFF - Primary */
+    --radius: 0.75rem; /* 12px for cards */
+    /* BabyEase brand-specific colors */
+    --mint: 165 65% 69%; /* #7FE3CC */
+    --info: 198 52% 53%; /* #4BA3C3 */
+    --lavender: 250 100% 86%; /* #C7B9FF */
+    /* Chart colors - BabyEase brand palette */
+    --chart-1: 230 100% 68%; /* Primary #5B7FFF */
+    --chart-2: 35 100% 64%; /* Secondary #FFB347 */
+    --chart-3: 340 100% 77%; /* Accent Pink #FF8AB8 */
+    --chart-4: 165 65% 69%; /* Mint #7FE3CC */
+    --chart-5: 12 100% 67%; /* Warning #FF7A59 */
   }
 
   .dark:root {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 70.9% 59.4%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 300 0% 45%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* BabyEase brand colors - Dark mode */
+    --background: 210 11% 7%; /* #11181C */
+    --foreground: 210 17% 93%; /* #ECEDEE */
+    --card: 210 10% 10%;
+    --card-foreground: 210 17% 93%;
+    --popover: 210 10% 10%;
+    --popover-foreground: 210 17% 93%;
+    --primary: 230 100% 72%; /* #6B9FFF - BabyEase primary (lighter for dark) */
+    --primary-foreground: 210 11% 7%;
+    --secondary: 35 100% 70%; /* #FFB86D - BabyEase secondary (lighter for dark) */
+    --secondary-foreground: 210 11% 7%;
+    --muted: 210 10% 15%;
+    --muted-foreground: 210 10% 65%;
+    --accent: 340 100% 77%; /* #FF8AB8 - BabyEase accent */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 12 100% 72%; /* #FF9B7A - Warning (lighter for dark) */
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 10% 20%;
+    --input: 210 10% 20%;
+    --ring: 230 100% 72%; /* #6B9FFF - Primary */
+    /* BabyEase brand-specific colors - Dark mode */
+    --mint: 165 60% 75%; /* #7FD4C1 */
+    --info: 198 50% 65%; /* #6BA8D1 */
+    --lavender: 250 100% 90%; /* #D4C9FF */
+    /* Chart colors - BabyEase brand palette (lighter for dark mode) */
+    --chart-1: 230 100% 72%; /* Primary #6B9FFF */
+    --chart-2: 35 100% 70%; /* Secondary #FFB86D */
+    --chart-3: 340 100% 77%; /* Accent Pink #FF8AB8 */
+    --chart-4: 165 60% 75%; /* Mint #7FD4C1 */
+    --chart-5: 12 100% 72%; /* Warning #FF9B7A */
   }
 }

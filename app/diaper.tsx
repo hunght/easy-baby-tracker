@@ -2,8 +2,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
+import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
@@ -18,6 +19,23 @@ type DiaperTypeOption = {
   labelKey: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 };
+
+// Type guard to check if a value is a valid PoopColor
+function isPoopColor(value: unknown): value is PoopColor {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  const validColors: string[] = [
+    'yellow',
+    'brown',
+    'olive_green',
+    'dark_green',
+    'red',
+    'black',
+    'white',
+  ];
+  return validColors.includes(value);
+}
 
 const diaperTypes: DiaperTypeOption[] = [
   { key: 'wet', labelKey: 'diaper.types.wet', icon: 'water-outline' },
@@ -65,9 +83,9 @@ export default function DiaperScreen() {
       setDiaperKind(existingData.kind);
       setTime(new Date(existingData.time * 1000));
       setWetness(existingData.wetness ?? undefined);
-      // Cast string to PoopColor if it matches, otherwise undefined
-      const loadedColor = existingData.color as PoopColor | null;
-      setColor(loadedColor ?? undefined);
+      // Use type guard to safely check if color is valid PoopColor
+      const loadedColor = isPoopColor(existingData.color) ? existingData.color : undefined;
+      setColor(loadedColor);
       setNotes(existingData.notes ?? '');
     }
   }, [existingData]);
@@ -208,12 +226,11 @@ export default function DiaperScreen() {
         )}
 
         {/* Notes */}
-        <TextInput
-          className="mt-3 min-h-20 rounded-xl border border-border bg-gray-50 px-4 py-3 text-base text-foreground"
+        <Input
+          className="mt-3 min-h-20"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
-          placeholderTextColor="#C4C4C4"
           multiline
           textAlignVertical="top"
         />

@@ -1,8 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
+import { Input } from '@/components/ui/input';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 type SolidsFeedingFormProps = {
@@ -30,6 +32,7 @@ export function SolidsFeedingForm({
   onDataChange,
 }: SolidsFeedingFormProps) {
   const { t } = useLocalization();
+  const brandColors = useBrandColor();
   const [ingredient, setIngredient] = useState(initialIngredient);
   const [amountGrams, setAmountGrams] = useState(initialAmountGrams);
   const [solidsDuration, setSolidsDuration] = useState(initialDuration);
@@ -77,12 +80,11 @@ export function SolidsFeedingForm({
           {ingredient || t('common.undefined')}
         </Text>
       </View>
-      <TextInput
-        className="mb-6 rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
+      <Input
+        className="mb-6"
         value={ingredient}
         onChangeText={setIngredient}
         placeholder={t('feeding.ingredientPlaceholder')}
-        placeholderTextColor="#C4C4C4"
       />
 
       <View className="mb-3 flex-row items-center justify-between">
@@ -98,13 +100,13 @@ export function SolidsFeedingForm({
         step={5}
         value={amountGrams}
         onValueChange={setAmountGrams}
-        minimumTrackTintColor="#FF5C8D"
+        minimumTrackTintColor={brandColors.colors.accent}
         maximumTrackTintColor="#E0E0E0"
-        thumbTintColor="#FFF"
+        thumbTintColor={brandColors.colors.white}
       />
       <View className="mb-6 flex-row justify-between px-1">
         {[0, 50, 100, 150, 200, 250, 300, 350].map((value) => (
-          <Text key={value} className="text-[10px] text-[#999]">
+          <Text key={value} className="text-xs text-muted-foreground">
             {value}
           </Text>
         ))}
@@ -114,8 +116,8 @@ export function SolidsFeedingForm({
         <Text className="text-base font-medium text-muted-foreground">{t('common.duration')}</Text>
         {isEditing || isPast ? (
           <View className="flex-row items-center gap-2">
-            <TextInput
-              className="w-[60px] rounded-lg border border-border bg-[#F9F9F9] px-3 py-2 text-center text-base text-foreground"
+            <Input
+              className="w-[60px] text-center"
               value={Math.floor(solidsDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -140,7 +142,7 @@ export function SolidsFeedingForm({
             <MaterialCommunityIcons
               name={solidsTimerActive ? 'pause' : 'play'}
               size={24}
-              color="#FFF"
+              color={brandColors.colors.white}
             />
           </Pressable>
           <Text className="text-base font-medium text-foreground">
