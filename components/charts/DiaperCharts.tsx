@@ -7,7 +7,8 @@ import { ChartCard } from './ChartCard';
 import { SummaryCard } from './SummaryCard';
 
 import { DIAPER_CHANGES_QUERY_KEY } from '@/constants/query-keys';
-import { BrandColors } from '@/constants/theme';
+import { getBrandColor } from '@/lib/utils';
+import { useTheme } from '@/lib/ThemeContext';
 import { getDiaperChanges } from '@/database/diaper';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
@@ -20,6 +21,7 @@ interface DiaperChartsProps {
 
 export function DiaperCharts({ startDate, endDate }: DiaperChartsProps) {
   const { t } = useLocalization();
+  const { colorScheme } = useTheme();
 
   const { data: changes = [] } = useQuery({
     queryKey: [...DIAPER_CHANGES_QUERY_KEY, { startDate, endDate }],
@@ -45,9 +47,9 @@ export function DiaperCharts({ startDate, endDate }: DiaperChartsProps) {
     const dData = Object.entries(dailyChanges)
       .map(([date, counts]) => ({
         stacks: [
-          { value: counts.wet, color: BrandColors.info, marginBottom: 2 },
-          { value: counts.soiled, color: BrandColors.warning, marginBottom: 2 },
-          { value: counts.mixed, color: BrandColors.secondary, marginBottom: 2 },
+          { value: counts.wet, color: getBrandColor('info', colorScheme), marginBottom: 2 },
+          { value: counts.soiled, color: getBrandColor('warning', colorScheme), marginBottom: 2 },
+          { value: counts.mixed, color: getBrandColor('secondary', colorScheme), marginBottom: 2 },
         ],
         label: new Date(date).toLocaleDateString(undefined, { weekday: 'short' }),
       }))
@@ -58,7 +60,7 @@ export function DiaperCharts({ startDate, endDate }: DiaperChartsProps) {
       avgChanges: dayCount > 0 ? Math.round(changes.length / dayCount) : 0,
       totalChanges: changes.length,
     };
-  }, [changes]);
+  }, [changes, colorScheme]);
 
   return (
     <View>
@@ -68,7 +70,7 @@ export function DiaperCharts({ startDate, endDate }: DiaperChartsProps) {
             title={t('diaper.avgDaily')}
             value={avgChanges}
             icon="water-outline"
-            color={BrandColors.info}
+            color={getBrandColor('info', colorScheme)}
           />
         </View>
         <View className="ml-2 flex-1">
@@ -76,7 +78,7 @@ export function DiaperCharts({ startDate, endDate }: DiaperChartsProps) {
             title={t('diaper.total')}
             value={totalChanges}
             icon="layers-outline"
-            color={BrandColors.warning}
+            color={getBrandColor('warning', colorScheme)}
           />
         </View>
       </View>

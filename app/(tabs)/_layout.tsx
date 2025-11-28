@@ -4,19 +4,19 @@ import React from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTheme } from '@/lib/ThemeContext';
+import { NAV_THEME } from '@/lib/theme';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const { colorScheme } = useTheme();
   const { t } = useLocalization();
   const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: NAV_THEME[colorScheme].colors.text,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
@@ -41,7 +41,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name="stats-chart" size={30} color={focused ? '#FF5C8D' : color} />
           ),
-
         }}
       />
       <Tabs.Screen
@@ -51,7 +50,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name="medkit" size={30} color={focused ? '#FF5C8D' : color} />
           ),
-
         }}
       />
       <Tabs.Screen

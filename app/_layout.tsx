@@ -75,6 +75,9 @@ function AppProviders() {
   const router = useRouter();
   const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
+  // Get the background color from THEME
+  const backgroundColor = colorScheme === 'dark' ? '#11181C' : '#F5F7FA';
+
   // Log current theme info to trace dark mode propagation
   useEffect(() => {
     console.log('[Theme] colorScheme:', colorScheme);
@@ -142,13 +145,14 @@ function AppProviders() {
     };
   }, [router]);
   logger.log('Rendering AppProviders with colorScheme:', colorScheme);
+
   return (
     <SafeAreaProvider>
       <NotificationProvider>
         <MigrationHandler>
           <QueryClientProvider client={queryClient}>
             <NavigationThemeProvider value={navTheme}>
-              <View className={colorScheme === 'dark' ? 'dark flex-1 bg-black' : 'flex-1 bg-white'}>
+              <View style={{ backgroundColor, flex: 1 }} className="flex-1">
                 <Stack
                   screenOptions={{
                     // Render screens transparently so our wrapper View controls background via Tailwind

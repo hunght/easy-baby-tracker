@@ -7,7 +7,8 @@ import { ChartCard } from './ChartCard';
 import { SummaryCard } from './SummaryCard';
 
 import { FEEDINGS_QUERY_KEY } from '@/constants/query-keys';
-import { BrandColors } from '@/constants/theme';
+import { getBrandColor } from '@/lib/utils';
+import { useTheme } from '@/lib/ThemeContext';
 import { getFeedings } from '@/database/feeding';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
@@ -20,6 +21,7 @@ interface FeedingChartsProps {
 
 export function FeedingCharts({ startDate, endDate }: FeedingChartsProps) {
   const { t } = useLocalization();
+  const { colorScheme } = useTheme();
 
   const { data: feedings = [] } = useQuery({
     queryKey: [...FEEDINGS_QUERY_KEY, { startDate, endDate }],
@@ -56,7 +58,7 @@ export function FeedingCharts({ startDate, endDate }: FeedingChartsProps) {
       .map(([date, vol]) => ({
         value: vol,
         label: new Date(date).toLocaleDateString(undefined, { weekday: 'short' }),
-        frontColor: BrandColors.primary,
+        frontColor: getBrandColor('primary', colorScheme),
         topLabelComponent: () => (
           <View style={{ marginBottom: 4 }}>
             <Text style={{ fontSize: 10, color: 'gray' }}>{Math.round(vol)}</Text>
@@ -71,7 +73,7 @@ export function FeedingCharts({ startDate, endDate }: FeedingChartsProps) {
         value: dur,
         label: new Date(date).toLocaleDateString(undefined, { weekday: 'short' }),
         dataPointText: dur.toString(),
-        textColor: BrandColors.secondary,
+        textColor: getBrandColor('secondary', colorScheme),
       }))
       .slice(-7);
 
@@ -81,7 +83,7 @@ export function FeedingCharts({ startDate, endDate }: FeedingChartsProps) {
       avgVolume: volCount > 0 ? Math.round(totalVol / volCount) : 0,
       totalFeedings: feedings.length,
     };
-  }, [feedings]);
+  }, [feedings, colorScheme]);
 
   return (
     <View>
@@ -91,7 +93,7 @@ export function FeedingCharts({ startDate, endDate }: FeedingChartsProps) {
             title={t('feeding.avgVolume')}
             value={`${avgVolume} ml`}
             icon="water-outline"
-            color={BrandColors.primary}
+            color={getBrandColor('primary', colorScheme)}
           />
         </View>
         <View className="ml-2 flex-1">
@@ -99,7 +101,7 @@ export function FeedingCharts({ startDate, endDate }: FeedingChartsProps) {
             title={t('feeding.total')}
             value={totalFeedings}
             icon="restaurant-outline"
-            color={BrandColors.accentPink}
+            color={getBrandColor('accent', colorScheme)}
           />
         </View>
       </View>
@@ -111,7 +113,7 @@ export function FeedingCharts({ startDate, endDate }: FeedingChartsProps) {
             barWidth={30}
             noOfSections={4}
             barBorderRadius={4}
-            frontColor={BrandColors.primary}
+            frontColor={getBrandColor('primary', colorScheme)}
             yAxisThickness={0}
             xAxisThickness={0}
             yAxisTextStyle={{ color: 'gray' }}
@@ -127,11 +129,11 @@ export function FeedingCharts({ startDate, endDate }: FeedingChartsProps) {
         {durationData.length > 0 ? (
           <LineChart
             data={durationData}
-            color={BrandColors.secondary}
+            color={getBrandColor('secondary', colorScheme)}
             thickness={3}
-            dataPointsColor={BrandColors.secondary}
-            startFillColor={BrandColors.secondary}
-            endFillColor={BrandColors.secondary + '10'}
+            dataPointsColor={getBrandColor('secondary', colorScheme)}
+            startFillColor={getBrandColor('secondary', colorScheme)}
+            endFillColor={getBrandColor('secondary', colorScheme) + '10'}
             startOpacity={0.9}
             endOpacity={0.2}
             initialSpacing={20}
