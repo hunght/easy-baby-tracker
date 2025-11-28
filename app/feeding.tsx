@@ -2,13 +2,18 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { BottleFeedingForm } from '@/components/feeding/BottleFeedingForm';
 import { BreastFeedingForm } from '@/components/feeding/BreastFeedingForm';
 import { SolidsFeedingForm } from '@/components/feeding/SolidsFeedingForm';
+import { ModalHeader } from '@/components/ModalHeader';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useNotification } from '@/components/ui/NotificationContext';
+import { Text } from '@/components/ui/text';
 import { TimeField } from '@/components/ui/TimeField';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { FEEDINGS_QUERY_KEY } from '@/constants/query-keys';
 import type { FeedingPayload, FeedingType, IngredientType } from '@/database/feeding';
@@ -31,12 +36,12 @@ const feedingTypes: FeedingTypeOption[] = [
   { key: 'solids', labelKey: 'feeding.types.solids', icon: 'bowl-mix-outline' },
 ];
 
-
 export default function FeedingScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { t } = useLocalization();
   const { showNotification } = useNotification();
+  const colorScheme = useColorScheme();
   const params = useLocalSearchParams<{ id: string }>();
   const id = params.id ? Number(params.id) : undefined;
   const isEditing = !!id;
@@ -177,7 +182,6 @@ export default function FeedingScreen() {
       };
       updateNotification();
     }
-
   }, [feedingType]);
 
   // Callbacks for child components to update parent state
@@ -259,39 +263,48 @@ export default function FeedingScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.closeButton}>{t('common.close')}</Text>
-        </Pressable>
-        <Text style={styles.title}>{isEditing ? t('feeding.editTitle') : t('feeding.title')}</Text>
-        <Pressable onPress={handleSave} disabled={isSaving}>
-          <Text style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}>{t('common.save')}</Text>
-        </Pressable>
-      </View>
+    <View className="flex-1 bg-card">
+      <ModalHeader
+        title={isEditing ? t('feeding.editTitle') : t('feeding.title')}
+        onSave={handleSave}
+        isSaving={isSaving}
+        closeLabel={t('common.close')}
+        saveLabel={t('common.save')}
+      />
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
         {/* Feeding Type Selection */}
-        <View style={styles.segmentedControl}>
+        <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-card">
           {feedingTypes.map((type, index) => (
-            <Pressable
+            <Badge
               key={type.key}
+              variant={feedingType === type.key ? 'default' : 'secondary'}
               onPress={() => setFeedingType(type.key)}
-              style={[
-                styles.segment,
-                feedingType === type.key && styles.segmentActive,
-                index > 0 && styles.segmentBorder,
-              ]}>
-              <MaterialCommunityIcons
-                name={type.icon}
-                size={20}
-                color={feedingType === type.key ? '#FFF' : '#666'}
-              />
-              <Text style={[styles.segmentText, feedingType === type.key && styles.segmentTextActive]}>
-                {t(type.labelKey)}
-              </Text>
-            </Pressable>
+              className={`flex-1 rounded-none ${index > 0 ? 'border-l border-border' : ''} ${feedingType === type.key ? 'bg-primary' : 'bg-card'}`}
+              accessibilityLabel={t(type.labelKey)}
+              accessibilityState={{ selected: feedingType === type.key }}>
+              <View className="flex-row items-center justify-center gap-1.5 py-3">
+                <MaterialCommunityIcons
+                  name={type.icon}
+                  size={20}
+                  color={
+                    feedingType === type.key
+                      ? '#FFFFFF'
+                      : colorScheme === 'dark'
+                        ? '#9CA3AF'
+                        : '#666666'
+                  }
+                />
+                <Text
+                  className={
+                    feedingType === type.key
+                      ? 'text-sm font-semibold text-white'
+                      : 'text-sm font-semibold text-muted-foreground'
+                  }>
+                  {t(type.labelKey)}
+                </Text>
+              </View>
+            </Badge>
           ))}
         </View>
 
@@ -306,26 +319,23 @@ export default function FeedingScreen() {
 
         {/* Schedule Reminder Button - only show if time is in future and not editing */}
         {!isEditing && isFuture && (
-          <View style={styles.scheduleContainer}>
+          <View className="mb-6 gap-2">
             <Pressable
               onPress={handleScheduleReminder}
-              style={[
-                styles.scheduleButton,
-                scheduledNotificationId && styles.scheduleButtonActive,
-              ]}>
+              className={`flex-row items-center justify-center gap-2 rounded-xl px-5 py-3.5 shadow-sm ${scheduledNotificationId ? 'bg-muted-foreground' : 'bg-blue-500'}`}>
               <MaterialCommunityIcons
                 name={scheduledNotificationId ? 'bell-off' : 'bell'}
                 size={20}
-                color="#FFF"
+                color="#FFFFFF"
               />
-              <Text style={styles.scheduleButtonText}>
+              <Text className="text-base font-semibold text-white">
                 {scheduledNotificationId
                   ? t('feeding.schedule.cancelSchedule')
                   : t('feeding.schedule.enable')}
               </Text>
             </Pressable>
             {scheduledNotificationId && (
-              <Text style={styles.scheduleStatusText}>
+              <Text className="text-center text-sm italic text-muted-foreground">
                 {t('feeding.schedule.scheduledFor')}: {startTime.toLocaleString()}
               </Text>
             )}
@@ -368,136 +378,15 @@ export default function FeedingScreen() {
         )}
 
         {/* Notes */}
-        <TextInput
-          style={styles.notesInput}
+        <Input
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
-          placeholderTextColor="#C4C4C4"
           multiline
+          numberOfLines={4}
+          className="mt-3 min-h-20"
         />
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  closeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D2D2D',
-  },
-  saveButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  saveButtonDisabled: {
-    opacity: 0.5,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    borderRadius: 12,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  segment: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    gap: 6,
-  },
-  segmentActive: {
-    backgroundColor: '#FF5C8D',
-  },
-  segmentBorder: {
-    borderLeftWidth: 1,
-    borderLeftColor: '#E0E0E0',
-  },
-  segmentText: {
-    color: '#666',
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  segmentTextActive: {
-    color: '#FFF',
-  },
-  notesInput: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F9F9F9',
-    minHeight: 80,
-    textAlignVertical: 'top',
-    fontSize: 16,
-    color: '#2D2D2D',
-    marginTop: 12,
-  },
-  scheduleContainer: {
-    marginBottom: 24,
-    gap: 8,
-  },
-  scheduleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2196F3',
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    gap: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  scheduleButtonActive: {
-    backgroundColor: '#999',
-  },
-  scheduleButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  scheduleStatusText: {
-    fontSize: 13,
-    color: '#666',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-});
-

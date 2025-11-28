@@ -2,12 +2,24 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
+import { Button } from '@/components/ui/button';
 import { DatePickerField } from '@/components/ui/DatePickerField';
-import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { BABY_PROFILES_QUERY_KEY, BABY_PROFILE_QUERY_KEY, babyProfileByIdKey } from '@/constants/query-keys';
-import { BabyProfilePayload, Gender, getBabyProfileById, saveBabyProfile } from '@/database/baby-profile';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Text } from '@/components/ui/text';
+import {
+  BABY_PROFILES_QUERY_KEY,
+  BABY_PROFILE_QUERY_KEY,
+  babyProfileByIdKey,
+} from '@/constants/query-keys';
+import {
+  BabyProfilePayload,
+  Gender,
+  getBabyProfileById,
+  saveBabyProfile,
+} from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 const genderSegments: { key: Gender; labelKey: string }[] = [
@@ -44,9 +56,6 @@ export default function ProfileEditScreen() {
     }
   }, [existingProfile]);
 
-
-
-
   const handleSave = async () => {
     if (isSaving) return;
 
@@ -74,40 +83,44 @@ export default function ProfileEditScreen() {
 
   if (isLoading && numericBabyId) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>{t('common.loadingProfile')}</Text>
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="font-semibold text-primary">{t('common.loadingProfile')}</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.heading}>
+    <View className="flex-1 bg-background">
+      <ScrollView
+        contentContainerClassName="pt-15 pb-10 px-6 gap-3"
+        showsVerticalScrollIndicator={false}>
+        <Text className="mb-3 text-center text-3xl font-bold text-foreground">
           {numericBabyId ? t('profileEdit.editTitle') : t('profileEdit.createTitle')}
         </Text>
-        <View style={styles.avatarWrapper}>
-          <Image source={require('@/assets/images/icon.png')} style={styles.avatar} />
-          <Text style={styles.addPhoto}>{t('common.addPhoto')}</Text>
+        <View className="mb-3 items-center">
+          <Image source={require('@/assets/images/icon.png')} className="w-30 h-30" />
+          <Text className="mt-2 text-accent">{t('common.addPhoto')}</Text>
         </View>
 
-        <Text style={styles.label}>{t('common.nickname')}</Text>
-        <TextInput
+        <Label className="mt-2 font-semibold text-muted-foreground">{t('common.nickname')}</Label>
+        <Input
           value={nickname}
           onChangeText={setNickname}
-          style={styles.input}
           placeholder={t('common.nicknamePlaceholder')}
-          placeholderTextColor="#C4C4C4"
+          className="mt-1"
         />
 
-        <Text style={styles.label}>{t('common.gender')}</Text>
-        <View style={styles.segmentedControl}>
+        <Label className="mt-2 font-semibold text-muted-foreground">{t('common.gender')}</Label>
+        <View className="mt-1 flex-row overflow-hidden rounded-2xl border border-input bg-white">
           {genderSegments.map((segment) => (
             <Pressable
               key={segment.key}
               onPress={() => setGender(segment.key)}
-              style={[styles.segment, gender === segment.key && styles.segmentActive]}>
-              <Text style={[styles.segmentText, gender === segment.key && styles.segmentTextActive]}>
+              className={`flex-1 items-center py-2.5 ${gender === segment.key ? 'bg-accent' : ''}`}
+              accessibilityRole="button"
+              accessibilityState={{ selected: gender === segment.key }}>
+              <Text
+                className={`font-semibold ${gender === segment.key ? 'text-white' : 'text-muted-foreground'}`}>
                 {t(segment.labelKey)}
               </Text>
             </Pressable>
@@ -118,103 +131,25 @@ export default function ProfileEditScreen() {
 
         <DatePickerField label={t('common.dueDate')} value={dueDate} onChange={setDueDate} />
 
-        <Text style={styles.infoText}>
+        <Text className="mt-2 text-sm leading-tight text-muted-foreground">
           {t('profileEdit.info')}
         </Text>
 
-        <PrimaryButton
-          label={numericBabyId ? t('common.saveChanges') : t('common.continue')}
+        <Button
+          variant="default"
+          size="lg"
           onPress={handleSave}
-          loading={isSaving}
-        />
+          disabled={isSaving}
+          className="mt-4 rounded-pill">
+          <Text className="text-lg font-bold text-white">
+            {isSaving
+              ? t('common.saving')
+              : numericBabyId
+                ? t('common.saveChanges')
+                : t('common.continue')}
+          </Text>
+        </Button>
       </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF5F7',
-  },
-  scrollContent: {
-    paddingTop: 60,
-    paddingBottom: 40,
-    paddingHorizontal: 24,
-    gap: 12,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF5F7',
-  },
-  loadingText: {
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  heading: {
-    fontSize: 26,
-    textAlign: 'center',
-    fontWeight: '700',
-    color: '#2D2D2D',
-    marginBottom: 12,
-  },
-  avatarWrapper: {
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-  },
-  addPhoto: {
-    color: '#FF728D',
-    marginTop: 8,
-  },
-  label: {
-    fontWeight: '600',
-    color: '#757575',
-    marginTop: 8,
-  },
-  input: {
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E0D5FF',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFF',
-    marginTop: 4,
-  },
-  segmentedControl: {
-    flexDirection: 'row',
-    borderRadius: 16,
-    backgroundColor: '#FFF',
-    borderWidth: 1,
-    borderColor: '#E0D5FF',
-    overflow: 'hidden',
-    marginTop: 4,
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  segmentActive: {
-    backgroundColor: '#FF728D',
-  },
-  segmentText: {
-    color: '#A4A4A4',
-    fontWeight: '600',
-  },
-  segmentTextActive: {
-    color: '#FFF',
-  },
-  infoText: {
-    fontSize: 13,
-    color: '#999',
-    lineHeight: 18,
-    marginTop: 8,
-  },
-});
-

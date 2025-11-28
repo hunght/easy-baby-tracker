@@ -1,23 +1,21 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
-} from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 
 import { BabyProfileStep } from '@/components/BabyProfileStep';
 import { ConcernsStep } from '@/components/ConcernsStep';
 import { FeaturesStep } from '@/components/FeaturesStep';
 import { WelcomeStep } from '@/components/WelcomeStep';
+import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
-import { BabyProfilePayload, getActiveBabyProfile, getBabyProfiles, saveOnboardingProfile } from '@/database/baby-profile';
+import {
+  BabyProfilePayload,
+  getActiveBabyProfile,
+  getBabyProfiles,
+  saveOnboardingProfile,
+} from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
-
-
 
 export default function OnboardingScreen() {
   const { t } = useLocalization();
@@ -59,7 +57,9 @@ export default function OnboardingScreen() {
   };
 
   const toggleConcern = (id: string) =>
-    setSelectedConcerns((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
+    setSelectedConcerns((prev) =>
+      prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]
+    );
 
   const headerText = useMemo(() => {
     switch (step) {
@@ -76,9 +76,9 @@ export default function OnboardingScreen() {
 
   if (profileLoading || profilesLoading || profile || profiles.length > 0) {
     return (
-      <View style={styles.loadingContainer}>
+      <View className="flex-1 items-center justify-center gap-3 bg-background">
         <ActivityIndicator size="large" color="#FF5C8D" />
-        <Text style={styles.loadingText}>
+        <Text className="font-semibold text-primary">
           {profile
             ? t('common.loadingDashboard')
             : profiles.length > 0
@@ -90,14 +90,9 @@ export default function OnboardingScreen() {
   }
 
   return (
-    <View style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container} bounces={false}>
-        {step === 0 && (
-          <WelcomeStep
-            headerText={headerText}
-            onContinue={nextStep}
-          />
-        )}
+    <View className="flex-1 bg-background">
+      <ScrollView contentContainerClassName="pt-15 pb-10 px-6 gap-6" bounces={false}>
+        {step === 0 && <WelcomeStep headerText={headerText} onContinue={nextStep} />}
         {step === 1 && (
           <ConcernsStep
             headerText={headerText}
@@ -118,31 +113,3 @@ export default function OnboardingScreen() {
     </View>
   );
 }
-
-
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#FFF5F7',
-  },
-  container: {
-    paddingTop: 60,
-    paddingBottom: 40,
-    paddingHorizontal: 24,
-    gap: 24,
-  },
-  loadingContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFF5F7',
-    gap: 12,
-  },
-  loadingText: {
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-});
-
-

@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useSSO, type StartSSOFlowParams } from '@clerk/clerk-expo';
 import * as AuthSession from 'expo-auth-session';
-import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useColorScheme } from 'nativewind';
 import * as React from 'react';
@@ -46,7 +45,7 @@ export function SocialConnections() {
     return async () => {
       try {
         // Start the authentication process by calling `startSSOFlow()`
-        const { createdSessionId, setActive, signIn } = await startSSOFlow({
+        const { createdSessionId, setActive } = await startSSOFlow({
           strategy,
           // For web, defaults to current path
           // For native, you must pass a scheme, like AuthSession.makeRedirectUri({ scheme, path })
@@ -96,17 +95,19 @@ export function SocialConnections() {
   );
 }
 
+function UseWarmUpBrowser() {
+  React.useEffect(() => {
+    // Preloads the browser for Android devices to reduce authentication load time
+    // See: https://docs.expo.dev/guides/authentication/#improving-user-experience
+    void WebBrowser.warmUpAsync();
+    return () => {
+      // Cleanup: closes browser when component unmounts
+      void WebBrowser.coolDownAsync();
+    };
+  }, []);
+}
+
 const useWarmUpBrowser = Platform.select({
-  web: () => {},
-  default: () => {
-    React.useEffect(() => {
-      // Preloads the browser for Android devices to reduce authentication load time
-      // See: https://docs.expo.dev/guides/authentication/#improving-user-experience
-      void WebBrowser.warmUpAsync();
-      return () => {
-        // Cleanup: closes browser when component unmounts
-        void WebBrowser.coolDownAsync();
-      };
-    }, []);
-  },
+  web: () => null,
+  default: UseWarmUpBrowser,
 });

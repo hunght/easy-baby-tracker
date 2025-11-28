@@ -41,11 +41,17 @@ module.exports = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // BabyEase brand-specific colors
+        mint: 'hsl(var(--mint))',
+        info: 'hsl(var(--info))',
+        lavender: 'hsl(var(--lavender))',
       },
       borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+        // BabyEase branding: cards=12px, buttons=8px, pills=24px
+        lg: 'var(--radius)', // 12px for cards
+        md: 'calc(var(--radius) - 4px)', // 8px for buttons
+        sm: 'calc(var(--radius) - 8px)', // 4px
+        pill: '1.5rem', // 24px for pills/badges (fully rounded)
       },
       borderWidth: {
         hairline: hairlineWidth(),

@@ -1,32 +1,20 @@
 import { Link } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Text } from '@/components/ui/text';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 export default function ModalScreen() {
   const { t } = useLocalization();
 
   return (
-    <ThemedView style={styles.container} testID="modal-container">
-      <ThemedText type="title" testID="modal-title">{t('modal.title')}</ThemedText>
-      <Link href="/" dismissTo style={styles.link} testID="modal-close-button">
-        <ThemedText type="link">{t('modal.link')}</ThemedText>
+    <View className="flex-1 items-center justify-center p-5" testID="modal-container">
+      <Text className="mb-4 text-2xl font-bold text-foreground" testID="modal-title">
+        {t('modal.title')}
+      </Text>
+      <Link href="/" dismissTo className="mt-4 py-4" testID="modal-close-button">
+        <Text className="text-primary underline">{t('modal.link')}</Text>
       </Link>
-    </ThemedView>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-});

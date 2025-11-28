@@ -1,18 +1,13 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import React, { useMemo } from 'react';
-import {
-  ActivityIndicator,
-  SectionList,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, SectionList, View } from 'react-native';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
 import { TimelineFilters } from '@/components/timeline/TimelineFilters';
 import { TimelineItem } from '@/components/timeline/TimelineItem';
 import { useNotification } from '@/components/ui/NotificationContext';
+import { Text } from '@/components/ui/text';
 import {
   DIAPER_CHANGES_QUERY_KEY,
   DIARY_ENTRIES_QUERY_KEY,
@@ -48,8 +43,7 @@ export default function TimelineScreen() {
   } = useInfiniteQuery({
     queryKey: [...TIMELINE_ACTIVITIES_QUERY_KEY, filter],
     queryFn: async ({ pageParam }) => {
-      const beforeTime =
-        pageParam ?? Math.floor(Date.now() / 1000) + 86400; // Future buffer
+      const beforeTime = pageParam ?? Math.floor(Date.now() / 1000) + 86400; // Future buffer
       return getTimelineActivities({
         beforeTime,
         limit: 20,
@@ -162,13 +156,13 @@ export default function TimelineScreen() {
   const sections = groupActivitiesByDate(activities);
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1 bg-background">
       <TabPageHeader title={t('timeline.title')} />
 
       <TimelineFilters selectedFilter={filter} onSelectFilter={setFilter} />
 
       {isFetching && !isRefetching && activities.length === 0 ? (
-        <View style={styles.centerContainer}>
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#6200EE" />
         </View>
       ) : (
@@ -177,26 +171,28 @@ export default function TimelineScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <TimelineItem item={item} onDelete={handleDelete} />}
           renderSectionHeader={({ section: { title } }) => (
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionHeaderText}>{title}</Text>
+            <View className="bg-background px-6 py-3">
+              <Text className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                {title}
+              </Text>
             </View>
           )}
-          contentContainerStyle={styles.listContent}
+          contentContainerClassName="pb-6"
           refreshing={isRefetching}
           onRefresh={() => refetch()}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
           ListFooterComponent={
             isFetchingNextPage ? (
-              <View style={styles.footerLoader}>
+              <View className="items-center py-4">
                 <ActivityIndicator size="small" color="#6200EE" />
               </View>
             ) : null
           }
           ListEmptyComponent={
             !isFetching ? (
-              <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No activities found</Text>
+              <View className="items-center p-10">
+                <Text className="text-base text-muted-foreground">No activities found</Text>
               </View>
             ) : null
           }
@@ -205,43 +201,3 @@ export default function TimelineScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F6F2FF',
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContent: {
-    paddingBottom: 24,
-  },
-  sectionHeader: {
-    backgroundColor: '#F6F2FF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-  },
-  sectionHeaderText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#666',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  footerLoader: {
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  emptyContainer: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#888',
-    fontSize: 16,
-  },
-});
-

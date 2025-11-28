@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { useSignIn } from '@clerk/clerk-expo';
-import { router } from 'expo-router';
 import * as React from 'react';
 import { TextInput, View } from 'react-native';
 
