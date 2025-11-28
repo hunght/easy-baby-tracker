@@ -174,27 +174,15 @@ export default function TrackingScreen() {
                   key={baby.id}
                   variant={isActive ? 'default' : 'secondary'}
                   onPress={() => handleSelectBaby(baby.id)}
-                  className={
-                    isActive
-                      ? 'border-[#FF5C8D] bg-[#FF5C8D] px-4 py-2.5'
-                      : 'border-[#E5D8FF] bg-[#F2ECFF] px-4 py-2.5'
-                  }
+                  className="px-4 py-2.5"
                   accessibilityLabel={t('tracking.accessibility.selectBaby', {
                     defaultValue: 'Select %{name}',
                     params: { name: baby.nickname },
                   })}
                   accessibilityState={{ selected: isActive, disabled: switchingBabyId != null }}>
                   <View className="gap-0.5">
-                    <Text
-                      className={
-                        isActive
-                          ? 'text-sm font-semibold text-white'
-                          : 'text-sm font-semibold text-[#5B4B7B]'
-                      }>
-                      {baby.nickname}
-                    </Text>
-                    <Text
-                      className={isActive ? 'text-xs text-[#FFE8F0]' : 'text-xs text-[#7C6A99]'}>
+                    <Text className="text-sm font-semibold">{baby.nickname}</Text>
+                    <Text className="text-xs opacity-80">
                       {t('common.monthsOld', { params: { count: tabMonths } })}
                     </Text>
                   </View>
