@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { useLocalization } from '@/localization/LocalizationProvider';
 
@@ -85,12 +85,14 @@ export function BreastFeedingForm({
   if (isEditing || isPast) {
     // Edit Mode or Past Time: Manual Inputs (forgot to record)
     return (
-      <View style={styles.manualInputContainer}>
-        <View style={styles.manualInputRow}>
-          <Text style={styles.fieldLabel}>{t('common.leftShort')}</Text>
-          <View style={styles.durationInputWrapper}>
+      <View className="mb-6 gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-medium text-muted-foreground">
+            {t('common.leftShort')}
+          </Text>
+          <View className="flex-row items-center gap-2">
             <TextInput
-              style={styles.durationInput}
+              className="w-[60px] rounded-lg border border-border bg-[#F9F9F9] px-3 py-2 text-center text-base text-foreground"
               value={Math.floor(leftDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -99,14 +101,16 @@ export function BreastFeedingForm({
               keyboardType="number-pad"
               placeholder="0"
             />
-            <Text style={styles.unitText}>{t('common.unitMin')}</Text>
+            <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
           </View>
         </View>
-        <View style={styles.manualInputRow}>
-          <Text style={styles.fieldLabel}>{t('common.rightShort')}</Text>
-          <View style={styles.durationInputWrapper}>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-medium text-muted-foreground">
+            {t('common.rightShort')}
+          </Text>
+          <View className="flex-row items-center gap-2">
             <TextInput
-              style={styles.durationInput}
+              className="w-[60px] rounded-lg border border-border bg-[#F9F9F9] px-3 py-2 text-center text-base text-foreground"
               value={Math.floor(rightDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -115,12 +119,16 @@ export function BreastFeedingForm({
               keyboardType="number-pad"
               placeholder="0"
             />
-            <Text style={styles.unitText}>{t('common.unitMin')}</Text>
+            <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
           </View>
         </View>
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{t('common.totalDuration')}</Text>
-          <Text style={styles.durationText}>{formatTime(leftDuration + rightDuration)}</Text>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-medium text-muted-foreground">
+            {t('common.totalDuration')}
+          </Text>
+          <Text className="text-base text-foreground">
+            {formatTime(leftDuration + rightDuration)}
+          </Text>
         </View>
       </View>
     );
@@ -129,36 +137,40 @@ export function BreastFeedingForm({
   // Create Mode (Now): Timers
   return (
     <>
-      <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>{t('common.duration')}</Text>
-        <Text style={styles.durationText}>
+      <View className="mb-3 flex-row items-center justify-between">
+        <Text className="text-base font-medium text-muted-foreground">{t('common.duration')}</Text>
+        <Text className="text-base text-foreground">
           {t('common.seconds', { params: { value: leftDuration + rightDuration } })}
         </Text>
       </View>
 
-      <View style={styles.timersContainer}>
-        <View style={styles.timerWrapper}>
-          <Pressable style={styles.timerButton} onPress={toggleLeftTimer}>
+      <View className="my-6 flex-row justify-around">
+        <View className="items-center gap-3">
+          <Pressable
+            className="h-[70px] w-[70px] items-center justify-center rounded-full bg-accent"
+            onPress={toggleLeftTimer}>
             <MaterialCommunityIcons
               name={leftTimerActive ? 'pause' : 'play'}
               size={24}
               color="#FFF"
             />
           </Pressable>
-          <Text style={styles.timerLabel}>
+          <Text className="text-base font-medium text-foreground">
             {t('common.leftShort')}: {formatTime(leftDuration)}
           </Text>
         </View>
 
-        <View style={styles.timerWrapper}>
-          <Pressable style={styles.timerButton} onPress={toggleRightTimer}>
+        <View className="items-center gap-3">
+          <Pressable
+            className="h-[70px] w-[70px] items-center justify-center rounded-full bg-accent"
+            onPress={toggleRightTimer}>
             <MaterialCommunityIcons
               name={rightTimerActive ? 'pause' : 'play'}
               size={24}
               color="#FFF"
             />
           </Pressable>
-          <Text style={styles.timerLabel}>
+          <Text className="text-base font-medium text-foreground">
             {t('common.rightShort')}: {formatTime(rightDuration)}
           </Text>
         </View>
@@ -166,74 +178,3 @@ export function BreastFeedingForm({
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  durationText: {
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  manualInputContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  manualInputRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  durationInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  durationInput: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    width: 60,
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  unitText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  timersContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 24,
-  },
-  timerWrapper: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  timerButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#FF5C8D',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timerLabel: {
-    fontSize: 16,
-    color: '#2D2D2D',
-    fontWeight: '500',
-  },
-});
-

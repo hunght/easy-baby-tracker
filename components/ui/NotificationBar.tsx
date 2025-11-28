@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Text, TouchableOpacity, View } from 'react-native';
 
 type NotificationType = 'success' | 'error' | 'info';
 
@@ -95,57 +95,20 @@ export function NotificationBar({
 
   return (
     <Animated.View
-      style={[
-        styles.container,
-        {
-          transform: [{ translateY: slideAnim }],
-          opacity: opacityAnim,
-        },
-      ]}>
-      <View style={[styles.notification, { backgroundColor: getBackgroundColor() }]}>
+      className="absolute left-0 right-0 top-[60px] z-[9999] px-4"
+      style={{
+        transform: [{ translateY: slideAnim }],
+        opacity: opacityAnim,
+      }}>
+      <View
+        className="flex-row items-center gap-3 rounded-xl px-4 py-3.5 shadow-lg shadow-black/25"
+        style={{ backgroundColor: getBackgroundColor() }}>
         <MaterialCommunityIcons name={getIcon()} size={24} color="#FFF" />
-        <Text style={styles.message}>{message}</Text>
-        <TouchableOpacity onPress={handleDismiss} style={styles.closeButton}>
+        <Text className="flex-1 text-[15px] font-semibold text-white">{message}</Text>
+        <TouchableOpacity onPress={handleDismiss} className="p-1">
           <MaterialCommunityIcons name="close" size={20} color="#FFF" />
         </TouchableOpacity>
       </View>
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    top: 60,
-    left: 0,
-    right: 0,
-    zIndex: 9999,
-    paddingHorizontal: 16,
-  },
-  notification: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    gap: 12,
-  },
-  message: {
-    flex: 1,
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  closeButton: {
-    padding: 4,
-  },
-});
-

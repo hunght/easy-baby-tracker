@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
 
 import { useLocalization } from '@/localization/LocalizationProvider';
 
@@ -69,26 +69,30 @@ export function SolidsFeedingForm({
 
   return (
     <>
-      <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>{t('common.ingredient')}</Text>
-        <Text style={styles.ingredientText}>{ingredient || t('common.undefined')}</Text>
+      <View className="mb-3 flex-row items-center justify-between">
+        <Text className="text-base font-medium text-muted-foreground">
+          {t('common.ingredient')}
+        </Text>
+        <Text className="text-base font-semibold text-accent">
+          {ingredient || t('common.undefined')}
+        </Text>
       </View>
       <TextInput
-        style={styles.input}
+        className="mb-6 rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground"
         value={ingredient}
         onChangeText={setIngredient}
         placeholder={t('feeding.ingredientPlaceholder')}
         placeholderTextColor="#C4C4C4"
       />
 
-      <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>{t('common.amount')}</Text>
-        <Text style={styles.amountText}>
+      <View className="mb-3 flex-row items-center justify-between">
+        <Text className="text-base font-medium text-muted-foreground">{t('common.amount')}</Text>
+        <Text className="text-base font-semibold text-accent">
           {amountGrams.toFixed(1)} {t('common.unitG')}
         </Text>
       </View>
       <Slider
-        style={styles.slider}
+        className="mb-2 h-10 w-full"
         minimumValue={0}
         maximumValue={350}
         step={5}
@@ -98,20 +102,20 @@ export function SolidsFeedingForm({
         maximumTrackTintColor="#E0E0E0"
         thumbTintColor="#FFF"
       />
-      <View style={styles.sliderLabels}>
+      <View className="mb-6 flex-row justify-between px-1">
         {[0, 50, 100, 150, 200, 250, 300, 350].map((value) => (
-          <Text key={value} style={styles.sliderLabel}>
+          <Text key={value} className="text-[10px] text-[#999]">
             {value}
           </Text>
         ))}
       </View>
 
-      <View style={styles.fieldRow}>
-        <Text style={styles.fieldLabel}>{t('common.duration')}</Text>
+      <View className="mb-3 flex-row items-center justify-between">
+        <Text className="text-base font-medium text-muted-foreground">{t('common.duration')}</Text>
         {isEditing || isPast ? (
-          <View style={styles.durationInputWrapper}>
+          <View className="flex-row items-center gap-2">
             <TextInput
-              style={styles.durationInput}
+              className="w-[60px] rounded-lg border border-border bg-[#F9F9F9] px-3 py-2 text-center text-base text-foreground"
               value={Math.floor(solidsDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -120,119 +124,30 @@ export function SolidsFeedingForm({
               keyboardType="number-pad"
               placeholder="0"
             />
-            <Text style={styles.unitText}>{t('common.unitMin')}</Text>
+            <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
           </View>
         ) : (
-          <Text style={styles.durationText}>
+          <Text className="text-base text-foreground">
             {t('common.seconds', { params: { value: solidsDuration } })}
           </Text>
         )}
       </View>
       {!isEditing && !isPast && (
-        <View style={styles.timerWrapper}>
-          <Pressable style={styles.timerButton} onPress={toggleSolidsTimer}>
+        <View className="items-center gap-3">
+          <Pressable
+            className="h-[70px] w-[70px] items-center justify-center rounded-full bg-accent"
+            onPress={toggleSolidsTimer}>
             <MaterialCommunityIcons
               name={solidsTimerActive ? 'pause' : 'play'}
               size={24}
               color="#FFF"
             />
           </Pressable>
-          <Text style={styles.timerLabel}>{formatTime(solidsDuration)}</Text>
+          <Text className="text-base font-medium text-foreground">
+            {formatTime(solidsDuration)}
+          </Text>
         </View>
       )}
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  fieldLabel: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  ingredientText: {
-    fontSize: 16,
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  amountText: {
-    fontSize: 16,
-    color: '#FF5C8D',
-    fontWeight: '600',
-  },
-  durationText: {
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  input: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFF',
-    marginBottom: 24,
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  slider: {
-    width: '100%',
-    height: 40,
-    marginBottom: 8,
-  },
-  sliderLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 4,
-    marginBottom: 24,
-  },
-  sliderLabel: {
-    fontSize: 10,
-    color: '#999',
-  },
-  durationInputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  durationInput: {
-    backgroundColor: '#F9F9F9',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    width: 60,
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#2D2D2D',
-  },
-  unitText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  timerWrapper: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  timerButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#FF5C8D',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timerLabel: {
-    fontSize: 16,
-    color: '#2D2D2D',
-    fontWeight: '500',
-  },
-});
-

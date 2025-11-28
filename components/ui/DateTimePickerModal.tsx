@@ -1,6 +1,6 @@
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, Text, View } from 'react-native';
 
 import { useLocalization } from '@/localization/LocalizationProvider';
 
@@ -130,65 +130,24 @@ export function DateTimePickerModal({
     } else {
       // Single mode (date or time)
       return (
-        <DateTimePicker
-          value={value}
-          mode={mode}
-          display="default"
-          onChange={handleDateChange}
-        />
+        <DateTimePicker value={value} mode={mode} display="default" onChange={handleDateChange} />
       );
     }
   }
 
   // On iOS, show the modal with spinner
   return (
-    <Modal
-      transparent={true}
-      animationType="slide"
-      visible={visible}
-      onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
+    <Modal transparent={true} animationType="slide" visible={visible} onRequestClose={onClose}>
+      <View className="flex-1 justify-end bg-black/50">
+        <View className="rounded-t-[20px] bg-white pb-[34px]">
+          <View className="flex-row justify-end border-b border-border p-4">
             <Pressable onPress={onClose}>
-              <Text style={styles.modalDoneButton}>{t('common.done')}</Text>
+              <Text className="text-[17px] font-semibold text-accent">{t('common.done')}</Text>
             </Pressable>
           </View>
-          <DateTimePicker
-            value={value}
-            mode={mode}
-            display="spinner"
-            onChange={onChange}
-          />
+          <DateTimePicker value={value} mode={mode} display="spinner" onChange={onChange} />
         </View>
       </View>
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 34,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  modalDoneButton: {
-    color: '#FF5C8D',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-});
-

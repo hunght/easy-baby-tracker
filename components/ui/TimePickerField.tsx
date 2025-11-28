@@ -1,6 +1,6 @@
 import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { DateTimePickerModal } from './DateTimePickerModal';
@@ -45,17 +45,19 @@ export function TimePickerField({
   const showHint = !isEditing;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.fieldRow}>
+    <View className="mb-3">
+      <View className="flex-row items-center justify-between">
         <View>
-          <Text style={styles.fieldLabel}>{label || t('common.time')}</Text>
-          <Text style={styles.timeValue}>{formatDateTime(value)}</Text>
+          <Text className="text-base font-medium text-muted-foreground">
+            {label || t('common.time')}
+          </Text>
+          <Text className="mt-1 text-[15px] text-foreground">{formatDateTime(value)}</Text>
           {showHint && (
-            <Text style={styles.timeHint}>{t('common.defaultsToNow')}</Text>
+            <Text className="mt-0.5 text-xs italic text-[#999]">{t('common.defaultsToNow')}</Text>
           )}
         </View>
         <Pressable onPress={() => setShowTimePicker(true)}>
-          <Text style={styles.setTimeButton}>{t('common.setTime')}</Text>
+          <Text className="text-base font-semibold text-accent">{t('common.setTime')}</Text>
         </Pressable>
       </View>
       <DateTimePickerModal
@@ -67,36 +69,3 @@ export function TimePickerField({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 12,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  fieldLabel: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  timeValue: {
-    fontSize: 15,
-    color: '#2D2D2D',
-    marginTop: 4,
-  },
-  timeHint: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 2,
-    fontStyle: 'italic',
-  },
-  setTimeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
-

@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { DateTimePickerModal } from './DateTimePickerModal';
@@ -90,21 +90,29 @@ export function TimeField({
 
   return (
     <>
-      <View style={styles.container}>
-        <View style={styles.fieldRow}>
-          <Text style={styles.fieldLabel}>{label}</Text>
-          <Pressable onPress={() => setShowTimePicker(true)} style={styles.timeButton}>
-            <Text style={styles.setTimeButton}>{displayText}</Text>
-            <View style={[styles.stateBadge, { backgroundColor: stateInfo.color }]}>
+      <View className="mb-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-medium text-muted-foreground">{label}</Text>
+          <Pressable
+            onPress={() => setShowTimePicker(true)}
+            className="flex-row items-center gap-2">
+            <Text className="text-base font-semibold text-accent">{displayText}</Text>
+            <View
+              className="flex-row items-center gap-1 rounded-xl px-2 py-1"
+              style={{ backgroundColor: stateInfo.color }}>
               <MaterialCommunityIcons name={stateInfo.icon} size={12} color="#FFF" />
-              <Text style={styles.stateBadgeText}>{stateInfo.label}</Text>
+              <Text className="text-[11px] font-semibold text-white">{stateInfo.label}</Text>
             </View>
           </Pressable>
         </View>
 
         {showHelperText && (
-          <View style={[styles.helperContainer, { borderLeftColor: stateInfo.color }]}>
-            <Text style={styles.helperText}>{stateInfo.helperText}</Text>
+          <View
+            className="mt-2 rounded border-l-[3px] bg-[#F9F9F9] py-2 pl-3"
+            style={{ borderLeftColor: stateInfo.color }}>
+            <Text className="text-[13px] leading-[18px] text-muted-foreground">
+              {stateInfo.helperText}
+            </Text>
           </View>
         )}
       </View>
@@ -119,56 +127,3 @@ export function TimeField({
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 12,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  fieldLabel: {
-    fontSize: 16,
-    color: '#666',
-    fontWeight: '500',
-  },
-  timeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  setTimeButton: {
-    color: '#FF5C8D',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  stateBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  stateBadgeText: {
-    color: '#FFF',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  helperContainer: {
-    marginTop: 8,
-    paddingLeft: 12,
-    borderLeftWidth: 3,
-    paddingVertical: 8,
-    backgroundColor: '#F9F9F9',
-    borderRadius: 4,
-  },
-  helperText: {
-    fontSize: 13,
-    color: '#666',
-    lineHeight: 18,
-  },
-});
-
