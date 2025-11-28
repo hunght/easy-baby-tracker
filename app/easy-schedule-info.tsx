@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui/text';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import {
   EASY_FORMULA_RULES,
   EasyFormulaRuleId,
@@ -11,11 +11,11 @@ import {
 } from '@/lib/easy-schedule-generator';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
-const TODDLER_WAKE_WINDOW_KEYS = [
+const TODDLER_WAKE_WINDOW_KEYS: string[] = [
   'easySchedule.toddlerExtras.wakeWindows.morning',
   'easySchedule.toddlerExtras.wakeWindows.afternoon',
   'easySchedule.toddlerExtras.wakeWindows.nap',
-] as const;
+];
 
 const TODDLER_SAMPLE_DAY_KEYS: readonly { titleKey: string; detailKey: string }[] = [
   {
@@ -50,28 +50,29 @@ const TODDLER_SAMPLE_DAY_KEYS: readonly { titleKey: string; detailKey: string }[
     titleKey: 'easySchedule.toddlerExtras.sampleDay.nightSleep.title',
     detailKey: 'easySchedule.toddlerExtras.sampleDay.nightSleep.detail',
   },
-] as const;
+];
 
-const TODDLER_SAMPLE_OUTPUT_ROWS = ['wake630', 'wake700', 'wake730'] as const;
+const TODDLER_SAMPLE_OUTPUT_ROWS: string[] = ['wake630', 'wake700', 'wake730'];
 
 const TODDLER_NOTES_KEYS = [
   'easySchedule.toddlerExtras.notes.singleNap',
   'easySchedule.toddlerExtras.notes.shiftNap',
   'easySchedule.toddlerExtras.notes.shortenNap',
   'easySchedule.toddlerExtras.notes.totalSleep',
-] as const;
+];
 
 export default function EasyScheduleInfoScreen() {
   const { t } = useLocalization();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const brandColors = useBrandColor();
   const params = useLocalSearchParams<{ ruleId?: EasyFormulaRuleId }>();
   const requestedRuleId = params.ruleId;
   const availableRuleIds = EASY_FORMULA_RULES.map((rule) => rule.id);
   const fallbackRuleId: EasyFormulaRuleId = 'newborn';
-  const ruleId = availableRuleIds.includes(requestedRuleId as EasyFormulaRuleId)
-    ? (requestedRuleId as EasyFormulaRuleId)
-    : fallbackRuleId;
+  const ruleId: EasyFormulaRuleId =
+    requestedRuleId && availableRuleIds.includes(requestedRuleId)
+      ? requestedRuleId
+      : fallbackRuleId;
 
   const formulaRule = getEasyFormulaRuleById(ruleId);
 
@@ -89,7 +90,7 @@ export default function EasyScheduleInfoScreen() {
     .map(({ text }) => text);
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <View className="flex-1 bg-background">
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-border bg-card px-5 py-4">
         <Pressable
@@ -97,7 +98,7 @@ export default function EasyScheduleInfoScreen() {
           className="p-1"
           accessibilityRole="button"
           accessibilityLabel={t('common.close')}>
-          <Ionicons name="close" size={28} color="#2D2D2D" />
+          <Ionicons name="close" size={28} color={brandColors.colors.black} />
         </Pressable>
         <Text className="text-lg font-semibold text-foreground">{t('easySchedule.infoTitle')}</Text>
         <View className="w-7" />
@@ -105,14 +106,14 @@ export default function EasyScheduleInfoScreen() {
 
       <ScrollView className="flex-1" contentContainerClassName="p-5">
         {/* Title Card */}
-        <View className="mb-4 items-center rounded-2xl bg-card p-5">
+        <View className="mb-4 items-center rounded-lg bg-card p-5">
           <View className="mb-3">
             <Text className="text-4xl font-bold" style={{ letterSpacing: 2 }}>
-              <Text style={{ color: '#FF6B9D' }}>E.</Text>
-              <Text style={{ color: '#FFA94D' }}>A.</Text>
-              <Text style={{ color: '#4ECDC4' }}>S.</Text>
-              <Text style={{ color: '#95E1D3' }}>Y.</Text>
-              <Text style={{ color: '#B8B8FF' }}>3</Text>
+              <Text style={{ color: brandColors.colors.accent }}>E.</Text>
+              <Text style={{ color: brandColors.colors.secondary }}>A.</Text>
+              <Text style={{ color: brandColors.colors.mint }}>S.</Text>
+              <Text style={{ color: brandColors.colors.mint }}>Y.</Text>
+              <Text style={{ color: brandColors.colors.lavender }}>3</Text>
             </Text>
           </View>
           <Text className="mb-1 text-center text-xl font-semibold text-foreground">
@@ -124,7 +125,7 @@ export default function EasyScheduleInfoScreen() {
         </View>
 
         {/* Formula Details */}
-        <View className="mb-4 rounded-2xl bg-white p-5">
+        <View className="mb-4 rounded-lg bg-card p-5">
           <Text className="mb-3 text-lg font-semibold text-foreground">
             {t('easySchedule.formulaTable.heading')}
           </Text>
@@ -140,7 +141,7 @@ export default function EasyScheduleInfoScreen() {
 
         {/* Logic Notes */}
         {logicNotes.length > 0 && (
-          <View className="mb-4 rounded-2xl bg-card p-5">
+          <View className="mb-4 rounded-lg bg-card p-5">
             <Text className="mb-3 text-lg font-semibold text-foreground">
               {t('easySchedule.formulaTable.labels.logic')}
             </Text>
@@ -157,22 +158,22 @@ export default function EasyScheduleInfoScreen() {
         {/* Toddler-specific content */}
         {formulaRule.id === 'toddler' && (
           <>
-            <View className="mb-4 rounded-2xl bg-card p-5">
+            <View className="mb-4 rounded-lg bg-card p-5">
               <Text className="mb-3 text-lg font-semibold text-foreground">
                 {t('easySchedule.toddlerExtras.wakeWindowsHeading')}
               </Text>
-              {TODDLER_WAKE_WINDOW_KEYS.map((key: string) => (
+              {TODDLER_WAKE_WINDOW_KEYS.map((key) => (
                 <Text key={key} className="mb-2 text-sm leading-5 text-muted-foreground">
                   • {t(key)}
                 </Text>
               ))}
             </View>
 
-            <View className="mb-4 rounded-2xl bg-card p-5">
+            <View className="mb-4 rounded-lg bg-card p-5">
               <Text className="mb-3 text-lg font-semibold text-foreground">
                 {t('easySchedule.toddlerExtras.sampleDayHeading')}
               </Text>
-              {TODDLER_SAMPLE_DAY_KEYS.map((entry: { titleKey: string; detailKey: string }) => (
+              {TODDLER_SAMPLE_DAY_KEYS.map((entry) => (
                 <View key={entry.titleKey} className="mb-3">
                   <Text className="mb-1 text-sm font-semibold text-foreground">
                     {t(entry.titleKey)}
@@ -182,7 +183,7 @@ export default function EasyScheduleInfoScreen() {
               ))}
             </View>
 
-            <View className="mb-4 rounded-2xl bg-card p-5">
+            <View className="mb-4 rounded-lg bg-card p-5">
               <Text className="mb-3 text-lg font-semibold text-foreground">
                 {t('easySchedule.toddlerExtras.sampleOutputsHeading')}
               </Text>
@@ -201,7 +202,7 @@ export default function EasyScheduleInfoScreen() {
                     {t('easySchedule.toddlerExtras.sampleOutputs.tableHeaders.bedtime')}
                   </Text>
                 </View>
-                {TODDLER_SAMPLE_OUTPUT_ROWS.map((rowKey: string) => (
+                {TODDLER_SAMPLE_OUTPUT_ROWS.map((rowKey) => (
                   <View key={rowKey} className="flex-row border-b border-border">
                     <Text className="flex-1 p-2 text-center text-xs text-muted-foreground">
                       {t(`easySchedule.toddlerExtras.sampleOutputs.rows.${rowKey}.wakeTime`)}
@@ -220,11 +221,11 @@ export default function EasyScheduleInfoScreen() {
               </View>
             </View>
 
-            <View className="mb-4 rounded-2xl bg-card p-5">
+            <View className="mb-4 rounded-lg bg-card p-5">
               <Text className="mb-3 text-lg font-semibold text-foreground">
                 {t('easySchedule.toddlerExtras.notesHeading')}
               </Text>
-              {TODDLER_NOTES_KEYS.map((key: string) => (
+              {TODDLER_NOTES_KEYS.map((key) => (
                 <Text key={key} className="mb-2 text-sm leading-5 text-muted-foreground">
                   • {t(key)}
                 </Text>

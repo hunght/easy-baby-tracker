@@ -4,11 +4,21 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  useColorScheme,
+  View,
+} from 'react-native';
 
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getActiveBabyProfile, updateBabyFirstWakeTime } from '@/database/baby-profile';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import {
   EasyScheduleItem,
   calculateAgeInWeeks,
@@ -56,6 +66,9 @@ export default function EasyScheduleScreen() {
   const router = useRouter();
   const { t, locale } = useLocalization();
   const queryClient = useQueryClient();
+  const brandColors = useBrandColor();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
   const wakeTimeSyncedRef = useRef<string | null>(null);
   const [firstWakeTime, setFirstWakeTime] = useState('07:00');
   const [scheduleItems, setScheduleItems] = useState<EasyScheduleItem[]>([]);
@@ -166,7 +179,7 @@ export default function EasyScheduleScreen() {
           previous ? { ...previous, firstWakeTime: time } : previous
         );
       } catch (error) {
-        Alert.alert(t('common.error'), (error as Error).message);
+        Alert.alert(t('common.error'), error instanceof Error ? error.message : String(error));
       }
     },
     [babyProfile?.id, queryClient, t]
@@ -295,7 +308,7 @@ export default function EasyScheduleScreen() {
           Alert.alert(t('common.error'), t('easySchedule.reminder.scheduleError'));
         }
       } catch (error) {
-        Alert.alert(t('common.error'), (error as Error).message);
+        Alert.alert(t('common.error'), error instanceof Error ? error.message : String(error));
       }
     },
     [t]
@@ -350,15 +363,25 @@ export default function EasyScheduleScreen() {
   };
 
   const getPhaseStyles = (type: string) => {
-    const map: Record<string, string> = {
-      E: '#FFF2F6',
-      A: '#EBF8F1',
-      S: '#EFF3FF',
+    // Phase backgrounds with dark mode support
+    // Use lighter tints in light mode, darker muted tones in dark mode
+    const lightMap: Record<string, string> = {
+      E: '#FFF2F6', // Light pink tint (accent-related)
+      A: '#EBF8F1', // Light green tint (mint-related)
+      S: '#EFF3FF', // Light blue tint (primary-related)
+    };
+
+    const darkMap: Record<string, string> = {
+      E: 'rgba(255, 138, 184, 0.15)', // Accent pink with opacity
+      A: 'rgba(127, 227, 204, 0.15)', // Mint with opacity
+      S: 'rgba(91, 127, 255, 0.15)', // Primary blue with opacity
     };
 
     return {
       container: {
-        backgroundColor: map[type] ?? '#F5F5F5',
+        backgroundColor: isDark
+          ? (darkMap[type] ?? 'rgba(245, 247, 250, 0.1)')
+          : (lightMap[type] ?? '#F5F7FA'),
       },
     };
   };
@@ -366,7 +389,7 @@ export default function EasyScheduleScreen() {
   return (
     <View className="flex-1 bg-background">
       {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border px-5 pb-4 pt-[60px]">
+      <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-4">
         <Pressable onPress={() => router.back()}>
           <Text className="text-base font-semibold text-accent">{t('common.close')}</Text>
         </Pressable>
@@ -377,14 +400,14 @@ export default function EasyScheduleScreen() {
           {t('easySchedule.title')}
         </Text>
         <TouchableOpacity onPress={openTimePicker} className="p-1" accessibilityRole="button">
-          <Ionicons name="time-outline" size={24} color="#9B7EBD" />
+          <Ionicons name="time-outline" size={24} color={brandColors.colors.lavender} />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerClassName="p-5 pb-10 gap-3" showsVerticalScrollIndicator={false}>
         <View className="flex-row gap-3">
           <TouchableOpacity
-            className="flex-1 flex-row items-center gap-2.5 rounded-2xl bg-[#F5EFFA] p-3"
+            className="flex-1 flex-row items-center gap-2.5 rounded-lg border border-border bg-card p-3 dark:bg-card/80"
             onPress={() =>
               router.push({ pathname: '/easy-schedule-info', params: { ruleId: formulaRule.id } })
             }
@@ -393,24 +416,27 @@ export default function EasyScheduleScreen() {
             <Ionicons
               name="information-circle-outline"
               size={18}
-              color="#6D4F91"
+              color={brandColors.colors.lavender}
               className="mr-2.5"
             />
             <View className="flex-1">
               <Text
-                className="text-sm font-semibold text-[#4C3A6D]"
+                className="text-sm font-semibold text-foreground"
                 numberOfLines={1}
                 ellipsizeMode="tail">
                 {t(formulaRule.labelKey)}
               </Text>
-              <Text className="text-xs text-[#7B6F9D]" numberOfLines={1} ellipsizeMode="tail">
+              <Text
+                className="text-xs text-muted-foreground"
+                numberOfLines={1}
+                ellipsizeMode="tail">
                 {t(formulaRule.ageRangeKey)}
               </Text>
             </View>
           </TouchableOpacity>
         </View>
 
-        <Text className="text-xs text-[#7B6F9D]" numberOfLines={1} ellipsizeMode="tail">
+        <Text className="text-xs text-muted-foreground" numberOfLines={1} ellipsizeMode="tail">
           {formulaNotice}
         </Text>
 
@@ -419,7 +445,7 @@ export default function EasyScheduleScreen() {
           return (
             <View
               key={group.number}
-              className="flex-row justify-between gap-2 rounded-2xl border border-[#F0E9FA] p-3">
+              className="flex-row justify-between gap-2 rounded-lg border border-border bg-card p-3 dark:bg-card/50">
               {phases.map((item) => {
                 const endTime = calculateEndTime(item.startTime, item.durationMinutes);
                 const duration = formatDuration(item.durationMinutes);
@@ -440,8 +466,10 @@ export default function EasyScheduleScreen() {
                 return (
                   <TouchableOpacity
                     key={`${group.number}-${item.order}`}
-                    className={`relative min-h-[94px] flex-1 items-start justify-center overflow-hidden rounded-xl px-2.5 py-2.5 ${
-                      isCurrentPhase ? 'border border-[#7B5AB1] shadow-md shadow-[#7B5AB1]/15' : ''
+                    className={`relative min-h-[94px] flex-1 items-start justify-center overflow-hidden rounded-lg px-2.5 py-2.5 ${
+                      isCurrentPhase
+                        ? 'border border-lavender shadow-md shadow-lavender/15 dark:shadow-lavender/30'
+                        : 'border border-transparent'
                     } ${!isCurrentPhase && isPastPhase ? 'opacity-60' : ''}`}
                     style={{ backgroundColor: phaseStyles.container.backgroundColor }}
                     activeOpacity={0.9}
@@ -451,7 +479,7 @@ export default function EasyScheduleScreen() {
                     {isCurrentPhase && (
                       <View
                         pointerEvents="none"
-                        className="absolute bottom-0 left-0 top-0 z-0 bg-[rgba(109,79,145,0.16)]"
+                        className="bg-lavender/16 absolute bottom-0 left-0 top-0 z-0 dark:bg-lavender/25"
                         style={{ width: `${clampedProgress * 100}%` }}
                       />
                     )}
@@ -460,12 +488,15 @@ export default function EasyScheduleScreen() {
                       className="absolute right-1.5 top-1.5 z-[2] p-1"
                       accessibilityRole="button"
                       accessibilityLabel={item.label}>
-                      <Ionicons name="information-circle-outline" size={16} color="#6D4F91" />
+                      <Ionicons
+                        name="information-circle-outline"
+                        size={16}
+                        color={brandColors.colors.lavender}
+                      />
                     </TouchableOpacity>
                     <Text className="mb-1 text-lg">{getActivityIcon(item.activityType)}</Text>
                     <View className="w-full">
-                      <Text
-                        className={`text-sm font-semibold ${isCurrentPhase ? 'text-[#4C3A6D]' : 'text-foreground'}`}>
+                      <Text className="text-sm font-semibold text-foreground">
                         {item.startTime} → {endTime}
                       </Text>
                       <Text className="mt-0.5 text-xs text-muted-foreground">{duration}</Text>
@@ -483,8 +514,8 @@ export default function EasyScheduleScreen() {
         visible={phaseModalVisible}
         animationType="fade"
         onRequestClose={closePhaseModal}>
-        <View className="flex-1 justify-center bg-black/25 p-6">
-          <View className="rounded-[20px] bg-card p-5">
+        <View className="flex-1 justify-center bg-black/50 p-6 dark:bg-black/70">
+          <View className="rounded-lg bg-card p-5 dark:bg-card">
             {selectedPhase && (
               <>
                 <View className="mb-2 flex-row items-center justify-between">
@@ -492,10 +523,10 @@ export default function EasyScheduleScreen() {
                     {selectedPhase.item.label}
                   </Text>
                   <TouchableOpacity onPress={closePhaseModal}>
-                    <Ionicons name="close" size={22} color="#2D2D2D" />
+                    <Ionicons name="close" size={22} color={brandColors.colors.black} />
                   </TouchableOpacity>
                 </View>
-                <Text className="text-base font-semibold text-[#4C3A6D]">
+                <Text className="text-base font-semibold text-foreground">
                   {selectedPhase.item.startTime} → {selectedPhase.endTimeLabel}
                 </Text>
                 <Text className="mb-4 text-[13px] text-muted-foreground">
@@ -503,7 +534,7 @@ export default function EasyScheduleScreen() {
                 </Text>
                 <View className="gap-3">
                   <TouchableOpacity
-                    className="flex-row items-center justify-center gap-2 rounded-xl bg-[#7B5AB1] py-3"
+                    className="flex-row items-center justify-center gap-2 rounded-lg bg-lavender py-3"
                     onPress={() =>
                       handleScheduleReminder(
                         selectedPhase.item,
@@ -511,22 +542,22 @@ export default function EasyScheduleScreen() {
                         selectedPhase.endTimeLabel
                       )
                     }>
-                    <Ionicons name="alarm-outline" size={18} color="#FFF" />
-                    <Text className="font-semibold text-white">
+                    <Ionicons name="alarm-outline" size={18} color={brandColors.colors.white} />
+                    <Text className="text-lavender-foreground font-semibold">
                       {t('easySchedule.phaseModal.setReminder')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    className="flex-row items-center justify-center gap-2 rounded-xl border border-[#E5DDF4] py-3"
+                    className="flex-row items-center justify-center gap-2 rounded-lg border border-border py-3"
                     onPress={openAdjustPicker}>
-                    <Ionicons name="time-outline" size={18} color="#6D4F91" />
-                    <Text className="font-semibold text-[#6D4F91]">
+                    <Ionicons name="time-outline" size={18} color={brandColors.colors.lavender} />
+                    <Text className="font-semibold text-lavender">
                       {t('easySchedule.phaseModal.adjustTime')}
                     </Text>
                   </TouchableOpacity>
                 </View>
                 {adjustPickerVisible && (
-                  <View className="mt-5 rounded-2xl border border-[#F0E9FA] p-4">
+                  <View className="mt-5 rounded-lg border border-border bg-card p-4">
                     <Text className="mb-2 text-center text-sm font-semibold text-foreground">
                       {t('easySchedule.phaseModal.adjustHeading')}
                     </Text>
@@ -539,16 +570,18 @@ export default function EasyScheduleScreen() {
                     />
                     <View className="mt-3 flex-row justify-between gap-3">
                       <TouchableOpacity
-                        className="flex-1 items-center rounded-[10px] border border-border py-2.5"
+                        className="flex-1 items-center rounded-md border border-border py-2.5"
                         onPress={() => setAdjustPickerVisible(false)}>
                         <Text className="font-semibold text-muted-foreground">
                           {t('common.cancel')}
                         </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        className="flex-1 items-center rounded-[10px] bg-[#7B5AB1] py-2.5"
+                        className="flex-1 items-center rounded-md bg-lavender py-2.5"
                         onPress={applyAdjustment}>
-                        <Text className="font-semibold text-white">{t('common.save')}</Text>
+                        <Text className="text-lavender-foreground font-semibold">
+                          {t('common.save')}
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -560,7 +593,7 @@ export default function EasyScheduleScreen() {
       </Modal>
 
       {showTimePicker && (
-        <View className="rounded-t-[20px] bg-card pt-3">
+        <View className="rounded-t-lg bg-card pt-3">
           <Text className="mb-2 text-center text-sm font-semibold text-foreground">
             {t('easySchedule.firstWakeTimeTitle')}
           </Text>
