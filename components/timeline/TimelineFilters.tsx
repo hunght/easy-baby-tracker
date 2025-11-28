@@ -1,6 +1,7 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { Badge } from '@/components/ui/badge';
 import { TimelineActivityType } from '@/database/timeline';
 
 const FILTERS: { label: string; value: TimelineActivityType | 'all' }[] = [
@@ -30,15 +31,17 @@ export const TimelineFilters = ({ selectedFilter, onSelectFilter }: Props) => {
                 {FILTERS.map((filter) => {
                     const isSelected = selectedFilter === filter.value;
                     return (
-                        <TouchableOpacity
+                        <Badge
                             key={filter.value}
-                            style={[styles.chip, isSelected && styles.selectedChip]}
+                            variant={isSelected ? 'default' : 'outline'}
                             onPress={() => onSelectFilter(filter.value)}
+                            className="h-8 px-4"
+                            accessibilityState={{ selected: isSelected }}
                         >
-                            <Text style={[styles.chipText, isSelected && styles.selectedChipText]}>
+                            <Text className={isSelected ? 'text-primary-foreground' : 'text-foreground'}>
                                 {filter.label}
                             </Text>
-                        </TouchableOpacity>
+                        </Badge>
                     );
                 })}
             </ScrollView>
@@ -54,25 +57,5 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 16,
         gap: 8,
-    },
-    chip: {
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: 'white',
-        borderWidth: 1,
-        borderColor: '#E0E0E0',
-    },
-    selectedChip: {
-        backgroundColor: '#6200EE',
-        borderColor: '#6200EE',
-    },
-    chipText: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#666',
-    },
-    selectedChipText: {
-        color: 'white',
     },
 });
