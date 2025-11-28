@@ -28,7 +28,7 @@ import migrations from '../drizzle/migrations';
 import { logger } from '@/lib/logger';
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  anchor: '(tabs)/tracking',
 };
 
 // Component that handles migrations and Drizzle Studio
@@ -179,10 +179,11 @@ function AppProviders() {
                   screenOptions={{
                     // Render screens transparently so our wrapper View controls background via Tailwind
                     contentStyle: { backgroundColor: 'transparent' },
+                    headerShown: false,
                   }}>
                   <Stack.Screen name="index" options={{ headerShown: false }} />
                   <Stack.Screen name="profile-selection" options={{ headerShown: false }} />
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)/tracking" options={{ headerShown: false }} />
                   <Stack.Screen
                     name="feeding"
                     options={{ presentation: 'modal', headerShown: false }}

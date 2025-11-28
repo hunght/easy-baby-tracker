@@ -28,7 +28,7 @@ export default function ProfileSelectionScreen() {
   const handleSelectProfile = async (babyId: number) => {
     await setActiveBabyProfileId(babyId);
     await queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/tracking');
   };
 
   const handleAddNew = () => {

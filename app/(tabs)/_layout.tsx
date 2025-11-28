@@ -44,7 +44,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="index"
+        name="tracking"
         options={{
           title: t('tabs.tracking'),
           tabBarIcon: ({ color, focused }) => (

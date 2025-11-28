@@ -36,7 +36,7 @@ export default function OnboardingScreen() {
   useEffect(() => {
     if (!profileLoading && !profilesLoading) {
       if (profile) {
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/tracking');
       } else if (profiles.length > 0) {
         router.replace('/profile-selection');
       }
@@ -53,7 +53,7 @@ export default function OnboardingScreen() {
     await saveOnboardingProfile(profileData);
     await queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
     await queryClient.invalidateQueries({ queryKey: BABY_PROFILES_QUERY_KEY });
-    router.replace('/(tabs)');
+    router.replace('/(tabs)/tracking');
   };
 
   const toggleConcern = (id: string) =>
