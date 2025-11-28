@@ -8,12 +8,11 @@ import { BottleFeedingForm } from '@/features/feeding/components/BottleFeedingFo
 import { BreastFeedingForm } from '@/features/feeding/components/BreastFeedingForm';
 import { SolidsFeedingForm } from '@/features/feeding/components/SolidsFeedingForm';
 import { ModalHeader } from '@/components/ModalHeader';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TimeField } from '@/components/TimeField';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 import { FEEDINGS_QUERY_KEY } from '@/constants/query-keys';
 import type { FeedingPayload, FeedingType, IngredientType } from '@/database/feeding';
@@ -41,7 +40,6 @@ export default function FeedingScreen() {
   const queryClient = useQueryClient();
   const { t } = useLocalization();
   const { showNotification } = useNotification();
-  const colorScheme = useColorScheme();
   const params = useLocalSearchParams<{ id: string }>();
   const id = params.id ? Number(params.id) : undefined;
   const isEditing = !!id;
@@ -274,49 +272,64 @@ export default function FeedingScreen() {
 
       <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
         {/* Feeding Type Selection */}
-        <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-card">
-          {feedingTypes.map((type, index) => (
-            <Badge
-              key={type.key}
-              variant={feedingType === type.key ? 'default' : 'secondary'}
-              className={`flex-1 rounded-none ${index > 0 ? 'border-l border-border' : ''} ${feedingType === type.key ? 'bg-primary' : 'bg-card'}`}
-              accessibilityLabel={t(type.labelKey)}
-              accessibilityState={{ selected: feedingType === type.key }}>
-              <Pressable key={type.key} onPress={() => setFeedingType(type.key)}>
-                <View className="flex-row items-center justify-center gap-1.5 py-3">
-                  <MaterialCommunityIcons
-                    name={type.icon}
-                    size={20}
-                    color={
-                      feedingType === type.key
-                        ? '#FFFFFF'
-                        : colorScheme === 'dark'
-                          ? '#9CA3AF'
-                          : '#666666'
-                    }
-                  />
-                  <Text
-                    className={
-                      feedingType === type.key
-                        ? 'text-sm font-semibold text-white'
-                        : 'text-sm font-semibold text-muted-foreground'
-                    }>
-                    {t(type.labelKey)}
-                  </Text>
-                </View>
-              </Pressable>
-            </Badge>
-          ))}
-        </View>
+        <Tabs
+          value={feedingType}
+          onValueChange={(value) => setFeedingType(value as FeedingType)}
+          className="mb-6">
+          <TabsList className="w-full">
+            {feedingTypes.map((type) => (
+              <TabsTrigger
+                key={type.key}
+                value={type.key}
+                className="flex-1 flex-row items-center gap-1.5">
+                <MaterialCommunityIcons name={type.icon} size={20} />
+                <Text>{t(type.labelKey)}</Text>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {/* Common Fields */}
+          <TimeField
+            label={t('common.starts')}
+            value={startTime}
+            onChange={handleStartTimeChange}
+            showNowThreshold={5}
+            showHelperText={!isEditing}
+          />
+          {/* Breast Feeding */}
+          <TabsContent value="breast">
+            <BreastFeedingForm
+              isEditing={isEditing}
+              isPast={isPast}
+              initialLeftDuration={breastData?.leftDuration}
+              initialRightDuration={breastData?.rightDuration}
+              onDataChange={handleBreastDataChange}
+            />
+          </TabsContent>
 
-        {/* Common Fields */}
-        <TimeField
-          label={t('common.starts')}
-          value={startTime}
-          onChange={handleStartTimeChange}
-          showNowThreshold={5}
-          showHelperText={!isEditing}
-        />
+          {/* Bottle Feeding */}
+          <TabsContent value="bottle">
+            <BottleFeedingForm
+              isEditing={isEditing}
+              isPast={isPast}
+              initialIngredientType={bottleData?.ingredientType}
+              initialAmountMl={bottleData?.amountMl}
+              initialDuration={bottleData?.duration}
+              onDataChange={handleBottleDataChange}
+            />
+          </TabsContent>
+
+          {/* Solids Feeding */}
+          <TabsContent value="solids">
+            <SolidsFeedingForm
+              isEditing={isEditing}
+              isPast={isPast}
+              initialIngredient={solidsData?.ingredient}
+              initialAmountGrams={solidsData?.amountGrams}
+              initialDuration={solidsData?.duration}
+              onDataChange={handleSolidsDataChange}
+            />
+          </TabsContent>
+        </Tabs>
 
         {/* Schedule Reminder Button - only show if time is in future and not editing */}
         {!isEditing && isFuture && (
@@ -341,41 +354,6 @@ export default function FeedingScreen() {
               </Text>
             )}
           </View>
-        )}
-
-        {/* Breast Feeding */}
-        {feedingType === 'breast' && (
-          <BreastFeedingForm
-            isEditing={isEditing}
-            isPast={isPast}
-            initialLeftDuration={breastData?.leftDuration}
-            initialRightDuration={breastData?.rightDuration}
-            onDataChange={handleBreastDataChange}
-          />
-        )}
-
-        {/* Bottle Feeding */}
-        {feedingType === 'bottle' && (
-          <BottleFeedingForm
-            isEditing={isEditing}
-            isPast={isPast}
-            initialIngredientType={bottleData?.ingredientType}
-            initialAmountMl={bottleData?.amountMl}
-            initialDuration={bottleData?.duration}
-            onDataChange={handleBottleDataChange}
-          />
-        )}
-
-        {/* Solids Feeding */}
-        {feedingType === 'solids' && (
-          <SolidsFeedingForm
-            isEditing={isEditing}
-            isPast={isPast}
-            initialIngredient={solidsData?.ingredient}
-            initialAmountGrams={solidsData?.amountGrams}
-            initialDuration={solidsData?.duration}
-            onDataChange={handleSolidsDataChange}
-          />
         )}
 
         {/* Notes */}
