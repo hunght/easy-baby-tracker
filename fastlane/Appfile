@@ -1,0 +1,7 @@
+# Appfile for BabyEase
+# More information: https://docs.fastlane.tools/advanced/#appfile
+
+app_identifier("com.hunght.BabyEase")
+apple_id("hth321@gmail.com")
+itc_team_id("111225803") # "Hung Hoang The" team
+

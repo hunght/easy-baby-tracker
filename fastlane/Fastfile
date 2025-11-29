@@ -1,0 +1,132 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Download metadata from App Store Connect"
+  lane :download_metadata do
+    # Note: Fastlane's deliver action only uploads metadata
+    # To download iOS metadata, you need to:
+    # 1. Manually download from App Store Connect, OR
+    # 2. Use App Store Connect API, OR
+    # 3. The metadata files should already exist in fastlane/metadata/ios/
+    UI.important("iOS metadata download:")
+    UI.important("1. Download manually from App Store Connect")
+    UI.important("2. Or ensure metadata files exist in ./fastlane/metadata/ios/")
+    UI.important("3. Metadata structure is already set up - just edit the .txt files")
+  end
+
+  desc "Upload metadata to App Store Connect"
+  lane :upload_metadata do
+    review_info = {
+      contact_first_name: "Hung",
+      contact_last_name: "Hoang",
+      contact_phone: "+1 206 555 0100",
+      contact_email: "hth321@gmail.com",
+      demo_username: "demo@easybabytracker.com",
+      demo_password: "DemoPass123!",
+      demo_required: true,
+      notes: "Demo account provides access to all premium tracking features."
+    }
+
+    deliver(
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      force: true,
+      app_identifier: "com.hunght.BabyEase",
+      metadata_path: "./fastlane/metadata/ios",
+      team_id: "111225803", # "Hung Hoang The" team
+      app_version: "1.0",
+      platform: "ios",
+      app_review_information: review_info
+    )
+  end
+
+  desc "Download screenshots from App Store Connect"
+  lane :download_screenshots do
+    # Note: deliver action only uploads. Screenshots need to be downloaded manually
+    UI.important("iOS screenshots download requires manual setup or App Store Connect API")
+    UI.important("You can download screenshots manually from App Store Connect")
+  end
+
+  desc "Upload screenshots to App Store Connect"
+  lane :upload_screenshots do
+    review_info = {
+      contact_first_name: "Hung",
+      contact_last_name: "Hoang",
+      contact_phone: "+1 206 555 0100",
+      contact_email: "hth321@gmail.com",
+      demo_username: "demo@easybabytracker.com",
+      demo_password: "DemoPass123!",
+      demo_required: true,
+      notes: "Demo account provides access to all premium tracking features."
+    }
+
+    deliver(
+      skip_binary_upload: true,
+      skip_metadata: true,
+      force: true,
+      app_identifier: "com.hunght.BabyEase",
+      screenshots_path: "./fastlane/metadata/ios/screenshots",
+      team_id: "111225803", # "Hung Hoang The" team
+      app_version: "1.0",
+      platform: "ios",
+      app_review_information: review_info
+    )
+  end
+end
+
+platform :android do
+  desc "Download metadata from Google Play Console"
+  lane :download_metadata do
+    download_from_play_store(
+      package_name: "com.hunght.BabyEase",
+      metadata_path: "./fastlane/metadata/android"
+    )
+  end
+
+  desc "Upload metadata to Google Play Console"
+  lane :upload_metadata do
+    supply(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: false,
+      skip_upload_images: false,
+      skip_upload_screenshots: false,
+      package_name: "com.hunght.BabyEase",
+      metadata_path: "./fastlane/metadata/android"
+    )
+  end
+
+  desc "Download screenshots from Google Play Console"
+  lane :download_screenshots do
+    download_from_play_store(
+      package_name: "com.hunght.BabyEase",
+      metadata_path: "./fastlane/metadata/android"
+    )
+  end
+
+  desc "Upload screenshots to Google Play Console"
+  lane :upload_screenshots do
+    supply(
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_images: false,
+      skip_upload_screenshots: false,
+      package_name: "com.hunght.BabyEase",
+      metadata_path: "./fastlane/metadata/android"
+    )
+  end
+end
+
