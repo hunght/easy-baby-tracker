@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { BabyProfilePayload, Gender } from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { DatePickerField } from '@/components/DatePickerField';
+import { useBrandColor } from '@/hooks/use-brand-color';
 
 type BabyProfileStepProps = {
   headerText: string;
@@ -23,6 +24,7 @@ const genderSegments: { key: Gender; labelKey: string }[] = [
 
 export function BabyProfileStep({ headerText, concerns, onSave }: BabyProfileStepProps) {
   const { t } = useLocalization();
+  const brandColors = useBrandColor();
 
   const [nickname, setNickname] = useState(t('common.nicknamePlaceholder'));
   const [gender, setGender] = useState<Gender>('unknown');
@@ -47,30 +49,33 @@ export function BabyProfileStep({ headerText, concerns, onSave }: BabyProfileSte
   };
 
   return (
-    <View className="gap-3 rounded-3xl bg-violet-50 p-6">
-      <Text className="text-center text-2xl font-bold text-neutral-900">{headerText}</Text>
+    <View
+      className="gap-3 rounded-lg bg-card p-6"
+      style={{ backgroundColor: brandColors.colors.lavender + '20' }}>
+      <Text className="text-center text-2xl font-bold text-foreground">{headerText}</Text>
       <View className="items-center">
         <Image source={require('@/assets/images/icon.png')} style={{ width: 120, height: 120 }} />
-        <Text className="mt-2 text-pink-500">{t('common.addPhoto')}</Text>
+        <Text className="mt-2 text-accent">{t('common.addPhoto')}</Text>
       </View>
 
-      <Text className="font-semibold text-neutral-600">{t('common.nickname')}</Text>
+      <Text className="font-semibold text-foreground">{t('common.nickname')}</Text>
       <Input
         value={nickname}
         onChangeText={setNickname}
         placeholder={t('common.nicknamePlaceholder')}
       />
 
-      <Text className="font-semibold text-neutral-600">{t('common.gender')}</Text>
-      <View className="flex-row overflow-hidden rounded-2xl border border-violet-200 bg-white">
+      <Text className="font-semibold text-foreground">{t('common.gender')}</Text>
+      <View className="flex-row overflow-hidden rounded-lg border border-border bg-card">
         {genderSegments.map((segment) => {
           const active = gender === segment.key;
           return (
             <Pressable
               key={segment.key}
               onPress={() => setGender(segment.key)}
-              className={`flex-1 items-center py-2 ${active ? 'bg-pink-500' : ''}`}>
-              <Text className={`font-semibold ${active ? 'text-white' : 'text-neutral-400'}`}>
+              className={`flex-1 items-center py-2 ${active ? 'bg-accent' : ''}`}>
+              <Text
+                className={`font-semibold ${active ? 'text-accent-foreground' : 'text-muted-foreground'}`}>
                 {t(segment.labelKey)}
               </Text>
             </Pressable>
@@ -82,7 +87,9 @@ export function BabyProfileStep({ headerText, concerns, onSave }: BabyProfileSte
 
       <DatePickerField label={t('common.dueDate')} value={dueDate} onChange={setDueDate} />
 
-      <Text className="text-xs leading-5 text-neutral-500">{t('onboarding.babyProfile.info')}</Text>
+      <Text className="text-xs leading-5 text-muted-foreground">
+        {t('onboarding.babyProfile.info')}
+      </Text>
 
       <Button onPress={handleContinue} disabled={isSaving}>
         <Text>{t('common.continue')}</Text>

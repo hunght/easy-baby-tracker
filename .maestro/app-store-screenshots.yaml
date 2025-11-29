@@ -1,12 +1,28 @@
-appId: host.exp.exponent
+appId: host.exp.Exponent
 ---
 - launchApp
+- assertVisible: "Easy Baby Tracker"
+- tapOn: "Easy Baby Tracker"
 - assertVisible: "Tracking"
 - waitForAnimationToEnd:
-    timeout: 3000
+    timeout: 1000
 - takeScreenshot: 01-tracking
-- tapOn: "E.A.S.Y"
+- scrollUntilVisible:
+    element:
+      id: "tile-easy-schedule"
+    direction: DOWN
+    timeout: 8000
+    speed: 60
+    visibilityPercentage: 50
+    centerElement: true
+- tapOn:
+    id: "tile-easy-schedule"
+- waitForAnimationToEnd
 - takeScreenshot: 03-easy
-- tapOn: "Settings"
+- tapOn:
+    id: "btn-close"
+- waitForAnimationToEnd
+- tapOn:
+    id: "tab-settings"
 - waitForAnimationToEnd
 - takeScreenshot: 02-settings

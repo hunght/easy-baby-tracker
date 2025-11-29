@@ -32,6 +32,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name="time-outline" size={26} color={focused ? '#FF5C8D' : color} />
           ),
+          tabBarButton: (props) => <HapticTab {...props} testID="tab-timeline" />,
         }}
       />
       <Tabs.Screen
@@ -41,6 +42,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name="stats-chart" size={30} color={focused ? '#FF5C8D' : color} />
           ),
+          tabBarButton: (props) => <HapticTab {...props} testID="tab-charts" />,
         }}
       />
       <Tabs.Screen
@@ -50,6 +52,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name="medkit" size={30} color={focused ? '#FF5C8D' : color} />
           ),
+          tabBarButton: (props) => <HapticTab {...props} testID="tab-tracking" />,
         }}
       />
       <Tabs.Screen
@@ -59,6 +62,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name="calendar-outline" size={26} color={focused ? '#FF5C8D' : color} />
           ),
+          tabBarButton: (props) => <HapticTab {...props} testID="tab-scheduling" />,
         }}
       />
 
@@ -69,6 +73,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name="settings-outline" size={26} color={focused ? '#FF5C8D' : color} />
           ),
+          tabBarButton: (props) => <HapticTab {...props} testID="tab-settings" />,
         }}
       />
     </Tabs>

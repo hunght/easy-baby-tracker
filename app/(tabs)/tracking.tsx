@@ -216,6 +216,7 @@ export default function TrackingScreen() {
               key={tile.id}
               className="w-[47%] shadow-sm"
               onPress={() => handleTilePress(tile.id)}
+              testID={`tile-${tile.id}`}
               accessibilityLabel={t('tracking.accessibility.openTile', {
                 defaultValue: 'Open %{label}',
                 params: { label: t(tile.labelKey) },

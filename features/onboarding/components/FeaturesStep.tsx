@@ -4,7 +4,13 @@ import { useLocalization } from '@/localization/LocalizationProvider';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 
-const featureSections = [
+type FeatureSection = {
+  key: 'control' | 'aware' | 'save';
+  bulletKeys: string[];
+  canShowAll: boolean;
+};
+
+const featureSections: FeatureSection[] = [
   {
     key: 'control',
     bulletKeys: ['identifySleep', 'dayOverview', 'milkIntake'],
@@ -20,7 +26,7 @@ const featureSections = [
     bulletKeys: ['sync', 'sharing'],
     canShowAll: false,
   },
-] as const;
+];
 
 type FeaturesStepProps = {
   headerText: string;
@@ -32,26 +38,26 @@ export function FeaturesStep({ headerText, onContinue }: FeaturesStepProps) {
 
   return (
     <View className="gap-4">
-      <Text className="text-center text-2xl font-bold text-neutral-900">{headerText}</Text>
+      <Text className="text-center text-2xl font-bold text-foreground">{headerText}</Text>
       <View className="gap-4">
         {featureSections.map((section) => (
-          <View key={section.key} className="gap-3 rounded-2xl bg-white p-5 shadow-sm">
+          <View key={section.key} className="gap-3 rounded-lg bg-card p-5 shadow-sm">
             <View className="flex-row items-center gap-3">
-              <Text className="text-xl text-pink-500">★</Text>
-              <Text className="text-lg font-bold text-neutral-900">
+              <Text className="text-xl text-accent">★</Text>
+              <Text className="text-lg font-bold text-foreground">
                 {t(`onboarding.features.sections.${section.key}.title`)}
               </Text>
             </View>
             {section.bulletKeys.map((bulletKey) => (
               <View key={bulletKey} className="flex-row items-center gap-2">
-                <Text className="text-pink-500">✓</Text>
-                <Text className="flex-1 text-[15px] text-neutral-600">
+                <Text className="text-accent">✓</Text>
+                <Text className="flex-1 text-[15px] text-foreground">
                   {t(`onboarding.features.sections.${section.key}.bullets.${bulletKey}`)}
                 </Text>
               </View>
             ))}
             {section.canShowAll && (
-              <Text className="self-end font-semibold text-pink-500">
+              <Text className="self-end font-semibold text-accent">
                 {t('onboarding.features.showAll')}
               </Text>
             )}

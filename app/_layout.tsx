@@ -13,7 +13,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import 'react-native-reanimated';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
 import { NotificationProvider } from '@/components/NotificationContext';
 import { db, expoDb } from '@/database/db';
@@ -55,38 +55,15 @@ function MigrationHandler({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return <MigrationCompleteHandler>{children}</MigrationCompleteHandler>;
 }
 
-export default function RootLayout() {
-  return (
-    <LocalizationProvider>
-      <ThemeProvider>
-        <AppProviders />
-      </ThemeProvider>
-    </LocalizationProvider>
-  );
-}
-
-function AppProviders() {
-  const { colorScheme } = useTheme();
-  const [queryClient] = useState(() => new QueryClient());
-  const { t } = useLocalization();
+// Component that runs after migrations are complete
+function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const navigationRef = useNavigationContainerRef();
-  const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
-
-  // Get the background color from THEME
-  const backgroundColor = colorScheme === 'dark' ? '#11181C' : '#F5F7FA';
-
-  // Log current theme info to trace dark mode propagation
-  useEffect(() => {
-    console.log('[Theme] colorScheme:', colorScheme);
-    console.log('[NavTheme] colors:', navTheme.colors);
-    console.log('[NavTheme] dark flag:', navTheme.dark);
-  }, [colorScheme, navTheme]);
 
   // Initialize notification handler and restore scheduled notifications
+  // This runs only after migrations are complete
   useEffect(() => {
     // Set up notification handler
     Notifications.setNotificationHandler({
@@ -146,6 +123,30 @@ function AppProviders() {
     };
   }, [router]);
 
+  return <>{children}</>;
+}
+
+export default function RootLayout() {
+  return (
+    <LocalizationProvider>
+      <ThemeProvider>
+        <AppProviders />
+      </ThemeProvider>
+    </LocalizationProvider>
+  );
+}
+
+function AppProviders() {
+  const { colorScheme } = useTheme();
+  const [queryClient] = useState(() => new QueryClient());
+  const { t } = useLocalization();
+
+  const navigationRef = useNavigationContainerRef();
+  const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
+
+  // Get the background color from THEME
+  const backgroundColor = colorScheme === 'dark' ? '#11181C' : '#F5F7FA';
+
   useEffect(() => {
     const logCurrentRoute = () => {
       const route = navigationRef.getCurrentRoute();
@@ -168,7 +169,7 @@ function AppProviders() {
   logger.log('Rendering AppProviders with colorScheme:', colorScheme);
 
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <NotificationProvider>
         <MigrationHandler>
           <QueryClientProvider client={queryClient}>
@@ -183,7 +184,6 @@ function AppProviders() {
                   }}>
                   <Stack.Screen name="index" options={{ headerShown: false }} />
                   <Stack.Screen name="profile-selection" options={{ headerShown: false }} />
-                  <Stack.Screen name="(tabs)/tracking" options={{ headerShown: false }} />
                   <Stack.Screen
                     name="feeding"
                     options={{ presentation: 'modal', headerShown: false }}

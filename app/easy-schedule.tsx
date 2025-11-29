@@ -390,7 +390,7 @@ export default function EasyScheduleScreen() {
     <View className="flex-1 bg-background">
       {/* Header */}
       <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-4">
-        <Pressable onPress={() => router.back()}>
+        <Pressable onPress={() => router.back()} testID="btn-close">
           <Text className="text-base font-semibold text-accent">{t('common.close')}</Text>
         </Pressable>
         <Text
@@ -522,7 +522,7 @@ export default function EasyScheduleScreen() {
                   <Text className="text-lg font-bold text-foreground">
                     {selectedPhase.item.label}
                   </Text>
-                  <TouchableOpacity onPress={closePhaseModal}>
+                  <TouchableOpacity onPress={closePhaseModal} testID="modal-close">
                     <Ionicons name="close" size={22} color={brandColors.colors.black} />
                   </TouchableOpacity>
                 </View>

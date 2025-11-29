@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { Image, View } from 'react-native';
+import { View } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -15,23 +16,26 @@ export function WelcomeStep({ headerText, onContinue }: WelcomeStepProps) {
   return (
     <View className="gap-6">
       <View className="flex-row items-center justify-between">
-        <Text className="text-sm text-neutral-500 underline">
+        <Text className="text-sm text-muted-foreground underline">
           {t('onboarding.welcome.privacy')}
         </Text>
-        <Text className="text-sm text-neutral-500 underline">{t('onboarding.welcome.terms')}</Text>
+        <Text className="text-sm text-muted-foreground underline">
+          {t('onboarding.welcome.terms')}
+        </Text>
       </View>
 
       <View className="items-center gap-4">
         <Image
           source={require('@/assets/images/icon.png')}
-          className="h-40 w-40"
-          resizeMode="contain"
+          style={{ width: 120, height: 120 }}
+          contentFit="contain"
+          transition={200}
         />
-        <Text className="text-center text-2xl font-semibold text-neutral-900">{headerText}</Text>
-        <Text className="text-center text-lg font-medium text-pink-500">
+        <Text className="text-center text-2xl font-semibold text-foreground">{headerText}</Text>
+        <Text className="text-center text-lg font-medium text-accent">
           {t('onboarding.welcome.quote')}
         </Text>
-        <Text className="text-center text-xs leading-5 text-neutral-500">
+        <Text className="text-center text-xs leading-5 text-muted-foreground">
           {t('onboarding.welcome.disclaimer')}
         </Text>
       </View>
