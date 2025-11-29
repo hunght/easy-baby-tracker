@@ -231,12 +231,6 @@ function AppProviders() {
                 </Stack>
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
                 <PortalHost />
-                {__DEV__ && (
-                  // Lightweight inline debug overlay to confirm current scheme
-                  <View className="absolute bottom-2 right-2 rounded-md bg-muted px-2 py-1">
-                    <Text className="text-xs text-muted-foreground">scheme: {colorScheme}</Text>
-                  </View>
-                )}
               </View>
             </NavigationThemeProvider>
           </QueryClientProvider>

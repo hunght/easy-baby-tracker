@@ -3,9 +3,9 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start -c",
-    "android": "expo start -c --android",
-    "ios": "expo start -c --ios",
+    "start": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c",
+    "android": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c --android",
+    "ios": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c --ios",
     "web": "expo start -c --web",
     "clean": "rm -rf .expo node_modules",
     "db:generate": "drizzle-kit generate",

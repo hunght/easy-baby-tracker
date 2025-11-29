@@ -1,0 +1,12 @@
+appId: host.exp.exponent
+---
+- launchApp
+- assertVisible: "Tracking"
+- waitForAnimationToEnd:
+    timeout: 3000
+- takeScreenshot: 01-tracking
+- tapOn: "E.A.S.Y"
+- takeScreenshot: 03-easy
+- tapOn: "Settings"
+- waitForAnimationToEnd
+- takeScreenshot: 02-settings
