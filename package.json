@@ -7,8 +7,6 @@
     "android": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c --android",
     "ios": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c --ios",
     "web": "expo start -c --web",
-    "maestro:ios": "IOS_DEVICE=\"iPhone 16e\" && open -a Simulator || true && xcrun simctl boot \"$IOS_DEVICE\" || true && kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c",
-    "maestro:screenshots:ios": "IOS_DEVICE=\"iPhone 16e\" && maestro test --device \"$IOS_DEVICE\" .maestro/app-store-screenshots.yaml",
     "clean": "rm -rf .expo node_modules",
     "db:generate": "drizzle-kit generate",
     "type-check": "tsc --noEmit",
@@ -17,7 +15,12 @@
     "format": "prettier --write \"**/*.{md,json,css,ts,tsx}\"",
     "find-unused": "ts-prune --error",
     "find-unused:detailed": "ts-prune",
-    "prepare": "husky"
+    "prepare": "husky",
+    "publish": "node scripts/publish.js",
+    "publish:android": "node scripts/publish.js --android-only",
+    "publish:ios": "node scripts/publish.js --ios-only",
+    "publish:build-only": "node scripts/publish.js --skip-submit",
+    "publish:submit-only": "node scripts/publish.js --skip-build"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.16.1",
