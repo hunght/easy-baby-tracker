@@ -28,17 +28,6 @@ platform :ios do
 
   desc "Upload metadata to App Store Connect"
   lane :upload_metadata do
-    review_info = {
-      contact_first_name: "Hung",
-      contact_last_name: "Hoang",
-      contact_phone: "+1 206 555 0100",
-      contact_email: "hth321@gmail.com",
-      demo_username: "demo@easybabytracker.com",
-      demo_password: "DemoPass123!",
-      demo_required: true,
-      notes: "Demo account provides access to all premium tracking features."
-    }
-
     deliver(
       skip_binary_upload: true,
       skip_screenshots: true,
@@ -47,8 +36,7 @@ platform :ios do
       metadata_path: "./fastlane/metadata/ios",
       team_id: "111225803", # "Hung Hoang The" team
       app_version: "1.0",
-      platform: "ios",
-      app_review_information: review_info
+      platform: "ios"
     )
   end
 
@@ -61,17 +49,6 @@ platform :ios do
 
   desc "Upload screenshots to App Store Connect"
   lane :upload_screenshots do
-    review_info = {
-      contact_first_name: "Hung",
-      contact_last_name: "Hoang",
-      contact_phone: "+1 206 555 0100",
-      contact_email: "hth321@gmail.com",
-      demo_username: "demo@easybabytracker.com",
-      demo_password: "DemoPass123!",
-      demo_required: true,
-      notes: "Demo account provides access to all premium tracking features."
-    }
-
     deliver(
       skip_binary_upload: true,
       skip_metadata: true,
@@ -81,7 +58,12 @@ platform :ios do
       team_id: "111225803", # "Hung Hoang The" team
       app_version: "1.0",
       platform: "ios",
-      app_review_information: review_info
+      app_review_information: {
+        "contact_first_name" => "Hung",
+        "contact_last_name" => "Hoang",
+        "contact_phone" => "+1 206 555 0100",
+        "contact_email" => "hth321@gmail.com"
+      }
     )
   end
 end

@@ -1,7 +1,7 @@
 {
   "name": "native-wind",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "start": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c",
     "android": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c --android",
