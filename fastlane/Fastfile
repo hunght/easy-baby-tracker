@@ -112,5 +112,219 @@ platform :android do
       metadata_path: "./fastlane/metadata/android"
     )
   end
+
+  desc "Check Android release status and tracks"
+  lane :check_release_status do
+    UI.message("📱 Checking Android release status for com.hunght.BabyEase...")
+    UI.message("")
+
+    package_name = "com.hunght.BabyEase"
+    json_key = "./google-play-key.json"
+    tracks = ["production", "beta", "alpha", "internal"]
+
+    begin
+      # Test connection first
+      supply(
+        skip_upload_apk: true,
+        skip_upload_aab: true,
+        skip_upload_metadata: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true,
+        skip_upload_changelogs: true,
+        package_name: package_name,
+        json_key: json_key,
+        validate_only: true
+      )
+      UI.success("✅ Successfully connected to Google Play Console")
+      UI.message("")
+
+      # Get release information for each track
+      tracks.each do |track|
+        UI.message("📊 Checking #{track.upcase} track...")
+        begin
+          version_codes = google_play_track_version_codes(
+            package_name: package_name,
+            track: track,
+            json_key: json_key
+          )
+
+          release_names = google_play_track_release_names(
+            package_name: package_name,
+            track: track,
+            json_key: json_key
+          )
+
+          if version_codes && version_codes.length > 0
+            UI.success("   Version Codes: #{version_codes.join(', ')}")
+            UI.success("   Release Names: #{release_names.join(', ') if release_names}")
+            UI.message("   Latest Version Code: #{version_codes.first}")
+            if release_names && release_names.length > 0
+              UI.message("   Latest Release Name: #{release_names.first}")
+            end
+          else
+            UI.important("   No releases found in #{track} track")
+          end
+        rescue => ex
+          UI.important("   ⚠️  Could not retrieve #{track} track info: #{ex.message}")
+        end
+        UI.message("")
+      end
+
+      UI.message("📊 For more detailed status, visit:")
+      UI.message("   https://play.google.com/console/developers")
+      UI.message("   Navigate to: Release > Production")
+
+    rescue => ex
+      UI.important("⚠️  Could not connect to Google Play Console API")
+      UI.important("   Error: #{ex.message}")
+      UI.important("   Please check your google-play-key.json file")
+      UI.message("")
+      UI.message("📊 You can still check release status manually at:")
+      UI.message("   https://play.google.com/console/developers")
+    end
+  end
+
+  desc "Promote version 1.0.1 (version code 3) from internal to production"
+  lane :promote_to_production do
+    package_name = "com.hunght.BabyEase"
+    json_key = "./google-play-key.json"
+    target_version_code = 3  # Version code for 1.0.1
+
+    UI.message("🚀 Promoting version 1.0.1 (version code #{target_version_code}) to production...")
+    UI.message("")
+
+    begin
+      # Promote from internal to production
+      # Note: This requires the version to exist in a lower track (internal)
+      supply(
+        package_name: package_name,
+        json_key: json_key,
+        track: "internal",
+        track_promote_to: "production",
+        version_code: target_version_code,
+        skip_upload_apk: true,
+        skip_upload_aab: true,
+        skip_upload_metadata: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true,
+        skip_upload_changelogs: true
+      )
+      UI.success("✅ Successfully promoted version 1.0.1 to PRODUCTION")
+      UI.message("")
+      UI.message("Note: The old 1.0.0 version will be automatically superseded in production")
+    rescue => ex
+      UI.important("⚠️  Could not promote to production: #{ex.message}")
+      UI.important("")
+      UI.important("Manual steps:")
+      UI.important("1. Visit: https://play.google.com/console/developers")
+      UI.important("2. Go to: Release > Internal testing")
+      UI.important("3. Find version 1.0.1 (version code 3)")
+      UI.important("4. Click 'Promote release' > Select 'Production'")
+    end
+  end
+
+  desc "Promote version 1.0.1 (version code 3) from internal to beta track"
+  lane :promote_to_beta do
+    package_name = "com.hunght.BabyEase"
+    json_key = "./google-play-key.json"
+    target_version_code = 3  # Version code for 1.0.1
+
+    UI.message("🚀 Promoting version 1.0.1 (version code #{target_version_code}) to beta...")
+    UI.message("")
+
+    begin
+      supply(
+        package_name: package_name,
+        json_key: json_key,
+        track: "internal",
+        track_promote_to: "beta",
+        version_code: target_version_code,
+        skip_upload_apk: true,
+        skip_upload_aab: true,
+        skip_upload_metadata: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true,
+        skip_upload_changelogs: true
+      )
+      UI.success("✅ Successfully promoted version 1.0.1 to BETA")
+      UI.message("")
+      UI.message("Note: The old 1.0.0 version will be automatically superseded in beta")
+    rescue => ex
+      UI.important("⚠️  Could not promote to beta: #{ex.message}")
+    end
+  end
+
+  desc "Promote version 1.0.1 (version code 3) from internal to alpha track"
+  lane :promote_to_alpha do
+    package_name = "com.hunght.BabyEase"
+    json_key = "./google-play-key.json"
+    target_version_code = 3  # Version code for 1.0.1
+
+    UI.message("🚀 Promoting version 1.0.1 (version code #{target_version_code}) to alpha...")
+    UI.message("")
+
+    begin
+      supply(
+        package_name: package_name,
+        json_key: json_key,
+        track: "internal",
+        track_promote_to: "alpha",
+        version_code: target_version_code,
+        skip_upload_apk: true,
+        skip_upload_aab: true,
+        skip_upload_metadata: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true,
+        skip_upload_changelogs: true
+      )
+      UI.success("✅ Successfully promoted version 1.0.1 to ALPHA")
+      UI.message("")
+      UI.message("Note: The old 1.0.0 version will be automatically superseded in alpha")
+    rescue => ex
+      UI.important("⚠️  Could not promote to alpha: #{ex.message}")
+    end
+  end
+
+  desc "Promote version 1.0.1 to both Beta and Alpha tracks"
+  lane :promote_to_testing_tracks do
+    UI.message("🚀 Promoting version 1.0.1 to Beta and Alpha tracks...")
+    UI.message("")
+
+    UI.message("Step 1: Promoting to Beta...")
+    promote_to_beta
+
+    UI.message("")
+    UI.message("Step 2: Promoting to Alpha...")
+    promote_to_alpha
+
+    UI.message("")
+    UI.success("✅ Successfully promoted version 1.0.1 to Beta and Alpha tracks")
+    UI.message("")
+    UI.message("Note: Old 1.0.0 versions are now automatically superseded in all tracks")
+  end
+
+  desc "Complete process: Promote 1.0.1 to all tracks (Production, Beta, Alpha)"
+  lane :cleanup_releases do
+    UI.message("🧹 Starting release cleanup process...")
+    UI.message("")
+    UI.message("This will promote version 1.0.1 to all tracks, automatically superseding old 1.0.0 versions")
+    UI.message("")
+
+    # Step 1: Promote 1.0.1 to production
+    UI.message("Step 1: Promoting 1.0.1 to Production...")
+    promote_to_production
+
+    UI.message("")
+    UI.message("Step 2: Promoting 1.0.1 to Beta and Alpha...")
+    promote_to_testing_tracks
+
+    UI.message("")
+    UI.success("✅ Cleanup process completed!")
+    UI.message("")
+    UI.message("📊 All tracks now have version 1.0.1, and old 1.0.0 versions are superseded")
+    UI.message("")
+    UI.message("Check the results:")
+    UI.message("   fastlane android check_release_status")
+  end
 end
 

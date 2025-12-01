@@ -82,6 +82,54 @@ Download screenshots from Google Play Console
 
 Upload screenshots to Google Play Console
 
+### android check_release_status
+
+```sh
+[bundle exec] fastlane android check_release_status
+```
+
+Check Android release status and tracks
+
+### android promote_to_production
+
+```sh
+[bundle exec] fastlane android promote_to_production
+```
+
+Promote version 1.0.1 (version code 3) from internal to production
+
+### android promote_to_beta
+
+```sh
+[bundle exec] fastlane android promote_to_beta
+```
+
+Promote version 1.0.1 (version code 3) from internal to beta track
+
+### android promote_to_alpha
+
+```sh
+[bundle exec] fastlane android promote_to_alpha
+```
+
+Promote version 1.0.1 (version code 3) from internal to alpha track
+
+### android promote_to_testing_tracks
+
+```sh
+[bundle exec] fastlane android promote_to_testing_tracks
+```
+
+Promote version 1.0.1 to both Beta and Alpha tracks
+
+### android cleanup_releases
+
+```sh
+[bundle exec] fastlane android cleanup_releases
+```
+
+Complete process: Promote 1.0.1 to all tracks (Production, Beta, Alpha)
+
 ---
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
