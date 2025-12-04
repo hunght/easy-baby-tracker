@@ -96,7 +96,7 @@ Check Android release status and tracks
 [bundle exec] fastlane android promote_to_production
 ```
 
-Promote version 1.0.1 (version code 3) from internal to production
+Promote version 1.0.2 (version code 4) from internal to production
 
 ### android promote_to_beta
 
@@ -104,7 +104,7 @@ Promote version 1.0.1 (version code 3) from internal to production
 [bundle exec] fastlane android promote_to_beta
 ```
 
-Promote version 1.0.1 (version code 3) from internal to beta track
+Promote version 1.0.2 (version code 4) from internal to beta track
 
 ### android promote_to_alpha
 
@@ -112,7 +112,7 @@ Promote version 1.0.1 (version code 3) from internal to beta track
 [bundle exec] fastlane android promote_to_alpha
 ```
 
-Promote version 1.0.1 (version code 3) from internal to alpha track
+Promote version 1.0.2 (version code 4) from internal to alpha track
 
 ### android promote_to_testing_tracks
 
@@ -120,15 +120,15 @@ Promote version 1.0.1 (version code 3) from internal to alpha track
 [bundle exec] fastlane android promote_to_testing_tracks
 ```
 
-Promote version 1.0.1 to both Beta and Alpha tracks
+Promote version 1.0.2 to both Beta and Alpha tracks
 
-### android cleanup_releases
+### android promote_all_tracks
 
 ```sh
-[bundle exec] fastlane android cleanup_releases
+[bundle exec] fastlane android promote_all_tracks
 ```
 
-Complete process: Promote 1.0.1 to all tracks (Production, Beta, Alpha)
+Complete process: Promote 1.0.2 to all tracks (Production, Beta, Alpha)
 
 ---
 

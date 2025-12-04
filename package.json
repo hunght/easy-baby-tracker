@@ -1,7 +1,7 @@
 {
   "name": "native-wind",
   "main": "expo-router/entry",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "scripts": {
     "start": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c",
     "android": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c --android",
@@ -21,7 +21,14 @@
     "publish:ios": "node scripts/publish.js --ios-only",
     "publish:build-only": "node scripts/publish.js --skip-submit",
     "publish:submit-only": "node scripts/publish.js --skip-build",
-    "generate:icons": "node scripts/generate-icons.js"
+    "generate:icons": "node scripts/generate-icons.js",
+    "release:android": "node scripts/release-android.js",
+    "release:android:patch": "node scripts/release-android.js --patch",
+    "release:android:minor": "node scripts/release-android.js --minor",
+    "release:android:major": "node scripts/release-android.js --major",
+    "release:android:auto": "node scripts/release-android.js --auto-promote",
+    "release:android:build-only": "node scripts/release-android.js --skip-promote",
+    "release:android:promote-only": "node scripts/release-android.js --skip-build --auto-promote"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.16.1",

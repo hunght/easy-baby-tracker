@@ -78,14 +78,18 @@ platform :android do
   end
 
   desc "Upload metadata to Google Play Console"
-  lane :upload_metadata do
+  lane :upload_metadata do |options|
+    skip_changelogs = options[:skip_changelogs] || false
+    version_code = options[:version_code] || 4  # Default to latest version code
+
     supply(
       skip_upload_apk: true,
       skip_upload_aab: true,
       skip_upload_metadata: false,
       skip_upload_images: false,
       skip_upload_screenshots: false,
-      skip_upload_changelogs: true,
+      skip_upload_changelogs: skip_changelogs,
+      version_code: skip_changelogs ? nil : version_code,
       package_name: "com.hunght.BabyEase",
       metadata_path: "./fastlane/metadata/android",
       json_key: "./google-play-key.json"
@@ -184,13 +188,13 @@ platform :android do
     end
   end
 
-  desc "Promote version 1.0.1 (version code 3) from internal to production"
+  desc "Promote version 1.0.2 (version code 4) from internal to production"
   lane :promote_to_production do
     package_name = "com.hunght.BabyEase"
     json_key = "./google-play-key.json"
-    target_version_code = 3  # Version code for 1.0.1
+    target_version_code = 4  # Version code for 1.0.2
 
-    UI.message("🚀 Promoting version 1.0.1 (version code #{target_version_code}) to production...")
+    UI.message("🚀 Promoting version 1.0.2 (version code #{target_version_code}) to production...")
     UI.message("")
 
     begin
@@ -207,29 +211,31 @@ platform :android do
         skip_upload_metadata: true,
         skip_upload_images: true,
         skip_upload_screenshots: true,
-        skip_upload_changelogs: true
+        skip_upload_changelogs: false
       )
-      UI.success("✅ Successfully promoted version 1.0.1 to PRODUCTION")
+      UI.success("✅ Successfully promoted version 1.0.2 to PRODUCTION")
       UI.message("")
-      UI.message("Note: The old 1.0.0 version will be automatically superseded in production")
+      UI.message("Note: The old 1.0.1 version will be automatically superseded in production")
+      UI.message("")
+      UI.message("The app is now submitted for Google Play review to address the misleading claims issue")
     rescue => ex
       UI.important("⚠️  Could not promote to production: #{ex.message}")
       UI.important("")
       UI.important("Manual steps:")
       UI.important("1. Visit: https://play.google.com/console/developers")
       UI.important("2. Go to: Release > Internal testing")
-      UI.important("3. Find version 1.0.1 (version code 3)")
+      UI.important("3. Find version 1.0.2 (version code 4)")
       UI.important("4. Click 'Promote release' > Select 'Production'")
     end
   end
 
-  desc "Promote version 1.0.1 (version code 3) from internal to beta track"
+  desc "Promote version 1.0.2 (version code 4) from internal to beta track"
   lane :promote_to_beta do
     package_name = "com.hunght.BabyEase"
     json_key = "./google-play-key.json"
-    target_version_code = 3  # Version code for 1.0.1
+    target_version_code = 4  # Version code for 1.0.2
 
-    UI.message("🚀 Promoting version 1.0.1 (version code #{target_version_code}) to beta...")
+    UI.message("🚀 Promoting version 1.0.2 (version code #{target_version_code}) to beta...")
     UI.message("")
 
     begin
@@ -244,23 +250,23 @@ platform :android do
         skip_upload_metadata: true,
         skip_upload_images: true,
         skip_upload_screenshots: true,
-        skip_upload_changelogs: true
+        skip_upload_changelogs: false
       )
-      UI.success("✅ Successfully promoted version 1.0.1 to BETA")
+      UI.success("✅ Successfully promoted version 1.0.2 to BETA")
       UI.message("")
-      UI.message("Note: The old 1.0.0 version will be automatically superseded in beta")
+      UI.message("Note: The old 1.0.1 version will be automatically superseded in beta")
     rescue => ex
       UI.important("⚠️  Could not promote to beta: #{ex.message}")
     end
   end
 
-  desc "Promote version 1.0.1 (version code 3) from internal to alpha track"
+  desc "Promote version 1.0.2 (version code 4) from internal to alpha track"
   lane :promote_to_alpha do
     package_name = "com.hunght.BabyEase"
     json_key = "./google-play-key.json"
-    target_version_code = 3  # Version code for 1.0.1
+    target_version_code = 4  # Version code for 1.0.2
 
-    UI.message("🚀 Promoting version 1.0.1 (version code #{target_version_code}) to alpha...")
+    UI.message("🚀 Promoting version 1.0.2 (version code #{target_version_code}) to alpha...")
     UI.message("")
 
     begin
@@ -275,19 +281,19 @@ platform :android do
         skip_upload_metadata: true,
         skip_upload_images: true,
         skip_upload_screenshots: true,
-        skip_upload_changelogs: true
+        skip_upload_changelogs: false
       )
-      UI.success("✅ Successfully promoted version 1.0.1 to ALPHA")
+      UI.success("✅ Successfully promoted version 1.0.2 to ALPHA")
       UI.message("")
-      UI.message("Note: The old 1.0.0 version will be automatically superseded in alpha")
+      UI.message("Note: The old 1.0.1 version will be automatically superseded in alpha")
     rescue => ex
       UI.important("⚠️  Could not promote to alpha: #{ex.message}")
     end
   end
 
-  desc "Promote version 1.0.1 to both Beta and Alpha tracks"
+  desc "Promote version 1.0.2 to both Beta and Alpha tracks"
   lane :promote_to_testing_tracks do
-    UI.message("🚀 Promoting version 1.0.1 to Beta and Alpha tracks...")
+    UI.message("🚀 Promoting version 1.0.2 to Beta and Alpha tracks...")
     UI.message("")
 
     UI.message("Step 1: Promoting to Beta...")
@@ -298,30 +304,30 @@ platform :android do
     promote_to_alpha
 
     UI.message("")
-    UI.success("✅ Successfully promoted version 1.0.1 to Beta and Alpha tracks")
+    UI.success("✅ Successfully promoted version 1.0.2 to Beta and Alpha tracks")
     UI.message("")
-    UI.message("Note: Old 1.0.0 versions are now automatically superseded in all tracks")
+    UI.message("Note: Old 1.0.1 versions are now automatically superseded in all tracks")
   end
 
-  desc "Complete process: Promote 1.0.1 to all tracks (Production, Beta, Alpha)"
-  lane :cleanup_releases do
-    UI.message("🧹 Starting release cleanup process...")
+  desc "Complete process: Promote 1.0.2 to all tracks (Production, Beta, Alpha)"
+  lane :promote_all_tracks do
+    UI.message("🚀 Starting promotion process...")
     UI.message("")
-    UI.message("This will promote version 1.0.1 to all tracks, automatically superseding old 1.0.0 versions")
+    UI.message("This will promote version 1.0.2 to all tracks, automatically superseding old 1.0.1 versions")
     UI.message("")
 
-    # Step 1: Promote 1.0.1 to production
-    UI.message("Step 1: Promoting 1.0.1 to Production...")
+    # Step 1: Promote 1.0.2 to production
+    UI.message("Step 1: Promoting 1.0.2 to Production...")
     promote_to_production
 
     UI.message("")
-    UI.message("Step 2: Promoting 1.0.1 to Beta and Alpha...")
+    UI.message("Step 2: Promoting 1.0.2 to Beta and Alpha...")
     promote_to_testing_tracks
 
     UI.message("")
-    UI.success("✅ Cleanup process completed!")
+    UI.success("✅ Promotion process completed!")
     UI.message("")
-    UI.message("📊 All tracks now have version 1.0.1, and old 1.0.0 versions are superseded")
+    UI.message("📊 All tracks now have version 1.0.2, and old 1.0.1 versions are superseded")
     UI.message("")
     UI.message("Check the results:")
     UI.message("   fastlane android check_release_status")

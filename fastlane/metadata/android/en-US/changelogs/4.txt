@@ -1,0 +1,7 @@
+Bug fixes and improvements:
+• Verified app name and icon consistency with Play Store listing
+• Enhanced app stability and performance
+• Minor UI improvements
+
+We've ensured the app name "Easy Baby Tracker" and icon are displayed correctly on your device to match the Play Store listing.
+

@@ -5,52 +5,52 @@
     
     
       
-      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000193">
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000327">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="1: supply" time="2.52274">
+      <testcase classname="fastlane.lanes" name="1: supply" time="3.124759">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="2: google_play_track_version_codes" time="1.843167">
+      <testcase classname="fastlane.lanes" name="2: google_play_track_version_codes" time="2.084843">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="3: google_play_track_release_names" time="1.778736">
+      <testcase classname="fastlane.lanes" name="3: google_play_track_release_names" time="2.348658">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="4: google_play_track_version_codes" time="1.820215">
+      <testcase classname="fastlane.lanes" name="4: google_play_track_version_codes" time="2.86332">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="5: google_play_track_release_names" time="2.216529">
+      <testcase classname="fastlane.lanes" name="5: google_play_track_release_names" time="2.289322">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="6: google_play_track_version_codes" time="1.83845">
+      <testcase classname="fastlane.lanes" name="6: google_play_track_version_codes" time="2.232082">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="7: google_play_track_release_names" time="2.273795">
+      <testcase classname="fastlane.lanes" name="7: google_play_track_release_names" time="2.922693">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="8: google_play_track_version_codes" time="1.948918">
+      <testcase classname="fastlane.lanes" name="8: google_play_track_version_codes" time="2.168049">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="9: google_play_track_release_names" time="1.787343">
+      <testcase classname="fastlane.lanes" name="9: google_play_track_release_names" time="2.875516">
         
       </testcase>
     
