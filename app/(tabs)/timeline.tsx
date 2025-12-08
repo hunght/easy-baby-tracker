@@ -4,8 +4,8 @@ import React, { useMemo } from 'react';
 import { ActivityIndicator, SectionList, View } from 'react-native';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
-import { TimelineFilters } from '@/features/timeline/components/TimelineFilters';
-import { TimelineItem } from '@/features/timeline/components/TimelineItem';
+import { TimelineFilters } from '@/pages/timeline/components/TimelineFilters';
+import { TimelineItem } from '@/pages/timeline/components/TimelineItem';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
 import { useBrandColor } from '@/hooks/use-brand-color';

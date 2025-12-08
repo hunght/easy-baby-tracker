@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
-import { OnboardingScreen } from '@/features/onboarding/OnboardingScreen';
+import { OnboardingScreen } from '@/pages/onboarding/OnboardingScreen';
 import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
 import { getActiveBabyProfile, getBabyProfiles } from '@/database/baby-profile';

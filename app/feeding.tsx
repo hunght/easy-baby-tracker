@@ -4,9 +4,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { BottleFeedingForm } from '@/features/feeding/components/BottleFeedingForm';
-import { BreastFeedingForm } from '@/features/feeding/components/BreastFeedingForm';
-import { SolidsFeedingForm } from '@/features/feeding/components/SolidsFeedingForm';
+import { BottleFeedingForm } from '@/pages/feeding/components/BottleFeedingForm';
+import { BreastFeedingForm } from '@/pages/feeding/components/BreastFeedingForm';
+import { SolidsFeedingForm } from '@/pages/feeding/components/SolidsFeedingForm';
 import { ModalHeader } from '@/components/ModalHeader';
 import { Input } from '@/components/ui/input';
 import { useNotification } from '@/components/NotificationContext';

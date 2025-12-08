@@ -1,4 +1,4 @@
-import { SignInForm } from '@/features/auth/components/sign-in-form';
+import { SignInForm } from '@/pages/auth/components/sign-in-form';
 import * as React from 'react';
 import { ScrollView, View } from 'react-native';
 

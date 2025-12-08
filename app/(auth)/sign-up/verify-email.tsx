@@ -1,4 +1,4 @@
-import { VerifyEmailForm } from '@/features/auth/components/verify-email-form';
+import { VerifyEmailForm } from '@/pages/auth/components/verify-email-form';
 import { ScrollView, View } from 'react-native';
 
 export default function VerifyEmailScreen() {

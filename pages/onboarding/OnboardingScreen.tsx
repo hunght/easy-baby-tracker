@@ -3,10 +3,10 @@ import { useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BabyProfileStep } from '@/features/onboarding/components/BabyProfileStep';
-import { ConcernsStep } from '@/features/onboarding/components/ConcernsStep';
-import { FeaturesStep } from '@/features/onboarding/components/FeaturesStep';
-import { WelcomeStep } from '@/features/onboarding/components/WelcomeStep';
+import { BabyProfileStep } from '@/pages/onboarding/components/BabyProfileStep';
+import { ConcernsStep } from '@/pages/onboarding/components/ConcernsStep';
+import { FeaturesStep } from '@/pages/onboarding/components/FeaturesStep';
+import { WelcomeStep } from '@/pages/onboarding/components/WelcomeStep';
 import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
 import { BabyProfilePayload, saveOnboardingProfile } from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';

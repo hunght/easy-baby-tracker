@@ -4,10 +4,10 @@ import { Text } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
-import { DiaperCharts } from '@/features/charts/components/DiaperCharts';
-import { FeedingCharts } from '@/features/charts/components/FeedingCharts';
-import { GrowthCharts } from '@/features/charts/components/GrowthCharts';
-import { SleepCharts } from '@/features/charts/components/SleepCharts';
+import { DiaperCharts } from '@/pages/charts/components/DiaperCharts';
+import { FeedingCharts } from '@/pages/charts/components/FeedingCharts';
+import { GrowthCharts } from '@/pages/charts/components/GrowthCharts';
+import { SleepCharts } from '@/pages/charts/components/SleepCharts';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 type ChartCategory = 'feeding' | 'sleep' | 'growth' | 'diaper';
