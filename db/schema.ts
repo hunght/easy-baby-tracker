@@ -105,6 +105,7 @@ export const babyProfiles = sqliteTable('baby_profiles', {
   birthDate: text('birth_date').notNull(),
   dueDate: text('due_date').notNull(),
   firstWakeTime: text('first_wake_time').default('07:00').notNull(),
+  selectedEasyFormulaId: text('selected_easy_formula_id'),
   createdAt: integer('created_at', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
 });
 

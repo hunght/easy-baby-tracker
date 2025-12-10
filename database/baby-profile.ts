@@ -86,6 +86,7 @@ export async function getBabyProfiles(): Promise<BabyProfileRecord[]> {
       birthDate: schema.babyProfiles.birthDate,
       dueDate: schema.babyProfiles.dueDate,
       firstWakeTime: schema.babyProfiles.firstWakeTime,
+      selectedEasyFormulaId: schema.babyProfiles.selectedEasyFormulaId,
       createdAt: schema.babyProfiles.createdAt,
       concerns: sql<string | null>`GROUP_CONCAT(${schema.concernChoices.concernId})`.as(
         'concerns_csv'
@@ -103,6 +104,7 @@ export async function getBabyProfiles(): Promise<BabyProfileRecord[]> {
     birthDate: profile.birthDate,
     dueDate: profile.dueDate,
     firstWakeTime: profile.firstWakeTime ?? '07:00',
+    selectedEasyFormulaId: profile.selectedEasyFormulaId ?? null,
     createdAt: profile.createdAt,
     concerns: profile.concerns ? profile.concerns.split(',') : [],
   }));
@@ -117,6 +119,7 @@ export async function getBabyProfileById(babyId: number): Promise<BabyProfileRec
       birthDate: schema.babyProfiles.birthDate,
       dueDate: schema.babyProfiles.dueDate,
       firstWakeTime: schema.babyProfiles.firstWakeTime,
+      selectedEasyFormulaId: schema.babyProfiles.selectedEasyFormulaId,
       createdAt: schema.babyProfiles.createdAt,
       concerns: sql<string | null>`GROUP_CONCAT(${schema.concernChoices.concernId})`.as(
         'concerns_csv'
@@ -140,6 +143,7 @@ export async function getBabyProfileById(babyId: number): Promise<BabyProfileRec
     birthDate: profile.birthDate,
     dueDate: profile.dueDate,
     firstWakeTime: profile.firstWakeTime ?? '07:00',
+    selectedEasyFormulaId: profile.selectedEasyFormulaId ?? null,
     createdAt: profile.createdAt,
     concerns: profile.concerns ? profile.concerns.split(',') : [],
   };
@@ -206,6 +210,7 @@ export async function getBabyProfile(): Promise<BabyProfileRecord | null> {
     birthDate: profile[0].birthDate,
     dueDate: profile[0].dueDate,
     firstWakeTime: profile[0].firstWakeTime ?? '07:00',
+    selectedEasyFormulaId: profile[0].selectedEasyFormulaId,
     createdAt: profile[0].createdAt,
     concerns: concerns.map((c) => c.concernId),
   };
@@ -244,5 +249,15 @@ export async function updateBabyFirstWakeTime(
   await db
     .update(schema.babyProfiles)
     .set({ firstWakeTime })
+    .where(eq(schema.babyProfiles.id, babyId));
+}
+
+export async function updateSelectedEasyFormula(
+  babyId: number,
+  formulaId: string | null
+): Promise<void> {
+  await db
+    .update(schema.babyProfiles)
+    .set({ selectedEasyFormulaId: formulaId })
     .where(eq(schema.babyProfiles.id, babyId));
 }

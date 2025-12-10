@@ -75,6 +75,12 @@ export default function EasyScheduleInfoScreen() {
       : fallbackRuleId;
 
   const formulaRule = getEasyFormulaRuleById(ruleId);
+  const sortedRules = [...EASY_FORMULA_RULES].sort((a, b) => a.minWeeks - b.minWeeks);
+  const chooseFormulaLabel =
+    t('easySchedule.formulaTable.labels.chooseFormula') ===
+    'easySchedule.formulaTable.labels.chooseFormula'
+      ? 'Choose a formula'
+      : t('easySchedule.formulaTable.labels.chooseFormula');
 
   const formulaRows = [
     { label: t('easySchedule.formulaTable.labels.cycle'), value: t(formulaRule.cycleKey) },
@@ -125,6 +131,41 @@ export default function EasyScheduleInfoScreen() {
         </View>
 
         {/* Formula Details */}
+        <View className="mb-4 rounded-lg bg-card p-5">
+          <Text className="mb-3 text-lg font-semibold text-foreground">
+            {chooseFormulaLabel}
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerClassName="flex-row gap-2 pb-2">
+            {sortedRules.map((rule) => {
+              const isActive = rule.id === ruleId;
+              return (
+                <Pressable
+                  key={rule.id}
+                  onPress={() =>
+                    router.replace({
+                      pathname: '/easy-schedule-info',
+                      params: { ruleId: rule.id },
+                    })
+                  }
+                  className={`rounded-full border px-3 py-2 ${
+                    isActive ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                  }`}>
+                  <Text
+                    className={`text-sm font-semibold ${
+                      isActive ? 'text-primary' : 'text-foreground'
+                    }`}>
+                    {t(rule.labelKey)}
+                  </Text>
+                  <Text className="text-xs text-muted-foreground">{t(rule.ageRangeKey)}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         <View className="mb-4 rounded-lg bg-card p-5">
           <Text className="mb-3 text-lg font-semibold text-foreground">
             {t('easySchedule.formulaTable.heading')}

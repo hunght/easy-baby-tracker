@@ -1,0 +1,1 @@
+ALTER TABLE `baby_profiles` ADD `selected_easy_formula_id` text;
