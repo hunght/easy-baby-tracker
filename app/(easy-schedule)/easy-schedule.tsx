@@ -1,4 +1,3 @@
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, ScrollView, View } from 'react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -37,8 +36,6 @@ export default function EasyScheduleScreen() {
   const queryClient = useQueryClient();
   const wakeTimeSyncedRef = useRef<string | null>(null);
   const [firstWakeTime, setFirstWakeTime] = useState('07:00');
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [tempTime, setTempTime] = useState(new Date());
   const [phaseModalVisible, setPhaseModalVisible] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<{
     item: EasyScheduleItem;
@@ -122,24 +119,6 @@ export default function EasyScheduleScreen() {
     [babyProfile?.id, queryClient, t]
   );
 
-  const handleTimeChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowTimePicker(false);
-    if (selectedDate) {
-      const hours = selectedDate.getHours().toString().padStart(2, '0');
-      const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
-      const newTime = `${hours}:${minutes}`;
-      void persistFirstWakeTime(newTime);
-    }
-  };
-
-  const openTimePicker = () => {
-    const [hours, minutes] = firstWakeTime.split(':').map(Number);
-    const date = new Date();
-    date.setHours(hours, minutes, 0, 0);
-    setTempTime(date);
-    setShowTimePicker(true);
-  };
-
   const groupedSchedule = (() => {
     const groups: { number: number; items: EasyScheduleItem[] }[] = [];
     let currentGroup: EasyScheduleItem[] = [];
@@ -195,9 +174,20 @@ export default function EasyScheduleScreen() {
     [persistFirstWakeTime]
   );
 
+  const handleWakeTimeChange = useCallback(
+    (time: string) => {
+      void persistFirstWakeTime(time);
+    },
+    [persistFirstWakeTime]
+  );
+
   return (
     <View className="flex-1 bg-background">
-      <ScheduleHeader formulaRule={formulaRule} onOpenTimePicker={openTimePicker} />
+      <ScheduleHeader
+        formulaRule={formulaRule}
+        firstWakeTime={firstWakeTime}
+        onWakeTimeChange={handleWakeTimeChange}
+      />
 
       <ScrollView contentContainerClassName="p-5 pb-10 gap-3" showsVerticalScrollIndicator={false}>
         <Text className="text-xs text-muted-foreground" numberOfLines={1} ellipsizeMode="tail">
@@ -225,21 +215,6 @@ export default function EasyScheduleScreen() {
         onClose={closePhaseModal}
         onAdjustmentApplied={handleAdjustmentApplied}
       />
-
-      {showTimePicker && (
-        <View className="rounded-t-lg bg-card pt-3">
-          <Text className="mb-2 text-center text-sm font-semibold text-foreground">
-            {t('easySchedule.firstWakeTimeTitle')}
-          </Text>
-          <DateTimePicker
-            value={tempTime}
-            mode="time"
-            is24Hour={true}
-            display="spinner"
-            onChange={handleTimeChange}
-          />
-        </View>
-      )}
     </View>
   );
 }
