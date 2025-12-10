@@ -7,10 +7,6 @@ import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getActiveBabyProfile, updateBabyFirstWakeTime } from '@/database/baby-profile';
-import {
-  requestNotificationPermissions,
-  scheduleEasyScheduleReminder,
-} from '@/lib/notification-scheduler';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
 import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
@@ -23,8 +19,6 @@ import {
 } from '@/lib/easy-schedule-generator';
 import type { EasyScheduleItem, EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
 
-const MINUTES_IN_DAY = 1440;
-
 function calculateAgeInWeeks(birthDate: string): number {
   const birth = new Date(birthDate);
   const now = new Date();
@@ -36,24 +30,6 @@ function calculateAgeInWeeks(birthDate: string): number {
 function timeStringToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + minutes;
-}
-
-function minutesToDate(minutes: number): Date {
-  const dayOffset = Math.floor(minutes / MINUTES_IN_DAY);
-  const minutesInDay = minutes % MINUTES_IN_DAY;
-  const hours = Math.floor(minutesInDay / 60);
-  const mins = minutesInDay % 60;
-  const date = new Date();
-  date.setDate(date.getDate() + dayOffset);
-  date.setHours(hours, mins, 0, 0);
-  return date;
-}
-
-function minutesToTimeString(minutes: number): string {
-  const normalizedMinutes = ((minutes % MINUTES_IN_DAY) + MINUTES_IN_DAY) % MINUTES_IN_DAY;
-  const hours = Math.floor(normalizedMinutes / 60);
-  const mins = normalizedMinutes % 60;
-  return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
 
 export default function EasyScheduleScreen() {
@@ -70,8 +46,6 @@ export default function EasyScheduleScreen() {
     endTimeLabel: string;
     durationLabel: string;
   } | null>(null);
-  const [adjustPickerVisible, setAdjustPickerVisible] = useState(false);
-  const [adjustPickerValue, setAdjustPickerValue] = useState(new Date());
 
   const { data: babyProfile } = useQuery({
     queryKey: BABY_PROFILE_QUERY_KEY,
@@ -191,52 +165,6 @@ export default function EasyScheduleScreen() {
     return groups;
   })();
 
-  const handleScheduleReminder = useCallback(
-    async (item: EasyScheduleItem, targetMinutes: number, endTimeLabel: string) => {
-      const targetDate = minutesToDate(targetMinutes);
-      const now = new Date();
-      const secondsUntil = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
-
-      if (secondsUntil <= 0) {
-        Alert.alert(t('easySchedule.reminder.pastTitle'), t('easySchedule.reminder.pastMessage'));
-        return;
-      }
-
-      const hasPermission = await requestNotificationPermissions();
-      if (!hasPermission) {
-        Alert.alert(
-          t('easySchedule.reminder.permissionDeniedTitle'),
-          t('easySchedule.reminder.permissionDeniedBody')
-        );
-        return;
-      }
-
-      try {
-        const notificationId = await scheduleEasyScheduleReminder({
-          targetDate,
-          activityType: item.activityType,
-          label: item.label,
-          notificationTitle: t('easySchedule.reminder.notificationTitle'),
-          notificationBody: t('easySchedule.reminder.notificationBody', {
-            params: { label: item.label, time: endTimeLabel },
-          }),
-        });
-
-        if (notificationId) {
-          Alert.alert(
-            t('easySchedule.reminder.scheduledTitle'),
-            t('easySchedule.reminder.scheduledBody', { params: { time: endTimeLabel } })
-          );
-        } else {
-          Alert.alert(t('common.error'), t('easySchedule.reminder.scheduleError'));
-        }
-      } catch (error) {
-        Alert.alert(t('common.error'), error instanceof Error ? error.message : String(error));
-      }
-    },
-    [t]
-  );
-
   const openPhaseModal = useCallback(
     (
       item: EasyScheduleItem,
@@ -258,32 +186,14 @@ export default function EasyScheduleScreen() {
   const closePhaseModal = () => {
     setPhaseModalVisible(false);
     setSelectedPhase(null);
-    setAdjustPickerVisible(false);
   };
 
-  const openAdjustPicker = () => {
-    if (!selectedPhase) return;
-    setAdjustPickerValue(minutesToDate(selectedPhase.timing.startMinutes));
-    setAdjustPickerVisible(true);
-  };
-
-  const handleAdjustPickerChange = (_event: DateTimePickerEvent, date?: Date) => {
-    if (date) {
-      setAdjustPickerValue(date);
-    }
-  };
-
-  const applyAdjustment = () => {
-    if (!selectedPhase) return;
-    const dayOffset = Math.floor(selectedPhase.timing.startMinutes / MINUTES_IN_DAY);
-    const pickedMinutes = adjustPickerValue.getHours() * 60 + adjustPickerValue.getMinutes();
-    const absoluteMinutes = dayOffset * MINUTES_IN_DAY + pickedMinutes;
-    const delta = absoluteMinutes - selectedPhase.timing.startMinutes;
-    const newFirstMinutes = baseMinutes + delta;
-    void persistFirstWakeTime(minutesToTimeString(newFirstMinutes));
-    setAdjustPickerVisible(false);
-    setPhaseModalVisible(false);
-  };
+  const handleAdjustmentApplied = useCallback(
+    (newWakeTime: string) => {
+      void persistFirstWakeTime(newWakeTime);
+    },
+    [persistFirstWakeTime]
+  );
 
   return (
     <View className="flex-1 bg-background">
@@ -311,14 +221,9 @@ export default function EasyScheduleScreen() {
       <PhaseModal
         visible={phaseModalVisible}
         selectedPhase={selectedPhase}
-        adjustPickerVisible={adjustPickerVisible}
-        adjustPickerValue={adjustPickerValue}
+        baseMinutes={baseMinutes}
         onClose={closePhaseModal}
-        onScheduleReminder={handleScheduleReminder}
-        onOpenAdjustPicker={openAdjustPicker}
-        onAdjustPickerChange={handleAdjustPickerChange}
-        onApplyAdjustment={applyAdjustment}
-        onCancelAdjustment={() => setAdjustPickerVisible(false)}
+        onAdjustmentApplied={handleAdjustmentApplied}
       />
 
       {showTimePicker && (
