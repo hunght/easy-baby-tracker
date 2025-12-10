@@ -206,7 +206,7 @@ function submitToPlayStore() {
 /**
  * Wait for user confirmation before promoting
  */
-function waitForConfirmation() {
+function _waitForConfirmation() {
   if (autoPromote) {
     log('  Auto-promote enabled, skipping confirmation...');
     return true;
@@ -226,7 +226,7 @@ function waitForConfirmation() {
 /**
  * Promote to production with fastlane
  */
-function promoteToProduction(versionCode) {
+function promoteToProduction(_versionCode) {
   logStep('5/6', 'Promoting to Production track with fastlane...');
 
   log('  Promoting from Internal to Production...');

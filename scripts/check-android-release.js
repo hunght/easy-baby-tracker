@@ -21,7 +21,7 @@ try {
     stdio: 'inherit',
     cwd: ROOT_DIR,
   });
-} catch (error) {
+} catch {
   console.log('\n⚠️  Fastlane check encountered an issue\n');
   console.log('\n💡 For detailed status, visit:');
   console.log('   https://play.google.com/console/developers');

@@ -82,7 +82,7 @@ function buildAndroid() {
     });
     console.log('\n✅ Android build completed!\n');
     return true;
-  } catch (error) {
+  } catch {
     console.error('\n❌ Android build failed!\n');
     return false;
   }
@@ -97,7 +97,7 @@ function buildIOS() {
     });
     console.log('\n✅ iOS build completed!\n');
     return true;
-  } catch (error) {
+  } catch {
     console.error('\n❌ iOS build failed!\n');
     return false;
   }
@@ -112,7 +112,7 @@ function submitAndroid() {
     });
     console.log('\n✅ Android submission completed!\n');
     return true;
-  } catch (error) {
+  } catch {
     console.error('\n❌ Android submission failed!\n');
     return false;
   }
@@ -127,7 +127,7 @@ function submitIOS() {
     });
     console.log('\n✅ iOS submission completed!\n');
     return true;
-  } catch (error) {
+  } catch {
     console.error('\n❌ iOS submission failed!\n');
     return false;
   }

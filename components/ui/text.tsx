@@ -46,13 +46,13 @@ type TextVariantProps = VariantProps<typeof textVariants>;
 
 type TextVariant = NonNullable<TextVariantProps['variant']>;
 
-const ROLE: Partial<Record<TextVariant, Role>> = {
-  h1: 'heading',
-  h2: 'heading',
-  h3: 'heading',
-  h4: 'heading',
-  blockquote: Platform.select({ web: 'blockquote' as Role }),
-  code: Platform.select({ web: 'code' as Role }),
+const ROLE: Partial<Record<TextVariant, Role | 'blockquote' | 'code'>> = {
+  h1: 'heading' as Role,
+  h2: 'heading' as Role,
+  h3: 'heading' as Role,
+  h4: 'heading' as Role,
+  ...(Platform.OS === 'web' ? { blockquote: 'blockquote' as const } : {}),
+  ...(Platform.OS === 'web' ? { code: 'code' as const } : {}),
 };
 
 const ARIA_LEVEL: Partial<Record<TextVariant, string>> = {
@@ -76,10 +76,11 @@ function Text({
   }) {
   const textClass = React.useContext(TextClassContext);
   const Component = asChild ? Slot.Text : RNText;
+  const role = variant && ROLE[variant] ? (ROLE[variant] as Role) : undefined;
   return (
     <Component
       className={cn(textVariants({ variant }), textClass, className)}
-      role={variant ? ROLE[variant] : undefined}
+      role={role}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}
       {...props}
     />

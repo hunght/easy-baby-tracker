@@ -7,7 +7,10 @@ import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getActiveBabyProfile, updateBabyFirstWakeTime } from '@/database/baby-profile';
-import { requestNotificationPermissions, scheduleEasyScheduleReminder } from '@/lib/notification-scheduler';
+import {
+  requestNotificationPermissions,
+  scheduleEasyScheduleReminder,
+} from '@/lib/notification-scheduler';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
 import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
@@ -97,8 +100,8 @@ export default function EasyScheduleScreen() {
   const availableRuleIds = EASY_FORMULA_RULES.map((rule) => rule.id);
   const storedFormulaId = babyProfile?.selectedEasyFormulaId;
   let validStoredId: EasyFormulaRuleId | undefined = undefined;
-  if (storedFormulaId && availableRuleIds.includes(storedFormulaId)) {
-    validStoredId = storedFormulaId;
+  if (storedFormulaId && availableRuleIds.some((id) => id === storedFormulaId)) {
+    validStoredId = storedFormulaId as EasyFormulaRuleId;
   }
 
   const formulaRule = validStoredId
@@ -281,7 +284,6 @@ export default function EasyScheduleScreen() {
     setAdjustPickerVisible(false);
     setPhaseModalVisible(false);
   };
-
 
   return (
     <View className="flex-1 bg-background">

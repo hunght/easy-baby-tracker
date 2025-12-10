@@ -43,8 +43,8 @@ export default function EasyScheduleSelectScreen() {
   const availableRuleIds = EASY_FORMULA_RULES.map((rule) => rule.id);
   const storedFormulaId = babyProfile?.selectedEasyFormulaId;
   let validStoredId: EasyFormulaRuleId | undefined = undefined;
-  if (storedFormulaId && availableRuleIds.includes(storedFormulaId)) {
-    validStoredId = storedFormulaId;
+  if (storedFormulaId && availableRuleIds.some((id) => id === storedFormulaId)) {
+    validStoredId = storedFormulaId as EasyFormulaRuleId;
   }
 
   const formulaRule = validStoredId
@@ -59,9 +59,8 @@ export default function EasyScheduleSelectScreen() {
       await updateSelectedEasyFormula(babyProfile.id, ruleId);
     },
     onSuccess: (_data, ruleId) => {
-      queryClient.setQueryData<BabyProfileRecord | null>(
-        BABY_PROFILE_QUERY_KEY,
-        (previous) => (previous ? { ...previous, selectedEasyFormulaId: ruleId } : previous)
+      queryClient.setQueryData<BabyProfileRecord | null>(BABY_PROFILE_QUERY_KEY, (previous) =>
+        previous ? { ...previous, selectedEasyFormulaId: ruleId } : previous
       );
       showNotification(t('easySchedule.formulaUpdated'), 'success');
       setTimeout(() => router.back(), 300);
@@ -132,4 +131,3 @@ export default function EasyScheduleSelectScreen() {
     </View>
   );
 }
-

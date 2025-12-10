@@ -41,8 +41,7 @@ export default function SchedulingScreen() {
   });
 
   const notifications = useMemo(
-    () =>
-      [...scheduledNotifications].sort((a, b) => a.scheduledTime - b.scheduledTime),
+    () => [...scheduledNotifications].sort((a, b) => a.scheduledTime - b.scheduledTime),
     [scheduledNotifications]
   );
 
@@ -78,10 +77,9 @@ export default function SchedulingScreen() {
 
   const renderCard = (record: ScheduledNotificationRecord, isNext = false) => {
     const parsedData = safeParseData(record);
-    const label =
-      parsedData?.label ??
-      typeLabels[record.notificationType as keyof typeof typeLabels] ??
-      typeLabels.default;
+    const notificationType =
+      record.notificationType in typeLabels ? record.notificationType : 'default';
+    const label = parsedData?.label ?? typeLabels[notificationType];
     const scheduledDate = new Date(record.scheduledTime * 1000);
     const dateString = scheduledDate.toLocaleDateString(locale, {
       weekday: 'short',
@@ -92,31 +90,25 @@ export default function SchedulingScreen() {
       hour: '2-digit',
       minute: '2-digit',
     });
-    const minutesLeft = Math.max(
-      Math.round((scheduledDate.getTime() - Date.now()) / 60000),
-      0
-    );
+    const minutesLeft = Math.max(Math.round((scheduledDate.getTime() - Date.now()) / 60000), 0);
 
     return (
       <View
         key={record.notificationId}
         className={[
-          'bg-card border border-border rounded-2xl p-4 mb-3 shadow-sm',
+          'mb-3 rounded-2xl border border-border bg-card p-4 shadow-sm',
           isNext ? 'border-primary/30 shadow-md' : '',
-        ].join(' ')}
-      >
-        <View className="flex-row items-center justify-between mb-2">
-          <Text className="text-base font-semibold text-foreground flex-1 mr-3">{label}</Text>
+        ].join(' ')}>
+        <View className="mb-2 flex-row items-center justify-between">
+          <Text className="mr-3 flex-1 text-base font-semibold text-foreground">{label}</Text>
           <Badge variant="secondary">
-            <Text>
-              {typeLabels[record.notificationType as keyof typeof typeLabels] ?? typeLabels.default}
-            </Text>
+            <Text>{typeLabels[notificationType]}</Text>
           </Badge>
         </View>
         <Text className="text-sm text-foreground/80">
           {t('scheduling.dueAt', { params: { date: dateString, time: timeString } })}
         </Text>
-        <Text className="text-[13px] text-muted-foreground mt-1">
+        <Text className="mt-1 text-[13px] text-muted-foreground">
           {t('scheduling.minutesRemaining', { params: { minutes: minutesLeft } })}
         </Text>
         <Button
@@ -124,11 +116,11 @@ export default function SchedulingScreen() {
           className="mt-3 rounded-xl"
           onPress={() => handleCancel(record.notificationId)}
           disabled={pendingId === record.notificationId}
-          accessibilityLabel={t('scheduling.accessibility.cancelNotification', { defaultValue: 'Cancel %{label} notification', params: { label } })}
-        >
-          <Text className="text-destructive/80 font-semibold">
-            {t('scheduling.cancel')}
-          </Text>
+          accessibilityLabel={t('scheduling.accessibility.cancelNotification', {
+            defaultValue: 'Cancel %{label} notification',
+            params: { label },
+          })}>
+          <Text className="font-semibold text-destructive/80">{t('scheduling.cancel')}</Text>
         </Button>
       </View>
     );
@@ -142,13 +134,13 @@ export default function SchedulingScreen() {
     if (notifications.length === 0) {
       return (
         <View className="items-center py-16">
-          <View className="w-16 h-16 rounded-full bg-card border border-border items-center justify-center mb-4">
+          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full border border-border bg-card">
             <Ionicons name="calendar-outline" size={36} color="#B7B7C8" />
           </View>
-          <Text className="text-lg font-semibold text-foreground mb-2">
+          <Text className="mb-2 text-lg font-semibold text-foreground">
             {t('scheduling.emptyTitle')}
           </Text>
-          <Text className="text-sm text-muted-foreground text-center px-5">
+          <Text className="px-5 text-center text-sm text-muted-foreground">
             {t('scheduling.emptySubtitle')}
           </Text>
         </View>
@@ -159,14 +151,14 @@ export default function SchedulingScreen() {
       <>
         {nextReminder && (
           <View className="mb-6">
-            <Text className="text-base font-semibold text-muted-foreground mb-3">
+            <Text className="mb-3 text-base font-semibold text-muted-foreground">
               {t('scheduling.nextHeading')}
             </Text>
             {renderCard(nextReminder, true)}
           </View>
         )}
         <View className="mb-6">
-          <Text className="text-base font-semibold text-muted-foreground mb-3">
+          <Text className="mb-3 text-base font-semibold text-muted-foreground">
             {t('scheduling.upcomingHeading')}
           </Text>
           {notifications.map((record) =>
@@ -183,10 +175,7 @@ export default function SchedulingScreen() {
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10"
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-        }
-      >
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}>
         {renderContent()}
       </ScrollView>
     </View>
