@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { TabPageHeader } from '@/components/TabPageHeader';
 import { Text } from '@/components/ui/text';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocalization } from '@/localization/LocalizationProvider';
@@ -14,17 +13,17 @@ export default function ChartsScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <TabPageHeader title={t('charts.title')} />
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-        <TabsList className="mx-4 mt-2">
-          <TabsTrigger value="timeline">
-            <Text>{t('tabs.timeline')}</Text>
-          </TabsTrigger>
-          <TabsTrigger value="charts">
-            <Text>{t('tabs.charts')}</Text>
-          </TabsTrigger>
-        </TabsList>
+        <View className="rounded-b-2xl bg-background px-4 pb-3 pt-2 shadow-sm shadow-black/5">
+          <TabsList className="w-full">
+            <TabsTrigger value="timeline" className="flex-1">
+              <Text className="font-semibold">{t('tabs.timeline')}</Text>
+            </TabsTrigger>
+            <TabsTrigger value="charts" className="flex-1">
+              <Text className="font-semibold">{t('tabs.charts')}</Text>
+            </TabsTrigger>
+          </TabsList>
+        </View>
 
         <TabsContent value="timeline" className="flex-1">
           <TimelineTabContent />

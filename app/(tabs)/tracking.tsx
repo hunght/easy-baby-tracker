@@ -54,10 +54,10 @@ const trackingTiles: readonly {
     colorKey: 'lavender',
   },
   {
-    id: 'easy-schedule',
-    labelKey: 'tracking.tiles.easySchedule.label',
-    sublabelKey: 'tracking.tiles.easySchedule.sublabel',
-    icon: 'calendar-clock',
+    id: 'habit',
+    labelKey: 'tracking.tiles.habit.label',
+    sublabelKey: 'tracking.tiles.habit.sublabel',
+    icon: 'toothbrush-paste',
     colorKey: 'lavender',
   },
   {
@@ -150,8 +150,8 @@ export default function TrackingScreen() {
       router.push('/health');
     } else if (tileId === 'growth') {
       router.push('/growth');
-    } else if (tileId === 'easy-schedule') {
-      router.push('/easy-schedule');
+    } else if (tileId === 'habit') {
+      router.push('/habit');
     } else if (tileId === 'diary') {
       router.push('/diary');
     }

@@ -6,12 +6,14 @@ import { profiles } from './profiles';
 import { settings } from './settings';
 import { tabs } from './tabs';
 import { tracking } from './tracking';
+import { habit } from './habit';
 
 export const translationObject = {
   en: {
     common: common.en,
     tabs: tabs.en,
     tracking: tracking.en,
+    habit: habit.en,
     easySchedule: easySchedule.en,
     settings: settings.en,
     onboarding: onboarding.en,
@@ -33,6 +35,7 @@ export const translationObject = {
     common: common.vi,
     tabs: tabs.vi,
     tracking: tracking.vi,
+    habit: habit.vi,
     easySchedule: easySchedule.vi,
     settings: settings.vi,
     onboarding: onboarding.vi,

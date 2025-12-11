@@ -191,3 +191,4 @@ const mutation = useMutation({
 - ✅ **Completed**: All tab screens, feeding screen, auth screens
 - 🔄 **In progress**: Remaining activity screens, onboarding
 - **When editing files**: Prefer migrating StyleSheet usage to Tailwind classes
+
