@@ -90,7 +90,7 @@ function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
         // Cancel the scheduled notification since user is now logging the feeding
         await cancelStoredScheduledNotification();
         // Navigate to feeding screen
-        router.push('/feeding');
+        router.push('/(tracking)/feeding');
       }
       // Add other notification types here as needed
     };
@@ -184,42 +184,6 @@ function AppProviders() {
                   }}>
                   <Stack.Screen name="index" options={{ headerShown: false }} />
                   <Stack.Screen name="profile-selection" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="feeding"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="pumping"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="diaper"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="sleep"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="health"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="growth"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="easy-schedule"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="easy-schedule-info"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
-                  <Stack.Screen
-                    name="diary"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
                   <Stack.Screen
                     name="modal"
                     options={{ presentation: 'modal', title: t('modal.title') }}
