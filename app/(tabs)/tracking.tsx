@@ -157,59 +157,55 @@ export default function TrackingScreen() {
     }
   };
 
+  const BabySelector = (
+    <ToggleGroup
+      type="single"
+      value={profile.id.toString()}
+      onValueChange={(value) => {
+        if (value) {
+          const babyId = parseInt(value, 10);
+          if (!isNaN(babyId)) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            handleSelectBaby(babyId);
+          }
+        }
+      }}
+      variant="outline"
+      disabled={switchingBabyId != null}
+      className="flex-row gap-1.5">
+      {displayBabies.map((baby, index) => {
+        const tabMonths = computeMonthsOld(baby.birthDate);
+        return (
+          <ToggleGroupItem
+            key={baby.id}
+            value={baby.id.toString()}
+            isFirst={index === 0}
+            isLast={index === displayBabies.length - 1}
+            className="min-w-20 px-3 py-1.5"
+            aria-label={t('tracking.accessibility.selectBaby', {
+              defaultValue: 'Select %{name}',
+              params: { name: baby.nickname },
+            })}>
+            <View className="items-center gap-0.5">
+              <Text className="text-xs font-semibold">{baby.nickname}</Text>
+              <Text className="text-[10px] opacity-70">
+                {tabMonths}
+                {t('common.monthsAbbrev', { defaultValue: 'mo' })}
+              </Text>
+            </View>
+          </ToggleGroupItem>
+        );
+      })}
+    </ToggleGroup>
+  );
+
   return (
     <View className="flex-1 bg-background">
-      <TabPageHeader title={t('tabs.tracking')} />
+      <TabPageHeader title={t('tabs.tracking')} accessory={BabySelector} />
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-6 pt-6 pb-20 gap-6"
         showsVerticalScrollIndicator={false}>
-        <View className="mb-1">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerClassName="gap-2">
-            <ToggleGroup
-              type="single"
-              value={profile.id.toString()}
-              onValueChange={(value) => {
-                if (value) {
-                  const babyId = parseInt(value, 10);
-                  if (!isNaN(babyId)) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    handleSelectBaby(babyId);
-                  }
-                }
-              }}
-              variant="outline"
-              disabled={switchingBabyId != null}
-              className="flex-row">
-              {displayBabies.map((baby, index) => {
-                const tabMonths = computeMonthsOld(baby.birthDate);
-                return (
-                  <ToggleGroupItem
-                    key={baby.id}
-                    value={baby.id.toString()}
-                    isFirst={index === 0}
-                    isLast={index === displayBabies.length - 1}
-                    className="px-4 py-2.5"
-                    aria-label={t('tracking.accessibility.selectBaby', {
-                      defaultValue: 'Select %{name}',
-                      params: { name: baby.nickname },
-                    })}>
-                    <View className="gap-0.5">
-                      <Text className="text-sm font-semibold">{baby.nickname}</Text>
-                      <Text className="text-xs opacity-80">
-                        {t('common.monthsOld', { params: { count: tabMonths } })}
-                      </Text>
-                    </View>
-                  </ToggleGroupItem>
-                );
-              })}
-            </ToggleGroup>
-          </ScrollView>
-        </View>
-
         <View className="flex-row flex-wrap justify-between gap-y-4">
           {trackingTiles.map((tile) => (
             <Card
