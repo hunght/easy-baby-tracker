@@ -1,83 +1,39 @@
 import { useState } from 'react';
-import { ScrollView, View, Pressable } from 'react-native';
-import { Text } from '@/components/ui/text';
-import { Badge } from '@/components/ui/badge';
+import { View } from 'react-native';
 
 import { TabPageHeader } from '@/components/TabPageHeader';
-import { DiaperCharts } from '@/pages/charts/components/DiaperCharts';
-import { FeedingCharts } from '@/pages/charts/components/FeedingCharts';
-import { GrowthCharts } from '@/pages/charts/components/GrowthCharts';
-import { SleepCharts } from '@/pages/charts/components/SleepCharts';
+import { Text } from '@/components/ui/text';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLocalization } from '@/localization/LocalizationProvider';
-
-type ChartCategory = 'feeding' | 'sleep' | 'growth' | 'diaper';
+import { TimelineTabContent } from '@/pages/timeline/TimelineTabContent';
+import { ChartsTabContent } from '@/pages/charts/ChartsTabContent';
 
 export default function ChartsScreen() {
   const { t } = useLocalization();
-  const [selectedCategory, setSelectedCategory] = useState<ChartCategory>('feeding');
-
-  const categories: { id: ChartCategory; label: string }[] = [
-    { id: 'feeding', label: t('tracking.tiles.feeding.label') },
-    { id: 'sleep', label: t('tracking.tiles.sleep.label') },
-    { id: 'growth', label: t('tracking.tiles.growth.label') },
-    { id: 'diaper', label: t('tracking.tiles.diaper.label') },
-  ];
-
-  const renderContent = () => {
-    switch (selectedCategory) {
-      case 'feeding':
-        return <FeedingCharts />;
-      case 'sleep':
-        return <SleepCharts />;
-      case 'growth':
-        return <GrowthCharts />;
-      case 'diaper':
-        return <DiaperCharts />;
-      default:
-        return null;
-    }
-  };
+  const [activeTab, setActiveTab] = useState('timeline');
 
   return (
     <View className="flex-1 bg-background">
       <TabPageHeader title={t('charts.title')} />
 
-      <View className="border-b border-border py-3">
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="px-5 gap-3">
-          {categories.map((cat) => {
-            const active = selectedCategory === cat.id;
-            return (
-              <Badge
-                key={cat.id}
-                asChild
-                variant={active ? 'default' : 'outline'}
-                className={active ? 'bg-primary' : ''}>
-                <Pressable
-                  onPress={() => setSelectedCategory(cat.id)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={t('charts.accessibility.selectCategory', {
-                    defaultValue: 'Show %{category} charts',
-                    params: { category: cat.label },
-                  })}>
-                  <Text
-                    className={`text-sm font-semibold ${active ? 'text-primary-foreground' : ''}`}>
-                    {cat.label}
-                  </Text>
-                </Pressable>
-              </Badge>
-            );
-          })}
-        </ScrollView>
-      </View>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
+        <TabsList className="mx-4 mt-2">
+          <TabsTrigger value="timeline">
+            <Text>{t('tabs.timeline')}</Text>
+          </TabsTrigger>
+          <TabsTrigger value="charts">
+            <Text>{t('tabs.charts')}</Text>
+          </TabsTrigger>
+        </TabsList>
 
-      <ScrollView className="flex-1" contentContainerClassName="px-5">
-        {renderContent()}
-        <View className="h-24" />
-      </ScrollView>
+        <TabsContent value="timeline" className="flex-1">
+          <TimelineTabContent />
+        </TabsContent>
+
+        <TabsContent value="charts" className="flex-1">
+          <ChartsTabContent />
+        </TabsContent>
+      </Tabs>
     </View>
   );
 }

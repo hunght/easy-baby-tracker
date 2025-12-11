@@ -1,0 +1,193 @@
+# BabyEase NativeWind - Project Rules & Best Practices
+
+## Core Architecture
+
+- **React Native** with **Expo 54+** (New Architecture)
+- **Expo Router** for file-based routing
+- **NativeWind 4** (Tailwind CSS) for styling - NO StyleSheet.create()
+- **Clerk Auth** for authentication
+- **SQLite** with Drizzle ORM
+- **React Native Reusables** component library (shadcn/ui pattern)
+
+## Styling Rules (CRITICAL)
+
+### Never Use StyleSheet
+- ❌ **NEVER** use `StyleSheet.create()` or inline `style={{ ... }}`
+- ✅ **ALWAYS** use Tailwind utility classes via `className` prop
+- Use `cn()` from `@/lib/utils` to merge Tailwind classes
+
+### Theme Colors
+- Brand colors: `bg-primary` (#5B7FFF), `bg-accent` (#FF8AB8), `bg-mint` (#7FE3CC), `bg-lavender` (#C7B9FF)
+- Border radius: Cards = `rounded-lg` (12px), Buttons = `rounded-md` (8px), Pills = `rounded-pill` (24px)
+- Dark mode: Use `dark:` modifiers (e.g., `dark:bg-background`)
+
+### Common Patterns
+```tsx
+// Spacing: p-4, m-6, gap-3
+// Flexbox: flex-1, flex-row, items-center, justify-between
+// Colors: bg-primary, text-foreground, border-border
+// Typography: text-xl, font-bold, font-semibold
+```
+
+## Component Rules
+
+### UI Components
+- Use components from `components/ui/` (React Native Reusables)
+- Install new components: `npx @react-native-reusables/cli@latest add <name>`
+- All components use `cn()` for className merging and CVA for variants
+
+### Component Architecture
+- **Functional only**: No class components
+- **Self-contained components**: Components manage their own state and UI interactions
+- **Minimize prop drilling**: Pass only essential data/callbacks (2-3 props max)
+- **Parent responsibility**: Orchestration, data fetching, final persistence only
+- **Forms**: Use local `useState`, submit via React Query mutation
+
+### Platform-Specific Styles
+- Wrap web-only styles in `Platform.select({ web: 'hover:...' })`
+- Use in CVA variants for buttons and interactive elements
+
+## TypeScript Rules
+
+- **Strict mode**: Enabled, `any` banned by ESLint
+- **Type inference**: Use Drizzle's `$inferSelect`/`$inferInsert`
+- **Path alias**: `@/*` → project root
+- **No type assertions**: Use type guards instead of `as` assertions
+- **as const**: Only for const assertions on literals
+
+```tsx
+// ✅ Type guard
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object';
+}
+
+// ✅ as const for literals
+const COLORS = ['red', 'blue'] as const;
+
+// ❌ No type assertions
+const value = data as SomeType;
+```
+
+## ESLint Rules (Strict)
+
+- **No classes**: Functional patterns only
+- **No `any`**: Fails build
+- **No type assertions**: Use type guards
+- **No unused vars**: Enforced (prefix `_` to ignore)
+- **No eslint-disable comments**: Fix issues, don't suppress
+
+## Database Rules
+
+- **Timestamps**: Unix seconds only (`Math.floor(Date.now() / 1000)`), never milliseconds
+- **Modules**: `database/*.ts` with `save{Activity}`, `get{Activities}`
+- **Auto-inject**: `babyId` via `requireActiveBabyProfileId()`
+- **Migrations**: Auto-run on startup, generate with `npm run db:generate`
+
+## React Query Patterns
+
+### Save Pattern
+```tsx
+const mutation = useMutation({
+  mutationFn: (payload) => saveFeeding(payload),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: FEEDINGS_QUERY_KEY });
+    showNotification(t('common.saveSuccess'), 'success');
+    setTimeout(() => router.back(), 500); // Delay for notification visibility
+  },
+  onError: (error) => {
+    console.error('Failed to save:', error);
+    showNotification(t('common.saveError'), 'error');
+  },
+});
+```
+
+### Edit Mode Pattern
+```tsx
+const { id } = useLocalSearchParams<{ id: string }>();
+const isEditing = !!id;
+
+const { data: existingData } = useQuery({
+  queryKey: feedingByIdKey(parseInt(id)),
+  queryFn: () => getFeedingById(parseInt(id)),
+  enabled: isEditing, // Important: avoid fetching when creating
+});
+```
+
+### Mutation with Update Support
+```tsx
+const mutation = useMutation({
+  mutationFn: async (payload: FeedingPayload) => {
+    if (isEditing && id) {
+      await updateFeeding(parseInt(id), payload);
+    } else {
+      await saveFeeding(payload);
+    }
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: FEEDINGS_QUERY_KEY });
+    showNotification(t('common.saveSuccess'), 'success');
+    setTimeout(() => router.back(), 500);
+  },
+  onError: (error) => {
+    console.error('Failed to save:', error);
+    showNotification(t('common.saveError'), 'error');
+  },
+});
+```
+
+## Authentication Rules
+
+- **Clerk hooks**: `useSignIn()`, `useSignUp()`, `useUser()`, `useAuth()`, `useSSO()`
+- **Auth pattern**: Use `setActive({ session })` after successful sign-in
+- **Auth screens**: Located in `app/(auth)/`
+
+## Localization Rules
+
+- **System**: `LocalizationProvider` + `useLocalization()` hook
+- **Usage**: `const { t } = useLocalization(); t('feeding.types.breast')`
+- **Files**: `localization/translations/*.ts`
+
+## Routing Rules
+
+- **Expo Router**: File-based routing
+- **Modals**: Activity screens use `presentation: 'modal'`
+- **Navigation**: `router.push()`, `router.back()`, `useLocalSearchParams<{ id: string }>()`
+
+## Common Gotchas
+
+- **ScrollView**: Use `contentContainerClassName` for scroll content styling, not `className`
+- **Notification delay**: Add 500ms `setTimeout()` before `router.back()` after notifications
+- **useNotification**: Import as `const { showNotification } = useNotification()`
+- **Edit mode queries**: Always set `enabled: isEditing` to avoid unnecessary fetches
+- **React Native Reusables**: Not all shadcn/ui components available - check `docs/ui-components-library.md`
+- **TabsTrigger children**: Must wrap text in `<Text>` component
+
+## Component Organization
+
+- **Page components**: Extract complex tab content to `pages/{feature}/` folders
+- **Reusable components**: Place in `components/` or `pages/{feature}/components/`
+- **UI primitives**: Use `components/ui/` for React Native Reusables components
+
+## Development Commands
+
+- **Type check**: `npm run type-check` (fails on `any` types)
+- **Lint**: `npm run lint:fix` (enforces no classes, no unused vars, no `any`)
+- **Format**: `npm run format` (Prettier with Tailwind plugin)
+- **DB generate**: `npm run db:generate` (creates migration)
+- **DB studio**: `npm run db:studio` (browse database)
+
+## File Structure
+
+- `app/_layout.tsx`: App initialization, Clerk provider, migrations
+- `global.css`: Theme CSS variables
+- `tailwind.config.js`: Tailwind config with brand colors
+- `lib/utils.ts`: `cn()` utility for className merging
+- `components/ui/*`: React Native Reusables component library
+- `db/schema.ts`: Database schema
+- `docs/color-migration.md`: Complete color mapping guide
+
+## Migration Status
+
+- ✅ **Completed**: All tab screens, feeding screen, auth screens
+- 🔄 **In progress**: Remaining activity screens, onboarding
+- **When editing files**: Prefer migrating StyleSheet usage to Tailwind classes

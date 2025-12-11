@@ -26,16 +26,6 @@ export default function TabLayout() {
         },
       }}>
       <Tabs.Screen
-        name="timeline"
-        options={{
-          title: t('tabs.timeline'),
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name="time-outline" size={26} color={focused ? '#FF5C8D' : color} />
-          ),
-          tabBarButton: (props) => <HapticTab {...props} testID="tab-timeline" />,
-        }}
-      />
-      <Tabs.Screen
         name="charts"
         options={{
           title: t('tabs.charts'),

@@ -3,7 +3,6 @@ import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-q
 import React, { useMemo } from 'react';
 import { ActivityIndicator, SectionList, View } from 'react-native';
 
-import { TabPageHeader } from '@/components/TabPageHeader';
 import { TimelineFilters } from '@/pages/timeline/components/TimelineFilters';
 import { TimelineItem } from '@/pages/timeline/components/TimelineItem';
 import { useNotification } from '@/components/NotificationContext';
@@ -27,7 +26,7 @@ import {
 } from '@/database/timeline';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
-export default function TimelineScreen() {
+export function TimelineTabContent() {
   const { t } = useLocalization();
   const queryClient = useQueryClient();
   const { showNotification } = useNotification();
@@ -160,9 +159,7 @@ export default function TimelineScreen() {
   const sections = groupActivitiesByDate(activities);
 
   return (
-    <View className="flex-1 bg-background">
-      <TabPageHeader title={t('timeline.title')} />
-
+    <View className="flex-1">
       <TimelineFilters selectedFilter={filter} onSelectFilter={setFilter} />
 
       {isFetching && !isRefetching && activities.length === 0 ? (
