@@ -92,7 +92,7 @@ export default function SettingsScreen() {
           })}
           <Button
             className="mt-2 rounded-pill"
-            onPress={() => router.push({ pathname: '/profile-edit', params: {} })}>
+            onPress={() => router.push({ pathname: '/(profiles)/profile-edit', params: {} })}>
             <Text className="text-[17px] font-bold text-primary-foreground">
               {t('common.addNewBaby')}
             </Text>

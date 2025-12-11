@@ -105,7 +105,7 @@ export default function TrackingScreen() {
     if (!isLoading && !profilesLoading) {
       if (!profile) {
         if (babyProfiles.length > 0) {
-          router.replace('/profile-selection');
+          router.replace('/(profiles)/profile-selection');
         } else {
           router.replace('/');
         }

@@ -22,7 +22,7 @@ import {
   restoreScheduledNotifications,
 } from '@/lib/notification-scheduler';
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
-import { LocalizationProvider, useLocalization } from '@/localization/LocalizationProvider';
+import { LocalizationProvider } from '@/localization/LocalizationProvider';
 import * as Notifications from 'expo-notifications';
 import migrations from '../drizzle/migrations';
 import { logger } from '@/lib/logger';
@@ -139,7 +139,6 @@ export default function RootLayout() {
 function AppProviders() {
   const { colorScheme } = useTheme();
   const [queryClient] = useState(() => new QueryClient());
-  const { t } = useLocalization();
 
   const navigationRef = useNavigationContainerRef();
   const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
@@ -183,15 +182,6 @@ function AppProviders() {
                     headerShown: false,
                   }}>
                   <Stack.Screen name="index" options={{ headerShown: false }} />
-                  <Stack.Screen name="profile-selection" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="modal"
-                    options={{ presentation: 'modal', title: t('modal.title') }}
-                  />
-                  <Stack.Screen
-                    name="profile-edit"
-                    options={{ presentation: 'modal', headerShown: false }}
-                  />
                 </Stack>
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
                 <PortalHost />

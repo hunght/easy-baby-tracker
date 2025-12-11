@@ -38,7 +38,7 @@ export default function AppScreen() {
         router.replace('/(tabs)/tracking');
       } else if (profiles.length > 0) {
         // User has profiles but none is active, go to profile selection
-        router.replace('/profile-selection');
+        router.replace('/(profiles)/profile-selection');
       }
       // If no profiles exist, stay on this screen to show onboarding
     }
