@@ -139,21 +139,21 @@ export default function TrackingScreen() {
 
   const handleTilePress = (tileId: string) => {
     if (tileId === 'feeding') {
-      router.push('/feeding');
+      router.push('/(tracking)/feeding');
     } else if (tileId === 'pumping') {
-      router.push('/pumping');
+      router.push('/(tracking)/pumping');
     } else if (tileId === 'diaper') {
-      router.push('/diaper');
+      router.push('/(tracking)/diaper');
     } else if (tileId === 'sleep') {
-      router.push('/sleep');
+      router.push('/(tracking)/sleep');
     } else if (tileId === 'health') {
-      router.push('/health');
+      router.push('/(tracking)/health');
     } else if (tileId === 'growth') {
-      router.push('/growth');
+      router.push('/(tracking)/growth');
     } else if (tileId === 'habit') {
-      router.push('/habit');
+      router.push('/(tracking)/habit');
     } else if (tileId === 'diary') {
-      router.push('/diary');
+      router.push('/(tracking)/diary');
     }
   };
 
