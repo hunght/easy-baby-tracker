@@ -16,7 +16,7 @@ import 'react-native-reanimated';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
 import { NotificationProvider } from '@/components/NotificationContext';
-import { db, expoDb } from '@/database/db';
+import { db, expoDb, initDatabase, getDb, getExpoDb } from '@/database/db';
 import {
   cancelStoredScheduledNotification,
   restoreScheduledNotifications,
@@ -26,18 +26,62 @@ import { LocalizationProvider } from '@/localization/LocalizationProvider';
 import * as Notifications from 'expo-notifications';
 import migrations from '../drizzle/migrations';
 import { logger } from '@/lib/logger';
+import { Platform } from 'react-native';
 
 export const unstable_settings = {
   anchor: '(tabs)/tracking',
 };
 
+// Component that initializes database on web
+function DatabaseInitializer({ children }: { children: React.ReactNode }) {
+  const [dbInitialized, setDbInitialized] = useState(Platform.OS !== 'web');
+  const [initError, setInitError] = useState<Error | null>(null);
+
+  // Initialize database on web before migrations
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      initDatabase()
+        .then(() => {
+          setDbInitialized(true);
+        })
+        .catch((error) => {
+          console.error('Database initialization failed:', error);
+          setInitError(error);
+        });
+    }
+  }, []);
+
+  // Wait for database initialization on web
+  if (!dbInitialized) {
+    if (initError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text>Database initialization error: {initError.message}</Text>
+        </View>
+      );
+    }
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Initializing database...</Text>
+      </View>
+    );
+  }
+
+  return <MigrationHandler>{children}</MigrationHandler>;
+}
+
 // Component that handles migrations and Drizzle Studio
+// This component is only rendered after database is initialized
 function MigrationHandler({ children }: { children: React.ReactNode }) {
-  // Set up Drizzle Studio
-  useDrizzleStudio(expoDb);
+  // Set up Drizzle Studio (use getters for web compatibility)
+  const dbInstance = Platform.OS === 'web' ? getExpoDb() : expoDb;
+  const drizzleDb = Platform.OS === 'web' ? getDb() : db;
+
+  // Always call hooks unconditionally
+  useDrizzleStudio(dbInstance);
 
   // Run migrations
-  const { success, error } = useMigrations(db, migrations);
+  const { success, error } = useMigrations(drizzleDb, migrations);
 
   if (error) {
     return (
@@ -170,7 +214,7 @@ function AppProviders() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <NotificationProvider>
-        <MigrationHandler>
+        <DatabaseInitializer>
           <QueryClientProvider client={queryClient}>
             <NavigationThemeProvider value={navTheme}>
               <View style={{ backgroundColor, flex: 1 }} className="flex-1">
@@ -188,7 +232,7 @@ function AppProviders() {
               </View>
             </NavigationThemeProvider>
           </QueryClientProvider>
-        </MigrationHandler>
+        </DatabaseInitializer>
       </NotificationProvider>
     </SafeAreaProvider>
   );

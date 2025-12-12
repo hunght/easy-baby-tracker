@@ -54,9 +54,48 @@ Or scan the QR code with the [Expo Go](https://expo.dev/go) app to test on your 
 - 🔐 Authentication powered by [Clerk](https://go.clerk.com/Q1MKAz0)
 - 🎨 Styled with [Tailwind CSS](https://tailwindcss.com/) via [Nativewind](https://www.nativewind.dev/)
 - 📦 UI powered by [React Native Reusables](https://github.com/founded-labs/react-native-reusables)
+- �️ SQLite database with [Drizzle ORM](https://orm.drizzle.team/) and full web support
 - 🚀 New Architecture enabled
 - 🔥 Edge to Edge enabled
 - 📱 Runs on iOS, Android, and Web
+
+## SQLite Database
+
+This project uses SQLite with Drizzle ORM for local data storage, with full web compatibility.
+
+### Web Compatibility Setup
+
+The project is configured for SQLite to work on web platform:
+
+1. **Metro Config** - Added WASM support and required HTTP headers for SharedArrayBuffer:
+   - WASM assets handling for expo-sqlite web version
+   - Cross-Origin headers for web worker support
+
+2. **App Plugin** - expo-sqlite plugin registered in app.json
+
+3. **Database Service** - Web-specific initialization in `database/db.ts`
+
+### Database Management
+
+```bash
+# Generate new migration after schema changes
+npm run db:generate
+
+# View database with Drizzle Studio
+# Open the app and Drizzle Studio will be available in Expo dev tools
+```
+
+### Key Features
+
+- ✅ Works on iOS, Android, and Web
+- ✅ Automatic migrations on app startup
+- ✅ Web-specific optimizations and error handling
+- ✅ TypeScript support with Drizzle ORM
+- ✅ Type-safe database queries
+
+### Database Schema
+
+The database schema is defined in `db/schema.ts` using Drizzle ORM. Migrations are automatically generated and applied on app startup via the `MigrationHandler` component in `app/_layout.tsx`.
 
 ## Learn More
 
