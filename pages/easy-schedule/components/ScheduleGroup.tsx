@@ -83,7 +83,7 @@ export function ScheduleGroup({ phases, baseMinutes, locale, onPhasePress }: Sch
         : currentMinutes;
 
   return (
-    <View className="flex-row justify-between gap-2 rounded-lg border border-border bg-card p-3 dark:bg-card/50">
+    <View className="flex-row justify-between gap-2 rounded-lg border border-border bg-card p-2 dark:bg-card/50">
       {phases.map((item) => {
         const endTime = calculateEndTime(item.startTime, item.durationMinutes);
         const duration = formatDuration(item.durationMinutes, locale);
