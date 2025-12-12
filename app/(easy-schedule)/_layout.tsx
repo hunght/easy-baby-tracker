@@ -12,6 +12,7 @@ export default function EasyScheduleLayout() {
         <Stack.Screen name="easy-schedule" />
         <Stack.Screen name="easy-schedule-select" />
         <Stack.Screen name="easy-schedule-info" />
+        <Stack.Screen name="easy-schedule-settings" />
       </Stack>
     </SafeAreaView>
   );

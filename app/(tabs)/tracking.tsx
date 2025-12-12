@@ -177,7 +177,7 @@ export default function TrackingScreen() {
           }
         }
       }}>
-      <SelectTrigger className="w-32">
+      <SelectTrigger className="w-32 py-2">
         <SelectValue
           className="text-sm font-semibold text-foreground"
           placeholder={t('tracking.selectBaby', { defaultValue: 'Select baby' })}>
@@ -211,13 +211,13 @@ export default function TrackingScreen() {
       <TabPageHeader title={t('tabs.tracking')} accessory={BabySelector} />
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-6 pt-6 pb-20 gap-6"
+        contentContainerClassName="px-6 pt-2 pb-20 gap-6"
         showsVerticalScrollIndicator={false}>
         <View className="flex-row flex-wrap justify-between gap-y-4">
           {trackingTiles.map((tile) => (
             <Card
               key={tile.id}
-              className="w-[47%] shadow-sm"
+              className="w-[47%] py-2 shadow-sm"
               onPress={() => handleTilePress(tile.id)}
               testID={`tile-${tile.id}`}
               accessibilityLabel={t('tracking.accessibility.openTile', {
@@ -225,13 +225,15 @@ export default function TrackingScreen() {
                 params: { label: t(tile.labelKey) },
               })}
               accessibilityRole="button">
-              <CardContent className="gap-2.5 p-4">
-                <MaterialCommunityIcons
-                  name={tile.icon}
-                  size={34}
-                  color={brandColors.get(tile.colorKey)}
-                />
-                <Text className="text-lg font-bold text-foreground">{t(tile.labelKey)}</Text>
+              <CardContent className="gap-2.5 p-2">
+                <View className="flex-row items-center gap-2">
+                  <MaterialCommunityIcons
+                    name={tile.icon}
+                    size={34}
+                    color={brandColors.get(tile.colorKey)}
+                  />
+                  <Text className="text-lg font-bold text-foreground">{t(tile.labelKey)}</Text>
+                </View>
                 <Text className="text-sm text-muted-foreground">{t(tile.sublabelKey)}</Text>
               </CardContent>
             </Card>

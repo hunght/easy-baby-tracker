@@ -10,7 +10,7 @@ type TabPageHeaderProps = {
 
 export function TabPageHeader({ title, subtitle, accessory }: TabPageHeaderProps) {
   return (
-    <View className="rounded-b-2xl bg-background px-5 pb-3 shadow-sm shadow-black/5">
+    <View className="rounded-b-2xl bg-background px-5 py-2 shadow-sm shadow-black/5">
       <View className="flex-row items-center gap-4">
         <View className="flex-1">
           <Text className="text-2xl font-bold text-foreground">{title}</Text>
