@@ -8,7 +8,14 @@ import { ScrollView, View } from 'react-native';
 import { TabPageHeader } from '@/components/TabPageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
 import {
   getActiveBabyProfile,
@@ -157,46 +164,46 @@ export default function TrackingScreen() {
     }
   };
 
+  const currentMonths = computeMonthsOld(profile.birthDate);
   const BabySelector = (
-    <ToggleGroup
-      type="single"
-      value={profile.id.toString()}
-      onValueChange={(value) => {
-        if (value) {
-          const babyId = parseInt(value, 10);
-          if (!isNaN(babyId)) {
+    <Select
+      value={{ value: profile.id.toString(), label: profile.nickname }}
+      onValueChange={(option) => {
+        if (option?.value) {
+          const babyId = parseInt(option.value, 10);
+          if (!isNaN(babyId) && babyId !== profile.id) {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             handleSelectBaby(babyId);
           }
         }
-      }}
-      variant="outline"
-      disabled={switchingBabyId != null}
-      className="flex-row gap-1.5">
-      {displayBabies.map((baby, index) => {
-        const tabMonths = computeMonthsOld(baby.birthDate);
-        return (
-          <ToggleGroupItem
-            key={baby.id}
-            value={baby.id.toString()}
-            isFirst={index === 0}
-            isLast={index === displayBabies.length - 1}
-            className="min-w-20 px-3 py-1.5"
-            aria-label={t('tracking.accessibility.selectBaby', {
-              defaultValue: 'Select %{name}',
-              params: { name: baby.nickname },
-            })}>
-            <View className="items-center gap-0.5">
-              <Text className="text-xs font-semibold">{baby.nickname}</Text>
-              <Text className="text-[10px] opacity-70">
-                {tabMonths}
-                {t('common.monthsAbbrev', { defaultValue: 'mo' })}
-              </Text>
-            </View>
-          </ToggleGroupItem>
-        );
-      })}
-    </ToggleGroup>
+      }}>
+      <SelectTrigger className="w-32">
+        <SelectValue
+          className="text-sm font-semibold text-foreground"
+          placeholder={t('tracking.selectBaby', { defaultValue: 'Select baby' })}>
+          {profile.nickname} ({currentMonths}
+          {t('common.monthsAbbrev', { defaultValue: 'mo' })})
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent className="w-48">
+        <SelectGroup>
+          {displayBabies.map((baby) => {
+            const months = computeMonthsOld(baby.birthDate);
+            return (
+              <SelectItem
+                key={baby.id}
+                value={baby.id.toString()}
+                label={`${baby.nickname} (${months}${t('common.monthsAbbrev', { defaultValue: 'mo' })})`}>
+                <Text className="text-sm">
+                  {baby.nickname} ({months}
+                  {t('common.monthsAbbrev', { defaultValue: 'mo' })})
+                </Text>
+              </SelectItem>
+            );
+          })}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   );
 
   return (

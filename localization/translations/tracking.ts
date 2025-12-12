@@ -1,6 +1,7 @@
 export const tracking = {
   en: {
     loading: 'Loading your dashboard...',
+    selectBaby: 'Select baby',
     tiles: {
       feeding: { label: 'Feeding', sublabel: 'Tap to log' },
       pumping: { label: 'Pumping', sublabel: 'Tap to log' },
@@ -16,6 +17,7 @@ export const tracking = {
   },
   vi: {
     loading: 'Đang tải bảng điều khiển của bạn...',
+    selectBaby: 'Chọn bé',
     tiles: {
       feeding: { label: 'Cho ăn', sublabel: 'Chạm để ghi lại' },
       pumping: { label: 'Hút sữa', sublabel: 'Chạm để ghi lại' },
