@@ -47,12 +47,9 @@ export function ScheduleHeader({
   return (
     <>
       <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-4">
-        <Pressable onPress={() => router.back()} testID="btn-close" accessibilityRole="button">
-          <Text className="text-base font-semibold text-accent">{t('common.close')}</Text>
-        </Pressable>
-
+        <View className="w-10" />
         <Pressable
-          className="mx-3 flex-1 flex-row items-center justify-center gap-2 rounded-full border border-border bg-card px-3 py-2"
+          className="flex-1 flex-row items-center justify-center gap-2 rounded-full border border-border bg-card px-3 py-2"
           accessibilityRole="button"
           accessibilityLabel={t('easySchedule.viewDetails')}
           onPress={() =>
@@ -76,8 +73,10 @@ export function ScheduleHeader({
           </View>
           <Ionicons name="chevron-down" size={18} color={brandColors.colors.lavender} />
         </Pressable>
-
-        <TouchableOpacity onPress={openTimePicker} className="p-1" accessibilityRole="button">
+        <TouchableOpacity
+          onPress={openTimePicker}
+          className="w-10 items-center justify-center p-1"
+          accessibilityRole="button">
           <Ionicons name="time-outline" size={24} color={brandColors.colors.lavender} />
         </TouchableOpacity>
       </View>

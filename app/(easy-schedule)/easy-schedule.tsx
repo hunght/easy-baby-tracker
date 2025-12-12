@@ -194,13 +194,25 @@ export default function EasyScheduleScreen() {
           {formulaNotice}
         </Text>
 
-        {groupedSchedule.map((group) => {
+        {groupedSchedule.map((group, groupIndex) => {
           const phases = group.items.filter((item) => item.activityType !== 'Y');
+          // Calculate baseMinutes for this group by summing durations of all previous groups
+          let groupBaseMinutes = baseMinutes;
+          for (let i = 0; i < groupIndex; i++) {
+            const previousGroupPhases = groupedSchedule[i].items.filter(
+              (item) => item.activityType !== 'Y'
+            );
+            const previousGroupDuration = previousGroupPhases.reduce(
+              (sum, item) => sum + item.durationMinutes,
+              0
+            );
+            groupBaseMinutes += previousGroupDuration;
+          }
           return (
             <ScheduleGroup
               key={group.number}
               phases={phases}
-              baseMinutes={baseMinutes}
+              baseMinutes={groupBaseMinutes}
               locale={locale}
               onPhasePress={openPhaseModal}
             />

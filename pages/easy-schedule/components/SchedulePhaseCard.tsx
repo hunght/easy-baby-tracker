@@ -1,11 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
-import { Alert, TouchableOpacity, View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 
 import { Text } from '@/components/ui/text';
-import { useBrandColor } from '@/hooks/use-brand-color';
 
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
 import { useColorScheme } from '@/hooks/use-color-scheme.web';
+import { useLocalization } from '@/localization/LocalizationProvider';
 
 type SchedulePhaseCardProps = {
   item: EasyScheduleItem;
@@ -26,9 +25,39 @@ export function SchedulePhaseCard({
   progressRatio,
   onPress,
 }: SchedulePhaseCardProps) {
-  const brandColors = useBrandColor();
+  const { t } = useLocalization();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+
+  const getActivityLabel = (type: string): string => {
+    const getUppercaseWord = (text: string): string => {
+      const words = text.split(/\s+/);
+      const uppercaseWord = words.find((word) => {
+        const cleaned = word.replace(/[#{{}}\d]/g, '');
+        return cleaned === cleaned.toUpperCase() && cleaned.length > 0;
+      });
+      return uppercaseWord?.replace(/[#{{}}\d]/g, '') || '';
+    };
+
+    switch (type) {
+      case 'E': {
+        const label = t('easySchedule.activityLabels.eat');
+        return getUppercaseWord(label) || 'EAT';
+      }
+      case 'A': {
+        const label = t('easySchedule.activityLabels.activity');
+        return getUppercaseWord(label) || 'PLAY';
+      }
+      case 'S': {
+        const label = t('easySchedule.activityLabels.sleep').replace('{{number}}', '');
+        return getUppercaseWord(label) || 'SLEEP';
+      }
+      case 'Y':
+        return 'YOURS';
+      default:
+        return '';
+    }
+  };
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -67,10 +96,6 @@ export function SchedulePhaseCard({
     };
   };
 
-  const showPhaseInfo = () => {
-    Alert.alert(item.label, `${item.startTime} → ${endTime}\n${duration}`);
-  };
-
   const phaseStyles = getPhaseStyles(item.activityType);
   const clampedProgress = Math.min(Math.max(progressRatio, 0), 1);
 
@@ -86,20 +111,17 @@ export function SchedulePhaseCard({
       onPress={onPress}>
       {isCurrentPhase && (
         <View
-          pointerEvents="none"
-          className="bg-lavender/16 absolute bottom-0 left-0 top-0 z-0 dark:bg-lavender/25"
-          style={{ width: `${clampedProgress * 100}%` }}
+          className="bg-lavender/16 absolute bottom-0 left-0 top-0 dark:bg-lavender/25"
+          style={{ width: `${clampedProgress * 100}%`, pointerEvents: 'none', zIndex: 0 }}
         />
       )}
-      <TouchableOpacity
-        onPress={showPhaseInfo}
-        className="absolute right-1.5 top-1.5 z-[2] p-1"
-        accessibilityRole="button"
-        accessibilityLabel={item.label}>
-        <Ionicons name="information-circle-outline" size={16} color={brandColors.colors.lavender} />
-      </TouchableOpacity>
-      <Text className="mb-1 text-lg">{getActivityIcon(item.activityType)}</Text>
-      <View className="w-full">
+      <View className="relative mb-1 flex-row items-center gap-1.5" style={{ zIndex: 1 }}>
+        <Text className="text-lg">{getActivityIcon(item.activityType)}</Text>
+        <Text className="text-xs font-semibold text-foreground">
+          {getActivityLabel(item.activityType)}
+        </Text>
+      </View>
+      <View className="relative w-full" style={{ zIndex: 1 }}>
         <Text className="text-sm font-semibold text-foreground">
           {item.startTime} → {endTime}
         </Text>

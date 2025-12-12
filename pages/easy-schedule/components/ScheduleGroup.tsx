@@ -46,18 +46,14 @@ function formatDuration(minutes: number, locale: string): string {
   return `${hours}${locale === 'vi' ? 'g' : 'h'}${mins}${locale === 'vi' ? 'p' : 'm'}`;
 }
 
-export function ScheduleGroup({
-  phases,
-  baseMinutes,
-  locale,
-  onPhasePress,
-}: ScheduleGroupProps) {
+export function ScheduleGroup({ phases, baseMinutes, locale, onPhasePress }: ScheduleGroupProps) {
   const [currentMinutes, setCurrentMinutes] = useState(getCurrentMinutes());
 
   useEffect(() => {
+    // Update every minute to keep active phase highlighting accurate
     const interval = setInterval(() => {
       setCurrentMinutes(getCurrentMinutes());
-    }, 30000);
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -76,6 +72,9 @@ export function ScheduleGroup({
     (timing) => timing.endMinutes > MINUTES_IN_DAY
   );
 
+  // Normalize current minutes to handle overnight schedules
+  // If current time is before base wake time and schedule spans overnight,
+  // treat current time as being in the next day cycle
   const normalizedCurrentMinutes =
     currentMinutes >= baseMinutes
       ? currentMinutes
@@ -91,9 +90,40 @@ export function ScheduleGroup({
         const timing = phaseTimingMap.get(item.order);
         const startMinutes = timing?.startMinutes ?? timeStringToMinutes(item.startTime);
         const endMinutes = timing?.endMinutes ?? startMinutes + item.durationMinutes;
-        const isCurrentPhase =
-          normalizedCurrentMinutes >= startMinutes && normalizedCurrentMinutes < endMinutes;
-        const isPastPhase = normalizedCurrentMinutes >= endMinutes;
+
+        // Determine if current time is within this phase
+        // Handle overnight phases correctly
+        let isCurrentPhase = false;
+        let isPastPhase = false;
+
+        if (endMinutes > MINUTES_IN_DAY) {
+          // Phase spans overnight (e.g., 11 PM to 1 AM)
+          if (normalizedCurrentMinutes >= MINUTES_IN_DAY) {
+            // Current time is normalized to next day cycle
+            const normalizedStart =
+              startMinutes < baseMinutes ? startMinutes + MINUTES_IN_DAY : startMinutes;
+            isCurrentPhase =
+              normalizedCurrentMinutes >= normalizedStart && normalizedCurrentMinutes < endMinutes;
+            isPastPhase = normalizedCurrentMinutes >= endMinutes;
+          } else {
+            // Current time is in current day cycle
+            // Phase has two parts: [startMinutes, 1440) and [0, endMinutes - 1440)
+            const endMinutesWrapped = endMinutes - MINUTES_IN_DAY;
+            const inFirstPart =
+              normalizedCurrentMinutes >= startMinutes && normalizedCurrentMinutes < MINUTES_IN_DAY;
+            const inSecondPart = normalizedCurrentMinutes < endMinutesWrapped;
+            isCurrentPhase = inFirstPart || inSecondPart;
+            // Past phase if we're past the end of the second part but before start of first part
+            isPastPhase =
+              normalizedCurrentMinutes >= endMinutesWrapped &&
+              normalizedCurrentMinutes < startMinutes;
+          }
+        } else {
+          // Phase doesn't span overnight - simple comparison
+          isCurrentPhase =
+            normalizedCurrentMinutes >= startMinutes && normalizedCurrentMinutes < endMinutes;
+          isPastPhase = normalizedCurrentMinutes >= endMinutes;
+        }
         const totalPhaseMinutes = endMinutes - startMinutes;
         const progressRatio =
           isCurrentPhase && totalPhaseMinutes > 0
