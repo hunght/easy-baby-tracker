@@ -11,7 +11,7 @@ import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
 import { Stack, useNavigationContainerRef, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Text, View , Platform } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -26,7 +26,6 @@ import { LocalizationProvider } from '@/localization/LocalizationProvider';
 import * as Notifications from 'expo-notifications';
 import migrations from '../drizzle/migrations';
 import { logger } from '@/lib/logger';
-import { Platform } from 'react-native';
 
 export const unstable_settings = {
   anchor: '(tabs)/tracking',
@@ -109,6 +108,11 @@ function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
   // Initialize notification handler and restore scheduled notifications
   // This runs only after migrations are complete
   useEffect(() => {
+    // Skip notifications setup on web (not fully supported)
+    if (Platform.OS === 'web') {
+      return;
+    }
+
     // Set up notification handler
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
@@ -127,7 +131,12 @@ function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
     });
 
     // Handle notification tap - navigate to appropriate screen
-    const handleNotificationResponse = async (response: Notifications.NotificationResponse) => {
+    const handleNotificationResponse = async (
+      response: Notifications.NotificationResponse | null
+    ) => {
+      if (!response) {
+        return;
+      }
       const data = response.notification.request.content.data;
 
       if (data?.type === 'feeding') {
@@ -145,12 +154,8 @@ function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
     );
 
     // Check if app was opened from a notification (when app was closed)
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) {
-        handleNotificationResponse(response);
-      }
-    });
-
+    const response = Notifications.getLastNotificationResponse();
+    handleNotificationResponse(response);
     // Listen for notification received events to clean up stored notifications
     const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
       // If it's a feeding notification, clean up the stored state
