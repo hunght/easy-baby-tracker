@@ -1,8 +1,8 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { Alert, ScrollView, Switch, View } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   getScheduledNotifications,
   deleteScheduledNotificationByNotificationId,
 } from '@/database/scheduled-notifications';
+import { getFormulaRuleByDate, deleteDaySpecificRule } from '@/database/easy-formula-rules';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { useNotification } from '@/components/NotificationContext';
 import {
@@ -41,6 +42,93 @@ export default function EasyScheduleSettingsScreen() {
     queryFn: getActiveBabyProfile,
     staleTime: 30 * 1000,
   });
+
+  // Get today's date
+  const today = useMemo(() => {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  }, []);
+
+  // Check if there's a day-specific rule for today
+  const { data: todayCustomRule } = useQuery({
+    queryKey: ['formulaRule', 'date', babyProfile?.id, today],
+    queryFn: () => getFormulaRuleByDate(babyProfile!.id, today),
+    enabled: !!babyProfile?.id,
+    staleTime: 30 * 1000,
+  });
+
+  const hasCustomRuleToday = !!todayCustomRule;
+
+  // Mutation to reset custom rule for today
+  const resetCustomRuleMutation = useMutation({
+    mutationFn: async () => {
+      if (!babyProfile?.id) {
+        throw new Error('Baby profile not found');
+      }
+      await deleteDaySpecificRule(babyProfile.id, today);
+
+      // Reschedule reminders if enabled
+      const reminderEnabledValue = await getAppState(EASY_REMINDER_ENABLED_KEY);
+      if (reminderEnabledValue === 'true') {
+        const advanceMinutesValue = await getAppState(EASY_REMINDER_ADVANCE_MINUTES_KEY);
+        const advanceMinutes = advanceMinutesValue ? parseInt(advanceMinutesValue, 10) : 5;
+
+        const labels: EasyScheduleReminderLabels = {
+          eat: t('easySchedule.activityLabels.eat'),
+          activity: t('easySchedule.activityLabels.activity'),
+          sleep: (napNumber: number) =>
+            t('easySchedule.activityLabels.sleep').replace('{{number}}', String(napNumber)),
+          yourTime: t('easySchedule.activityLabels.yourTime'),
+          reminderTitle: (params) =>
+            t('easySchedule.reminder.title', {
+              params: { emoji: params.emoji, activity: params.activity },
+            }),
+          reminderBody: (params) =>
+            t('easySchedule.reminder.body', {
+              params: {
+                activity: params.activity,
+                time: params.time,
+                advance: params.advance,
+              },
+            }),
+        };
+
+        await rescheduleEasyReminders(babyProfile, firstWakeTime, advanceMinutes, labels);
+      }
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh UI
+      queryClient.invalidateQueries({
+        queryKey: ['formulaRule', 'date', babyProfile?.id, today],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['timeAdjustments', babyProfile?.id, today],
+      });
+      showNotification(t('easySchedule.settings.customRuleReset'), 'success');
+    },
+    onError: (error) => {
+      console.error('Failed to reset custom rule:', error);
+      showNotification(t('common.saveError'), 'error');
+    },
+  });
+
+  const handleResetCustomRule = () => {
+    Alert.alert(
+      t('easySchedule.settings.resetCustomRuleTitle'),
+      t('easySchedule.settings.resetCustomRuleMessage'),
+      [
+        {
+          text: t('common.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('common.reset'),
+          style: 'destructive',
+          onPress: () => resetCustomRuleMutation.mutate(),
+        },
+      ]
+    );
+  };
 
   // Load settings
   useEffect(() => {
@@ -209,6 +297,32 @@ export default function EasyScheduleSettingsScreen() {
             </View>
           )}
         </View>
+
+        {/* Custom Rule Reset Section */}
+        {hasCustomRuleToday && (
+          <View className="gap-3">
+            <Text className="text-base font-semibold text-foreground">
+              {t('easySchedule.settings.customSchedule')}
+            </Text>
+            <View className="rounded-lg border border-border bg-card p-4">
+              <View className="mb-3">
+                <Text className="text-sm font-medium text-foreground">
+                  {t('easySchedule.settings.customRuleActive')}
+                </Text>
+                <Text className="mt-1 text-xs text-muted-foreground">
+                  {t('easySchedule.settings.customRuleDescription')}
+                </Text>
+              </View>
+              <Button
+                variant="outline"
+                size="sm"
+                onPress={handleResetCustomRule}
+                disabled={resetCustomRuleMutation.isPending}>
+                <Text>{t('easySchedule.settings.resetToOriginal')}</Text>
+              </Button>
+            </View>
+          </View>
+        )}
 
         {/* Reminder Settings Section */}
         <View className="gap-3">

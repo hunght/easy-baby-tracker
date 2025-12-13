@@ -85,7 +85,7 @@ function MigrationHandler({ children }: { children: React.ReactNode }) {
   // Always call hooks unconditionally
   useDrizzleStudio(dbInstance);
 
-  // Run migrations
+  // Run migrations - must be called unconditionally
   const { success, error } = useMigrations(drizzleDb, migrations);
 
   if (error) {

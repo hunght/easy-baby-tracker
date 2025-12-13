@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "454011c1-f06e-42f4-8165-a464e5fc52a8",
+  "id": "f7ec4f8a-6ee8-4a3b-9ccc-23cd08081460",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "app_state": {
@@ -74,6 +74,13 @@
           "autoincrement": false,
           "default": "'07:00'"
         },
+        "selected_easy_formula_id": {
+          "name": "selected_easy_formula_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -116,9 +123,7 @@
       "indexes": {
         "idx_concern_choices_baby_id": {
           "name": "idx_concern_choices_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         }
       },
@@ -127,12 +132,8 @@
           "name": "concern_choices_baby_id_baby_profiles_id_fk",
           "tableFrom": "concern_choices",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -204,23 +205,17 @@
       "indexes": {
         "idx_diaper_changes_baby_id": {
           "name": "idx_diaper_changes_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_diaper_changes_recorded_at": {
           "name": "idx_diaper_changes_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_diaper_changes_time": {
           "name": "idx_diaper_changes_time",
-          "columns": [
-            "time"
-          ],
+          "columns": ["time"],
           "isUnique": false
         }
       },
@@ -229,12 +224,8 @@
           "name": "diaper_changes_baby_id_baby_profiles_id_fk",
           "tableFrom": "diaper_changes",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -292,16 +283,12 @@
       "indexes": {
         "idx_diary_entries_baby_id": {
           "name": "idx_diary_entries_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_diary_entries_created_at": {
           "name": "idx_diary_entries_created_at",
-          "columns": [
-            "createdAt"
-          ],
+          "columns": ["createdAt"],
           "isUnique": false
         }
       },
@@ -310,12 +297,237 @@
           "name": "diary_entries_baby_id_baby_profiles_id_fk",
           "tableFrom": "diary_entries",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "easy_formula_rules": {
+      "name": "easy_formula_rules",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "baby_id": {
+          "name": "baby_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "is_custom": {
+          "name": "is_custom",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "valid_date": {
+          "name": "valid_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_rule_id": {
+          "name": "source_rule_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "min_weeks": {
+          "name": "min_weeks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "max_weeks": {
+          "name": "max_weeks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "label_key": {
+          "name": "label_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "label_text": {
+          "name": "label_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "age_range_key": {
+          "name": "age_range_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "age_range_text": {
+          "name": "age_range_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cycle_key": {
+          "name": "cycle_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cycle_text": {
+          "name": "cycle_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "eat_key": {
+          "name": "eat_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "eat_text": {
+          "name": "eat_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "activity_key": {
+          "name": "activity_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "activity_text": {
+          "name": "activity_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sleep_key": {
+          "name": "sleep_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sleep_text": {
+          "name": "sleep_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "your_time_key": {
+          "name": "your_time_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "your_time_text": {
+          "name": "your_time_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "logic_keys": {
+          "name": "logic_keys",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "logic_texts": {
+          "name": "logic_texts",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "phases": {
+          "name": "phases",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_formula_rules_baby_id": {
+          "name": "idx_formula_rules_baby_id",
+          "columns": ["baby_id"],
+          "isUnique": false
+        },
+        "idx_formula_rules_custom": {
+          "name": "idx_formula_rules_custom",
+          "columns": ["is_custom"],
+          "isUnique": false
+        },
+        "idx_formula_rules_weeks": {
+          "name": "idx_formula_rules_weeks",
+          "columns": ["min_weeks", "max_weeks"],
+          "isUnique": false
+        },
+        "idx_formula_rules_valid_date": {
+          "name": "idx_formula_rules_valid_date",
+          "columns": ["valid_date"],
+          "isUnique": false
+        },
+        "idx_formula_rules_baby_date_unique": {
+          "name": "idx_formula_rules_baby_date_unique",
+          "columns": ["baby_id", "valid_date"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "easy_formula_rules_baby_id_baby_profiles_id_fk": {
+          "name": "easy_formula_rules_baby_id_baby_profiles_id_fk",
+          "tableFrom": "easy_formula_rules",
+          "tableTo": "baby_profiles",
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -422,23 +634,17 @@
       "indexes": {
         "idx_feedings_baby_id": {
           "name": "idx_feedings_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_feedings_recorded_at": {
           "name": "idx_feedings_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_feedings_start_time": {
           "name": "idx_feedings_start_time",
-          "columns": [
-            "startTime"
-          ],
+          "columns": ["startTime"],
           "isUnique": false
         }
       },
@@ -447,12 +653,8 @@
           "name": "feedings_baby_id_baby_profiles_id_fk",
           "tableFrom": "feedings",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -524,23 +726,17 @@
       "indexes": {
         "idx_growth_records_baby_id": {
           "name": "idx_growth_records_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_growth_records_recorded_at": {
           "name": "idx_growth_records_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_growth_records_time": {
           "name": "idx_growth_records_time",
-          "columns": [
-            "time"
-          ],
+          "columns": ["time"],
           "isUnique": false
         }
       },
@@ -549,12 +745,8 @@
           "name": "growth_records_baby_id_baby_profiles_id_fk",
           "tableFrom": "growth_records",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -640,30 +832,22 @@
       "indexes": {
         "idx_health_records_baby_id": {
           "name": "idx_health_records_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_health_records_recorded_at": {
           "name": "idx_health_records_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_health_records_time": {
           "name": "idx_health_records_time",
-          "columns": [
-            "time"
-          ],
+          "columns": ["time"],
           "isUnique": false
         },
         "idx_health_records_type": {
           "name": "idx_health_records_type",
-          "columns": [
-            "type"
-          ],
+          "columns": ["type"],
           "isUnique": false
         }
       },
@@ -672,12 +856,8 @@
           "name": "health_records_baby_id_baby_profiles_id_fk",
           "tableFrom": "health_records",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -770,23 +950,17 @@
       "indexes": {
         "idx_pumpings_baby_id": {
           "name": "idx_pumpings_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_pumpings_recorded_at": {
           "name": "idx_pumpings_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_pumpings_start_time": {
           "name": "idx_pumpings_start_time",
-          "columns": [
-            "startTime"
-          ],
+          "columns": ["startTime"],
           "isUnique": false
         }
       },
@@ -795,12 +969,8 @@
           "name": "pumpings_baby_id_baby_profiles_id_fk",
           "tableFrom": "pumpings",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -865,30 +1035,22 @@
       "indexes": {
         "idx_scheduled_notifications_baby_id": {
           "name": "idx_scheduled_notifications_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_scheduled_notifications_type": {
           "name": "idx_scheduled_notifications_type",
-          "columns": [
-            "notification_type"
-          ],
+          "columns": ["notification_type"],
           "isUnique": false
         },
         "idx_scheduled_notifications_notification_id": {
           "name": "idx_scheduled_notifications_notification_id",
-          "columns": [
-            "notification_id"
-          ],
+          "columns": ["notification_id"],
           "isUnique": false
         },
         "idx_scheduled_notifications_scheduled_time": {
           "name": "idx_scheduled_notifications_scheduled_time",
-          "columns": [
-            "scheduled_time"
-          ],
+          "columns": ["scheduled_time"],
           "isUnique": false
         }
       },
@@ -897,12 +1059,8 @@
           "name": "scheduled_notifications_baby_id_baby_profiles_id_fk",
           "tableFrom": "scheduled_notifications",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -974,23 +1132,17 @@
       "indexes": {
         "idx_sleep_sessions_baby_id": {
           "name": "idx_sleep_sessions_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_sleep_sessions_recorded_at": {
           "name": "idx_sleep_sessions_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_sleep_sessions_start_time": {
           "name": "idx_sleep_sessions_start_time",
-          "columns": [
-            "startTime"
-          ],
+          "columns": ["startTime"],
           "isUnique": false
         }
       },
@@ -999,12 +1151,8 @@
           "name": "sleep_sessions_baby_id_baby_profiles_id_fk",
           "tableFrom": "sleep_sessions",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

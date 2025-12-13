@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScrollView, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -7,11 +7,13 @@ import {
   BABY_PROFILE_QUERY_KEY,
   formulaRuleByIdKey,
   formulaRuleByAgeKey,
-  todayScheduleAdjustmentsKey,
 } from '@/constants/query-keys';
 import { getActiveBabyProfile } from '@/database/baby-profile';
-import { getFormulaRuleById, getFormulaRuleByAge } from '@/database/easy-formula-rules';
-import { getTodayScheduleAdjustments } from '@/database/easy-schedule-adjustments';
+import {
+  getFormulaRuleById,
+  getFormulaRuleByAge,
+  getFormulaRuleByDate,
+} from '@/database/easy-formula-rules';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
 import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
@@ -34,6 +36,7 @@ function timeStringToMinutes(time: string): number {
 
 export default function EasyScheduleScreen() {
   const { t, locale } = useLocalization();
+  const queryClient = useQueryClient();
   const wakeTimeSyncedRef = useRef<string | null>(null);
 
   const { data: babyProfile } = useQuery({
@@ -72,34 +75,41 @@ export default function EasyScheduleScreen() {
     [t]
   );
 
-  // Get active formula by selected ID
-  const { data: formulaById } = useQuery({
-    queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
-    queryFn: () => getFormulaRuleById(babyProfile!.selectedEasyFormulaId!, babyProfile?.id),
-    enabled: !!babyProfile?.selectedEasyFormulaId,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Get today's date
+  const today = useMemo(() => {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+  }, []);
 
-  // Get active formula by age as fallback
-  const { data: formulaByAge, isLoading: isLoadingFormula } = useQuery({
-    queryKey: formulaRuleByAgeKey(ageWeeks ?? 0, babyProfile?.id),
-    queryFn: () => getFormulaRuleByAge(ageWeeks!, babyProfile?.id),
-    enabled: ageWeeks !== undefined,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Use selected formula if valid, otherwise use age-based
-  const formulaRule = formulaById || formulaByAge;
-
-  // Get today's schedule adjustments
-  const { data: todayAdjustments = [], refetch: refetchAdjustments } = useQuery({
-    queryKey: todayScheduleAdjustmentsKey(babyProfile?.id),
-    queryFn: () => getTodayScheduleAdjustments(babyProfile!.id),
+  // Get day-specific formula rule for today (if exists)
+  const { data: daySpecificRule } = useQuery({
+    queryKey: ['formulaRule', 'date', babyProfile?.id, today],
+    queryFn: () => getFormulaRuleByDate(babyProfile!.id, today),
     enabled: !!babyProfile?.id,
     staleTime: 30 * 1000,
   });
 
-  const hasAdjustments = todayAdjustments.length > 0;
+  // Get active formula by selected ID (only if no day-specific rule)
+  const { data: formulaById } = useQuery({
+    queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
+    queryFn: () => getFormulaRuleById(babyProfile!.selectedEasyFormulaId!, babyProfile?.id),
+    enabled: !!babyProfile?.selectedEasyFormulaId && !daySpecificRule,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Get active formula by age as fallback (only if no day-specific rule)
+  const { data: formulaByAge, isLoading: isLoadingFormula } = useQuery({
+    queryKey: formulaRuleByAgeKey(ageWeeks ?? 0, babyProfile?.id),
+    queryFn: () => getFormulaRuleByAge(ageWeeks!, babyProfile?.id),
+    enabled: ageWeeks !== undefined && !daySpecificRule,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Use day-specific rule first, then selected formula, then age-based
+  const formulaRule = daySpecificRule || formulaById || formulaByAge;
+
+  // Check if there's a day-specific rule (custom schedule for today)
+  const hasCustomSchedule = !!daySpecificRule;
 
   const formulaNotice = formulaRule
     ? babyProfile?.selectedEasyFormulaId
@@ -118,36 +128,14 @@ export default function EasyScheduleScreen() {
   useEffect(() => {
     if (!formulaRule || isLoadingFormula) return;
 
-    let items = generateEasySchedule(firstWakeTime, {
+    // Generate schedule from formula rule phases
+    const items = generateEasySchedule(firstWakeTime, {
       labels,
-      ageWeeks,
-      ruleId: formulaRule.id,
+      phases: [...formulaRule.phases],
     });
 
-    // Apply today's adjustments if any
-    if (todayAdjustments.length > 0) {
-      items = items.map((item) => {
-        const adjustment = todayAdjustments.find((adj) => adj.itemOrder === item.order);
-        if (adjustment) {
-          return {
-            ...item,
-            startTime: adjustment.startTime,
-            // Recalculate duration based on adjusted times
-            durationMinutes: (() => {
-              const [startH, startM] = adjustment.startTime.split(':').map(Number);
-              const [endH, endM] = adjustment.endTime.split(':').map(Number);
-              const startMinutes = startH * 60 + startM;
-              const endMinutes = endH * 60 + endM;
-              return endMinutes - startMinutes;
-            })(),
-          };
-        }
-        return item;
-      });
-    }
-
     setScheduleItems(items);
-  }, [firstWakeTime, labels, ageWeeks, formulaRule, isLoadingFormula, todayAdjustments]);
+  }, [firstWakeTime, labels, formulaRule, isLoadingFormula]);
 
   const baseMinutes = timeStringToMinutes(firstWakeTime);
 
@@ -214,7 +202,7 @@ export default function EasyScheduleScreen() {
           {formulaNotice}
         </Text>
 
-        {hasAdjustments && (
+        {hasCustomSchedule && (
           <View className="rounded-md border border-accent/30 bg-accent/5 px-3 py-2">
             <Text className="text-xs font-medium text-accent">
               {t('easySchedule.customScheduleNotice', {
@@ -248,10 +236,17 @@ export default function EasyScheduleScreen() {
         phaseData={phaseModalData}
         onClose={closePhaseModal}
         onAdjustmentSaved={() => {
-          void refetchAdjustments();
+          // Invalidate queries to refresh day-specific rule and adjustments
+          queryClient.invalidateQueries({
+            queryKey: ['formulaRule', 'date', babyProfile?.id, today],
+          });
+          queryClient.invalidateQueries({
+            queryKey: ['timeAdjustments', babyProfile?.id, today],
+          });
         }}
         babyProfile={babyProfile ?? null}
         scheduleItems={scheduleItems}
+        currentFormulaRuleId={formulaRule?.id ?? ''}
       />
     </View>
   );

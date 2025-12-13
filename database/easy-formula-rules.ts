@@ -28,11 +28,13 @@ export async function seedPredefinedFormulas(): Promise<void> {
         'easySchedule.formulas.newborn.logic.cycle',
         'easySchedule.formulas.newborn.logic.activity',
       ]),
-      cycleLengthMinutes: 180,
-      activityRangeMin: 45,
-      activityRangeMax: 75,
-      feedDurationMinutes: 35,
-      napDurationsMinutes: JSON.stringify([120, 120, 90, 60]),
+      // 4 naps: Eat 35m, Activity 55m, Sleep varies
+      phases: JSON.stringify([
+        { eat: 35, activity: 55, sleep: 120 },
+        { eat: 35, activity: 55, sleep: 120 },
+        { eat: 35, activity: 55, sleep: 90 },
+        { eat: 35, activity: 55, sleep: 60 },
+      ]),
     },
     {
       id: 'fourToSixMonths',
@@ -50,11 +52,12 @@ export async function seedPredefinedFormulas(): Promise<void> {
         'easySchedule.formulas.fourToSixMonths.logic.cycle',
         'easySchedule.formulas.fourToSixMonths.logic.balance',
       ]),
-      cycleLengthMinutes: 240,
-      activityRangeMin: 90,
-      activityRangeMax: 120,
-      feedDurationMinutes: 30,
-      napDurationsMinutes: JSON.stringify([120, 120, 90]),
+      // 3 naps: Eat 30m, Activity 90m, Sleep varies
+      phases: JSON.stringify([
+        { eat: 30, activity: 90, sleep: 120 },
+        { eat: 30, activity: 90, sleep: 120 },
+        { eat: 30, activity: 90, sleep: 90 },
+      ]),
     },
     {
       id: 'sixToNineMonths',
@@ -72,12 +75,12 @@ export async function seedPredefinedFormulas(): Promise<void> {
         'easySchedule.formulas.sixToNineMonths.logic.window',
         'easySchedule.formulas.sixToNineMonths.logic.dropNap',
       ]),
-      cycleLengthMinutes: 240,
-      activityRangeMin: 120,
-      activityRangeMax: 180,
-      feedDurationMinutes: 30,
-      napDurationsMinutes: JSON.stringify([90, 90, 60]),
-      thirdNapDropWakeThreshold: 180,
+      // 3 naps: Eat 30m, Activity 120m, Sleep varies
+      phases: JSON.stringify([
+        { eat: 30, activity: 120, sleep: 90 },
+        { eat: 30, activity: 120, sleep: 90 },
+        { eat: 30, activity: 120, sleep: 60 },
+      ]),
     },
     {
       id: 'nineToTwelveMonths',
@@ -95,11 +98,11 @@ export async function seedPredefinedFormulas(): Promise<void> {
         'easySchedule.formulas.nineToTwelveMonths.logic.feedBalance',
         'easySchedule.formulas.nineToTwelveMonths.logic.capNap',
       ]),
-      activityRangeMin: 150,
-      activityRangeMax: 240,
-      feedDurationMinutes: 25,
-      napDurationsMinutes: JSON.stringify([90, 120]),
-      morningNapCapMinutes: 120,
+      // 2 naps: Eat 25m, Activity 150m, Sleep varies
+      phases: JSON.stringify([
+        { eat: 25, activity: 150, sleep: 90 },
+        { eat: 25, activity: 150, sleep: 120 },
+      ]),
     },
     {
       id: 'toddler',
@@ -117,14 +120,8 @@ export async function seedPredefinedFormulas(): Promise<void> {
         'easySchedule.formulas.toddler.logic.napStart',
         'easySchedule.formulas.toddler.logic.duration',
       ]),
-      activityRangeMin: 240,
-      activityRangeMax: 300,
-      feedDurationMinutes: 20,
-      napDurationsMinutes: JSON.stringify([120]),
-      afternoonActivityRangeMin: 240,
-      afternoonActivityRangeMax: 300,
-      nightSleepMinutes: 660,
-      bedtimeRoutineMinutes: 30,
+      // 1 nap: Eat 20m, Activity 240m, Sleep 120m
+      phases: JSON.stringify([{ eat: 20, activity: 240, sleep: 120 }]),
     },
   ];
 
@@ -147,26 +144,20 @@ function dbToFormulaRule(record: FormulaRuleSelect): EasyFormulaRule {
     sleepKey: record.sleepKey ?? record.sleepText ?? '',
     yourTimeKey: record.yourTimeKey ?? record.yourTimeText ?? '',
     logicKeys: JSON.parse(record.logicKeys ?? record.logicTexts ?? '[]'),
-    cycleLengthMinutes: record.cycleLengthMinutes ?? undefined,
-    activityRangeMinutes: [record.activityRangeMin, record.activityRangeMax] as const,
-    feedDurationMinutes: record.feedDurationMinutes,
-    napDurationsMinutes: JSON.parse(record.napDurationsMinutes),
-    thirdNapDropWakeThreshold: record.thirdNapDropWakeThreshold ?? undefined,
-    morningNapCapMinutes: record.morningNapCapMinutes ?? undefined,
-    afternoonActivityRangeMinutes:
-      record.afternoonActivityRangeMin && record.afternoonActivityRangeMax
-        ? ([record.afternoonActivityRangeMin, record.afternoonActivityRangeMax] as const)
-        : undefined,
-    nightSleepMinutes: record.nightSleepMinutes ?? undefined,
-    bedtimeRoutineMinutes: record.bedtimeRoutineMinutes ?? undefined,
+    // Parse phases from JSON, default to empty array if missing (old data)
+    phases: record.phases ? JSON.parse(record.phases) : [],
   };
 }
 
 /**
  * Get all formula rules (predefined + user custom for specific baby)
+ * Excludes day-specific rules (validDate is set)
  */
 export async function getFormulaRules(babyId?: number): Promise<EasyFormulaRule[]> {
-  const conditions: SQLWrapper[] = [];
+  const conditions: SQLWrapper[] = [
+    // Exclude day-specific rules
+    isNull(schema.easyFormulaRules.validDate),
+  ];
 
   // Get predefined rules OR rules created by this baby
   if (babyId) {
@@ -188,6 +179,7 @@ export async function getFormulaRules(babyId?: number): Promise<EasyFormulaRule[
 
 /**
  * Get formula rule by ID
+ * Can retrieve day-specific rules (validDate is set) if babyId matches
  */
 export async function getFormulaRuleById(
   ruleId: string,
@@ -213,6 +205,22 @@ export async function getFormulaRuleById(
 }
 
 /**
+ * Delete day-specific formula rule for a specific date
+ * This resets the schedule to use the original formula rule
+ */
+export async function deleteDaySpecificRule(babyId: number, date: string): Promise<void> {
+  await db
+    .delete(schema.easyFormulaRules)
+    .where(
+      and(
+        eq(schema.easyFormulaRules.babyId, babyId),
+        eq(schema.easyFormulaRules.validDate, date),
+        eq(schema.easyFormulaRules.isCustom, true)
+      )
+    );
+}
+
+/**
  * Get formula rule by age in weeks
  */
 export async function getFormulaRuleByAge(
@@ -228,6 +236,8 @@ export async function getFormulaRuleByAge(
       ),
       and(lte(schema.easyFormulaRules.minWeeks, ageWeeks), isNull(schema.easyFormulaRules.maxWeeks))
     )!,
+    // Exclude day-specific rules (validDate is set)
+    isNull(schema.easyFormulaRules.validDate),
   ];
 
   if (babyId) {
@@ -246,6 +256,90 @@ export async function getFormulaRuleByAge(
     .limit(1);
 
   return records[0] ? dbToFormulaRule(records[0]) : null;
+}
+
+/**
+ * Get day-specific formula rule for a baby and date
+ * Returns the custom rule for that specific date, or null if none exists
+ */
+export async function getFormulaRuleByDate(
+  babyId: number,
+  date: string // YYYY-MM-DD format
+): Promise<EasyFormulaRule | null> {
+  const records = await db
+    .select()
+    .from(schema.easyFormulaRules)
+    .where(
+      and(
+        eq(schema.easyFormulaRules.babyId, babyId),
+        eq(schema.easyFormulaRules.validDate, date),
+        eq(schema.easyFormulaRules.isCustom, true)
+      )
+    )
+    .limit(1);
+
+  return records[0] ? dbToFormulaRule(records[0]) : null;
+}
+
+/**
+ * Clone a formula rule for a specific date with custom phases
+ * This creates a day-specific custom rule that applies only to the given date
+ */
+export async function cloneFormulaRuleForDate(
+  babyId: number,
+  sourceRuleId: string,
+  date: string, // YYYY-MM-DD format
+  phases: { eat: number; activity: number; sleep: number }[]
+): Promise<string> {
+  // Get the source rule as raw database record
+  const sourceRecords = await db
+    .select()
+    .from(schema.easyFormulaRules)
+    .where(
+      and(
+        eq(schema.easyFormulaRules.id, sourceRuleId),
+        or(eq(schema.easyFormulaRules.isCustom, false), eq(schema.easyFormulaRules.babyId, babyId))!
+      )
+    )
+    .limit(1);
+
+  if (sourceRecords.length === 0) {
+    throw new Error(`Source formula rule ${sourceRuleId} not found`);
+  }
+
+  const sourceRecord = sourceRecords[0];
+
+  // Check if a day-specific rule already exists for this date
+  const existing = await getFormulaRuleByDate(babyId, date);
+  if (existing) {
+    // Update existing day-specific rule with new phases
+    await db
+      .update(schema.easyFormulaRules)
+      .set({
+        sourceRuleId: sourceRuleId,
+        phases: JSON.stringify(phases),
+        updatedAt: Math.floor(Date.now() / 1000),
+      })
+      .where(eq(schema.easyFormulaRules.id, existing.id));
+    return existing.id;
+  }
+
+  // Create new day-specific rule by cloning the source record
+  const newRuleId = `day_${babyId}_${date.replace(/-/g, '')}_${Date.now()}`;
+  const insert: FormulaRuleInsert = {
+    ...sourceRecord,
+    id: newRuleId,
+    babyId,
+    isCustom: true,
+    validDate: date,
+    sourceRuleId: sourceRuleId,
+    phases: JSON.stringify(phases),
+    createdAt: Math.floor(Date.now() / 1000),
+    updatedAt: Math.floor(Date.now() / 1000),
+  };
+
+  await db.insert(schema.easyFormulaRules).values(insert);
+  return newRuleId;
 }
 
 /**
@@ -269,17 +363,7 @@ export async function createCustomFormulaRule(
     sleepText: rule.sleepKey,
     yourTimeText: rule.yourTimeKey,
     logicTexts: JSON.stringify(rule.logicKeys),
-    cycleLengthMinutes: rule.cycleLengthMinutes,
-    activityRangeMin: rule.activityRangeMinutes[0],
-    activityRangeMax: rule.activityRangeMinutes[1],
-    feedDurationMinutes: rule.feedDurationMinutes,
-    napDurationsMinutes: JSON.stringify(rule.napDurationsMinutes),
-    thirdNapDropWakeThreshold: rule.thirdNapDropWakeThreshold,
-    morningNapCapMinutes: rule.morningNapCapMinutes,
-    afternoonActivityRangeMin: rule.afternoonActivityRangeMinutes?.[0],
-    afternoonActivityRangeMax: rule.afternoonActivityRangeMinutes?.[1],
-    nightSleepMinutes: rule.nightSleepMinutes,
-    bedtimeRoutineMinutes: rule.bedtimeRoutineMinutes,
+    phases: JSON.stringify(rule.phases),
   };
 
   const result = await db

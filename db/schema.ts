@@ -1,4 +1,4 @@
-import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, real, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 
 export const feedings = sqliteTable(
   'feedings',
@@ -275,6 +275,12 @@ export const easyFormulaRules = sqliteTable(
     id: text('id').primaryKey().notNull(), // 'newborn', 'fourToSixMonths', etc. or 'custom_<babyId>_<timestamp>'
     babyId: integer('baby_id').references(() => babyProfiles.id, { onDelete: 'cascade' }), // NULL for predefined, set for user-created
     isCustom: integer('is_custom', { mode: 'boolean' }).notNull().default(false),
+    // Date-specific rule: if set, this rule only applies to this date (YYYY-MM-DD format)
+    // NULL means the rule applies to all dates (or based on age range)
+    validDate: text('valid_date'),
+    // Source rule ID: for day-specific rules, stores the ID of the original rule it was cloned from
+    // NULL for regular rules, set for day-specific custom rules
+    sourceRuleId: text('source_rule_id'),
     minWeeks: integer('min_weeks').notNull(),
     maxWeeks: integer('max_weeks'), // NULL for open-ended (toddler+)
 
@@ -296,18 +302,10 @@ export const easyFormulaRules = sqliteTable(
     logicKeys: text('logic_keys'), // JSON array of translation keys
     logicTexts: text('logic_texts'), // JSON array of text strings
 
-    // Schedule parameters
-    cycleLengthMinutes: integer('cycle_length_minutes'),
-    activityRangeMin: integer('activity_range_min').notNull(),
-    activityRangeMax: integer('activity_range_max').notNull(),
-    feedDurationMinutes: integer('feed_duration_minutes').notNull(),
-    napDurationsMinutes: text('nap_durations_minutes').notNull(), // JSON array [120, 120, 90]
-    thirdNapDropWakeThreshold: integer('third_nap_drop_wake_threshold'),
-    morningNapCapMinutes: integer('morning_nap_cap_minutes'),
-    afternoonActivityRangeMin: integer('afternoon_activity_range_min'),
-    afternoonActivityRangeMax: integer('afternoon_activity_range_max'),
-    nightSleepMinutes: integer('night_sleep_minutes'),
-    bedtimeRoutineMinutes: integer('bedtime_routine_minutes'),
+    // Schedule phases - JSON array of cycles, each cycle contains durations in minutes
+    // Format: [{ eat: 35, activity: 55, sleep: 120 }, { eat: 30, activity: 60, sleep: 90 }, ...]
+    // Each cycle represents: Eat -> Activity -> Sleep -> Your Time (Y overlaps with S)
+    phases: text('phases').notNull(),
 
     createdAt: integer('created_at', { mode: 'number' })
       .notNull()
@@ -320,31 +318,8 @@ export const easyFormulaRules = sqliteTable(
     index('idx_formula_rules_baby_id').on(table.babyId),
     index('idx_formula_rules_custom').on(table.isCustom),
     index('idx_formula_rules_weeks').on(table.minWeeks, table.maxWeeks),
-  ]
-);
-
-export const easyScheduleAdjustments = sqliteTable(
-  'easy_schedule_adjustments',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    // Date for which this adjustment applies (YYYY-MM-DD format)
-    adjustmentDate: text('adjustment_date').notNull(),
-    // Schedule item order (position in the schedule)
-    itemOrder: integer('item_order').notNull(),
-    // Adjusted start time (HH:mm format)
-    startTime: text('start_time').notNull(),
-    // Adjusted end time (HH:mm format)
-    endTime: text('end_time').notNull(),
-    createdAt: integer('created_at', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_schedule_adjustments_baby_id').on(table.babyId),
-    index('idx_schedule_adjustments_date').on(table.adjustmentDate),
-    index('idx_schedule_adjustments_baby_date').on(table.babyId, table.adjustmentDate),
+    index('idx_formula_rules_valid_date').on(table.validDate),
+    // Unique constraint: one day-specific rule per baby per date
+    unique('idx_formula_rules_baby_date_unique').on(table.babyId, table.validDate),
   ]
 );

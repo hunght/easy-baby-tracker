@@ -80,6 +80,7 @@ export const common = {
     noData: 'No data available',
     apply: 'Apply',
     cancel: 'Cancel',
+    reset: 'Reset',
   },
   vi: {
     close: 'Đóng',
@@ -163,5 +164,6 @@ export const common = {
     noData: 'Không có dữ liệu',
     apply: 'Áp dụng',
     cancel: 'Hủy',
+    reset: 'Đặt lại',
   },
 } as const;

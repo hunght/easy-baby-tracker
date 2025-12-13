@@ -346,8 +346,7 @@ export async function rescheduleEasyReminders(
 
   const scheduleItems: EasyScheduleItem[] = generateEasySchedule(firstWakeTime, {
     labels: scheduleLabels,
-    ageWeeks,
-    ruleId: formulaRule.id,
+    phases: [...formulaRule.phases],
   });
 
   // Filter out 'Y' activities and schedule reminders for E, A, S

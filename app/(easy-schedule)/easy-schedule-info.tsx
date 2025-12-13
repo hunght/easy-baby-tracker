@@ -1,14 +1,18 @@
+import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { Text } from '@/components/ui/text';
-import { useBrandColor } from '@/hooks/use-brand-color';
 import {
-  EASY_FORMULA_RULES,
-  EasyFormulaRuleId,
-  getEasyFormulaRuleById,
-} from '@/lib/easy-schedule-generator';
+  BABY_PROFILE_QUERY_KEY,
+  FORMULA_RULES_QUERY_KEY,
+  formulaRuleByIdKey,
+} from '@/constants/query-keys';
+import { getActiveBabyProfile } from '@/database/baby-profile';
+import { getFormulaRuleById, getFormulaRules } from '@/database/easy-formula-rules';
+import { useBrandColor } from '@/hooks/use-brand-color';
+import type { EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 const TODDLER_WAKE_WINDOW_KEYS: string[] = [
@@ -67,15 +71,45 @@ export default function EasyScheduleInfoScreen() {
   const brandColors = useBrandColor();
   const params = useLocalSearchParams<{ ruleId?: EasyFormulaRuleId }>();
   const requestedRuleId = params.ruleId;
-  const availableRuleIds = EASY_FORMULA_RULES.map((rule) => rule.id);
-  const fallbackRuleId: EasyFormulaRuleId = 'newborn';
+
+  // Load baby profile
+  const { data: babyProfile } = useQuery({
+    queryKey: BABY_PROFILE_QUERY_KEY,
+    queryFn: getActiveBabyProfile,
+    staleTime: 30 * 1000,
+  });
+
+  // Load all formula rules from database
+  const { data: allRules = [] } = useQuery({
+    queryKey: FORMULA_RULES_QUERY_KEY,
+    queryFn: () => getFormulaRules(babyProfile?.id),
+    enabled: !!babyProfile,
+  });
+
+  const availableRuleIds = allRules.map((rule) => rule.id);
+  const fallbackRuleId: EasyFormulaRuleId = allRules[0]?.id ?? 'newborn';
   const ruleId: EasyFormulaRuleId =
     requestedRuleId && availableRuleIds.includes(requestedRuleId)
       ? requestedRuleId
       : fallbackRuleId;
 
-  const formulaRule = getEasyFormulaRuleById(ruleId);
-  const sortedRules = [...EASY_FORMULA_RULES].sort((a, b) => a.minWeeks - b.minWeeks);
+  // Load the selected formula rule from database
+  const { data: formulaRule } = useQuery({
+    queryKey: formulaRuleByIdKey(ruleId),
+    queryFn: () => getFormulaRuleById(ruleId, babyProfile?.id),
+    enabled: !!babyProfile && !!ruleId,
+  });
+
+  const sortedRules = [...allRules].sort((a, b) => a.minWeeks - b.minWeeks);
+
+  // Show loading state while data is loading
+  if (!formulaRule) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-muted-foreground">{t('common.loading')}</Text>
+      </View>
+    );
+  }
   const chooseFormulaLabel =
     t('easySchedule.formulaTable.labels.chooseFormula') ===
     'easySchedule.formulaTable.labels.chooseFormula'
@@ -132,9 +166,7 @@ export default function EasyScheduleInfoScreen() {
 
         {/* Formula Details */}
         <View className="mb-4 rounded-lg bg-card p-5">
-          <Text className="mb-3 text-lg font-semibold text-foreground">
-            {chooseFormulaLabel}
-          </Text>
+          <Text className="mb-3 text-lg font-semibold text-foreground">{chooseFormulaLabel}</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}

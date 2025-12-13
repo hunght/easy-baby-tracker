@@ -221,6 +221,15 @@ export const easySchedule = {
       enableReminders: 'Enable E.A.S.Y. reminders',
       enableRemindersDescription: 'Get notified before each E.A.S.Y. activity starts',
       reminderAdvance: 'Remind me before',
+      customSchedule: 'Custom Schedule',
+      customRuleActive: 'Today has custom schedule adjustments',
+      customRuleDescription:
+        'You have adjusted the schedule for today. Reset to use the original formula.',
+      resetToOriginal: 'Reset to Original Formula',
+      resetCustomRuleTitle: 'Reset Custom Schedule',
+      resetCustomRuleMessage:
+        "This will remove today's custom schedule adjustments and use the original formula. Continue?",
+      customRuleReset: 'Schedule reset to original formula',
     },
   },
   vi: {
@@ -442,6 +451,15 @@ export const easySchedule = {
       enableReminders: 'Bật nhắc nhở E.A.S.Y.',
       enableRemindersDescription: 'Nhận thông báo trước khi mỗi hoạt động E.A.S.Y. bắt đầu',
       reminderAdvance: 'Nhắc tôi trước',
+      customSchedule: 'Lịch tùy chỉnh',
+      customRuleActive: 'Hôm nay có điều chỉnh lịch tùy chỉnh',
+      customRuleDescription:
+        'Bạn đã điều chỉnh lịch cho hôm nay. Đặt lại để sử dụng công thức gốc.',
+      resetToOriginal: 'Đặt lại về Công thức Gốc',
+      resetCustomRuleTitle: 'Đặt lại Lịch Tùy chỉnh',
+      resetCustomRuleMessage:
+        'Điều này sẽ xóa các điều chỉnh lịch tùy chỉnh hôm nay và sử dụng công thức gốc. Tiếp tục?',
+      customRuleReset: 'Đã đặt lại lịch về công thức gốc',
     },
   },
 } as const;

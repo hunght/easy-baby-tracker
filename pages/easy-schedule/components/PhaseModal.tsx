@@ -2,6 +2,7 @@ import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { Modal, Pressable, TouchableOpacity, View } from 'react-native';
 import { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
@@ -10,11 +11,17 @@ import { useNotification } from '@/components/NotificationContext';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
-import { saveScheduleAdjustment, getTodayDateString } from '@/database/easy-schedule-adjustments';
+import { recalculateScheduleFromItem } from '@/lib/easy-schedule-generator';
+import { cloneFormulaRuleForDate } from '@/database/easy-formula-rules';
 
 import type { BabyProfileRecord } from '@/database/baby-profile';
 
 const MINUTES_IN_DAY = 1440;
+
+function getTodayDateString(): string {
+  const now = new Date();
+  return now.toISOString().split('T')[0];
+}
 
 function minutesToDate(minutes: number): Date {
   const dayOffset = Math.floor(minutes / MINUTES_IN_DAY);
@@ -45,18 +52,21 @@ type PhaseModalProps = {
   onAdjustmentSaved: () => void;
   babyProfile: BabyProfileRecord | null;
   scheduleItems: EasyScheduleItem[];
+  currentFormulaRuleId: string; // ID of the current formula rule to clone
 };
 
 export function PhaseModal({
   phaseData,
   onClose,
-  onAdjustmentSaved,
+  onAdjustmentSaved: _onAdjustmentSaved,
   babyProfile,
   scheduleItems,
+  currentFormulaRuleId,
 }: PhaseModalProps) {
   const { t } = useLocalization();
   const { showNotification } = useNotification();
   const brandColors = useBrandColor();
+  const queryClient = useQueryClient();
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [startTimeValue, setStartTimeValue] = useState('');
@@ -81,8 +91,6 @@ export function PhaseModal({
       setCurrentEndMinutes(phaseData.timing.endMinutes);
     }
   }, [phaseData]);
-
-  if (!phaseData) return null;
 
   const handleStartTimeChange = (_event: DateTimePickerEvent, date?: Date) => {
     if (date) {
@@ -118,103 +126,122 @@ export function PhaseModal({
     }
   };
 
-  const handleApply = async () => {
-    if (!startTimeValue || !endTimeValue || !phaseData || !babyProfile) {
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!startTimeValue || !endTimeValue || !phaseData || !babyProfile) {
+        throw new Error('Missing required data');
+      }
+
+      const today = getTodayDateString();
+
+      // Recalculate schedule with the new adjustment
+      const recalculatedItems = recalculateScheduleFromItem(
+        scheduleItems,
+        phaseData.item.order,
+        startTimeValue,
+        endTimeValue
+      );
+
+      // Convert schedule items back to phases format
+      // Each EASY cycle has 4 items: E, A, S, Y
+      // We need to group them into phases: { eat, activity, sleep }
+      const phases: { eat: number; activity: number; sleep: number }[] = [];
+
+      for (let i = 0; i < recalculatedItems.length; i += 4) {
+        const eatItem = recalculatedItems[i];
+        const activityItem = recalculatedItems[i + 1];
+        const sleepItem = recalculatedItems[i + 2];
+        // Skip Y item (i + 3) as it overlaps with S
+
+        if (eatItem && activityItem && sleepItem) {
+          phases.push({
+            eat: eatItem.durationMinutes,
+            activity: activityItem.durationMinutes,
+            sleep: sleepItem.durationMinutes,
+          });
+        }
+      }
+
+      // Clone the formula rule for today with adjusted phases
+      if (phases.length > 0) {
+        await cloneFormulaRuleForDate(babyProfile.id, currentFormulaRuleId, today, phases);
+      }
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh day-specific rule
+      const today = getTodayDateString();
+      queryClient.invalidateQueries({
+        queryKey: ['formulaRule', 'date', babyProfile?.id, today],
+      });
+
+      // Calculate old values for notification
+      const oldStartTime = minutesToTimeString(phaseData?.timing.startMinutes ?? 0);
+      const oldEndTime = minutesToTimeString(phaseData?.timing.endMinutes ?? 0);
+
+      // Check if anything changed
+      const startChanged = oldStartTime !== startTimeValue;
+      const endChanged = oldEndTime !== endTimeValue;
+
+      // Show success notification with details
+      const changes: string[] = [];
+      if (startChanged) {
+        changes.push(
+          t('easySchedule.phaseModal.startTimeChanged', {
+            defaultValue: `Start time: ${oldStartTime} → ${startTimeValue}`,
+            params: { old: oldStartTime, new: startTimeValue },
+          })
+        );
+      }
+      if (endChanged) {
+        changes.push(
+          t('easySchedule.phaseModal.endTimeChanged', {
+            defaultValue: `End time: ${oldEndTime} → ${endTimeValue}`,
+            params: { old: oldEndTime, new: endTimeValue },
+          })
+        );
+      }
+
+      const activityLabel =
+        phaseData?.item.activityType === 'E'
+          ? t('easySchedule.activityLabels.eat')
+          : phaseData?.item.activityType === 'A'
+            ? t('easySchedule.activityLabels.activity')
+            : phaseData?.item.activityType === 'S'
+              ? t('easySchedule.activityLabels.sleep').replace('{{number}}', '')
+              : t('easySchedule.activityLabels.yourTime');
+
+      const notificationMessage =
+        t('easySchedule.phaseModal.adjustmentSuccess', {
+          defaultValue: `Schedule adjusted: ${activityLabel}`,
+          params: { activity: activityLabel },
+        }) + (changes.length > 0 ? `\n${changes.join('\n')}` : '');
+
+      showNotification(notificationMessage, 'success');
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Failed to save adjustment:', error);
+      showNotification(t('common.saveError'), 'error');
+    },
+  });
+
+  const handleApply = () => {
+    if (!startTimeValue || !endTimeValue || !phaseData) {
       return;
     }
 
-    // Calculate old values for notification
+    // Calculate old values to check if anything changed
     const oldStartTime = minutesToTimeString(phaseData.timing.startMinutes);
     const oldEndTime = minutesToTimeString(phaseData.timing.endMinutes);
 
-    // Check if anything changed
     const startChanged = oldStartTime !== startTimeValue;
     const endChanged = oldEndTime !== endTimeValue;
 
     if (startChanged || endChanged) {
-      try {
-        const today = getTodayDateString();
-
-        // Calculate time difference to apply to subsequent phases
-        const timeDiff = currentStartMinutes - phaseData.timing.startMinutes;
-
-        // Save adjustment for current phase
-        await saveScheduleAdjustment({
-          babyId: babyProfile.id,
-          adjustmentDate: today,
-          itemOrder: phaseData.item.order,
-          startTime: startTimeValue,
-          endTime: endTimeValue,
-        });
-
-        // Update all subsequent phases with the time difference
-        if (timeDiff !== 0) {
-          const currentIndex = scheduleItems.findIndex(
-            (item) => item.order === phaseData.item.order
-          );
-          const subsequentPhases = scheduleItems.slice(currentIndex + 1);
-
-          for (const phase of subsequentPhases) {
-            // Parse original time
-            const [origStartH, origStartM] = phase.startTime.split(':').map(Number);
-            const origStartMinutes = origStartH * 60 + origStartM;
-            const origEndMinutes = origStartMinutes + phase.durationMinutes;
-
-            // Apply time difference
-            const newStartMinutes = origStartMinutes + timeDiff;
-            const newEndMinutes = origEndMinutes + timeDiff;
-
-            await saveScheduleAdjustment({
-              babyId: babyProfile.id,
-              adjustmentDate: today,
-              itemOrder: phase.order,
-              startTime: minutesToTimeString(newStartMinutes),
-              endTime: minutesToTimeString(newEndMinutes),
-            });
-          }
-        }
-
-        // Notify parent to refresh schedule
-        onAdjustmentSaved();
-
-        // Show success notification with details
-        const changes: string[] = [];
-        if (startChanged) {
-          changes.push(
-            t('easySchedule.phaseModal.startTimeChanged', {
-              defaultValue: `Start time: ${oldStartTime} → ${startTimeValue}`,
-              params: { old: oldStartTime, new: startTimeValue },
-            })
-          );
-        }
-        if (endChanged) {
-          changes.push(
-            t('easySchedule.phaseModal.endTimeChanged', {
-              defaultValue: `End time: ${oldEndTime} → ${endTimeValue}`,
-              params: { old: oldEndTime, new: endTimeValue },
-            })
-          );
-        }
-
-        const notificationMessage =
-          t('easySchedule.phaseModal.adjustmentSuccess', {
-            defaultValue: `Schedule adjusted for today: ${phaseData.item.label}`,
-            params: { activity: phaseData.item.label },
-          }) + (changes.length > 0 ? `\n${changes.join(', ')}` : '');
-
-        showNotification(notificationMessage, 'success');
-      } catch (error) {
-        console.error('Failed to save schedule adjustment:', error);
-        showNotification(
-          t('common.saveError', { defaultValue: 'Failed to save adjustment' }),
-          'error'
-        );
-      }
+      mutation.mutate();
+    } else {
+      onClose();
     }
-
-    setShowStartPicker(false);
-    setShowEndPicker(false);
-    onClose();
   };
 
   const handleClose = () => {
@@ -222,6 +249,15 @@ export function PhaseModal({
     setShowEndPicker(false);
     onClose();
   };
+
+  // Early return after all hooks - guard against null phaseData
+  if (!phaseData) {
+    return (
+      <Modal transparent visible={false} animationType="fade" onRequestClose={handleClose}>
+        <View />
+      </Modal>
+    );
+  }
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={handleClose}>
