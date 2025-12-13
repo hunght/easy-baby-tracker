@@ -246,13 +246,12 @@ export default function EasyScheduleScreen() {
 
       <PhaseModal
         phaseData={phaseModalData}
-        baseMinutes={baseMinutes}
         onClose={closePhaseModal}
         onAdjustmentSaved={() => {
           void refetchAdjustments();
         }}
         babyProfile={babyProfile ?? null}
-        labels={labels}
+        scheduleItems={scheduleItems}
       />
     </View>
   );

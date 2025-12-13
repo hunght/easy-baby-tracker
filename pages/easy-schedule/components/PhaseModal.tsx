@@ -12,7 +12,6 @@ import { useLocalization } from '@/localization/LocalizationProvider';
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
 import { saveScheduleAdjustment, getTodayDateString } from '@/database/easy-schedule-adjustments';
 
-
 import type { BabyProfileRecord } from '@/database/baby-profile';
 
 const MINUTES_IN_DAY = 1440;
@@ -42,25 +41,18 @@ type PhaseModalProps = {
     endTimeLabel: string;
     durationLabel: string;
   } | null;
-  baseMinutes: number;
   onClose: () => void;
   onAdjustmentSaved: () => void;
   babyProfile: BabyProfileRecord | null;
-  labels: {
-    eat: string;
-    activity: string;
-    sleep: (napNumber: number) => string;
-    yourTime: string;
-  };
+  scheduleItems: EasyScheduleItem[];
 };
 
 export function PhaseModal({
   phaseData,
-  baseMinutes: _baseMinutes,
   onClose,
   onAdjustmentSaved,
   babyProfile,
-  labels: _labels,
+  scheduleItems,
 }: PhaseModalProps) {
   const { t } = useLocalization();
   const { showNotification } = useNotification();
@@ -71,6 +63,8 @@ export function PhaseModal({
   const [endTimeValue, setEndTimeValue] = useState('');
   const [startTimeDate, setStartTimeDate] = useState(new Date());
   const [endTimeDate, setEndTimeDate] = useState(new Date());
+  const [currentStartMinutes, setCurrentStartMinutes] = useState(0);
+  const [currentEndMinutes, setCurrentEndMinutes] = useState(0);
 
   const visible = phaseData !== null;
 
@@ -83,6 +77,8 @@ export function PhaseModal({
       setEndTimeValue(endTime);
       setStartTimeDate(minutesToDate(phaseData.timing.startMinutes));
       setEndTimeDate(minutesToDate(phaseData.timing.endMinutes));
+      setCurrentStartMinutes(phaseData.timing.startMinutes);
+      setCurrentEndMinutes(phaseData.timing.endMinutes);
     }
   }, [phaseData]);
 
@@ -94,7 +90,21 @@ export function PhaseModal({
       const hours = date.getHours().toString().padStart(2, '0');
       const minutes = date.getMinutes().toString().padStart(2, '0');
       const timeString = `${hours}:${minutes}`;
+
+      // Calculate the time difference and adjust end time accordingly
+      const newStartMinutes = date.getHours() * 60 + date.getMinutes();
+      const timeDiff = newStartMinutes - currentStartMinutes;
+
+      // Update end time by the same difference
+      const newEndMinutes = currentEndMinutes + timeDiff;
+      const newEndTime = minutesToTimeString(newEndMinutes);
+      const newEndDate = minutesToDate(newEndMinutes);
+
       setStartTimeValue(timeString);
+      setEndTimeValue(newEndTime);
+      setEndTimeDate(newEndDate);
+      setCurrentStartMinutes(newStartMinutes);
+      setCurrentEndMinutes(newEndMinutes);
     }
   };
 
@@ -123,8 +133,12 @@ export function PhaseModal({
 
     if (startChanged || endChanged) {
       try {
-        // Save adjustment to database for today only
         const today = getTodayDateString();
+
+        // Calculate time difference to apply to subsequent phases
+        const timeDiff = currentStartMinutes - phaseData.timing.startMinutes;
+
+        // Save adjustment for current phase
         await saveScheduleAdjustment({
           babyId: babyProfile.id,
           adjustmentDate: today,
@@ -132,6 +146,33 @@ export function PhaseModal({
           startTime: startTimeValue,
           endTime: endTimeValue,
         });
+
+        // Update all subsequent phases with the time difference
+        if (timeDiff !== 0) {
+          const currentIndex = scheduleItems.findIndex(
+            (item) => item.order === phaseData.item.order
+          );
+          const subsequentPhases = scheduleItems.slice(currentIndex + 1);
+
+          for (const phase of subsequentPhases) {
+            // Parse original time
+            const [origStartH, origStartM] = phase.startTime.split(':').map(Number);
+            const origStartMinutes = origStartH * 60 + origStartM;
+            const origEndMinutes = origStartMinutes + phase.durationMinutes;
+
+            // Apply time difference
+            const newStartMinutes = origStartMinutes + timeDiff;
+            const newEndMinutes = origEndMinutes + timeDiff;
+
+            await saveScheduleAdjustment({
+              babyId: babyProfile.id,
+              adjustmentDate: today,
+              itemOrder: phase.order,
+              startTime: minutesToTimeString(newStartMinutes),
+              endTime: minutesToTimeString(newEndMinutes),
+            });
+          }
+        }
 
         // Notify parent to refresh schedule
         onAdjustmentSaved();
@@ -196,6 +237,15 @@ export function PhaseModal({
             {phaseData.item.startTime} → {phaseData.endTimeLabel}
           </Text>
           <Text className="mb-4 text-[13px] text-muted-foreground">{phaseData.durationLabel}</Text>
+
+          <View className="mb-4 flex-row items-start gap-2 rounded-md bg-accent/10 p-3 dark:bg-accent/20">
+            <Ionicons name="information-circle" size={18} color={brandColors.colors.accent} />
+            <Text className="flex-1 text-xs text-muted-foreground">
+              {t('easySchedule.phaseModal.todayOnlyNotice', {
+                defaultValue: 'Changes apply only for today and will reset tomorrow',
+              })}
+            </Text>
+          </View>
 
           <View className="gap-4">
             <View className="gap-2">
