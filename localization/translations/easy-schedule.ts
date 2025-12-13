@@ -9,6 +9,7 @@ export const easySchedule = {
     hideDetails: 'Hide details',
     infoTitle: 'How E.A.S.Y. Works',
     selectFormulaTitle: 'Select Formula',
+    formulaUpdated: 'Formula updated successfully',
     viewMore: 'View more',
     scheduleFor: 'Schedule {{number}}',
     currentPhase: {
@@ -226,6 +227,7 @@ export const easySchedule = {
     subtitle: 'Lịch trình có cấu trúc cho bé của bạn',
     firstWakeTime: 'Bé thức lần đầu lúc: {{time}}',
     firstWakeTimeTitle: 'Chọn giờ thức đầu tiên',
+    formulaUpdated: 'Đã cập nhật công thức thành công',
     currentPhase: {
       now: 'Đang diễn ra',
       remaining: 'Còn {{time}}',

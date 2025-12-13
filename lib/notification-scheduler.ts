@@ -16,13 +16,15 @@ import {
 import {
   EasyScheduleActivityType,
   generateEasySchedule,
-  getEasyFormulaRuleByAge,
-  getEasyFormulaRuleById,
-  EASY_FORMULA_RULES,
   type EasyFormulaRuleId,
   type EasyScheduleItem,
 } from '@/lib/easy-schedule-generator';
 import type { BabyProfileRecord } from '@/database/baby-profile';
+import {
+  getFormulaRuleByAge,
+  getFormulaRuleById,
+  getFormulaRules,
+} from '@/database/easy-formula-rules';
 
 export interface ScheduledFeedingNotification {
   notificationId: string;
@@ -316,7 +318,10 @@ export async function rescheduleEasyReminders(
 
   // Generate the EASY schedule
   const ageWeeks = babyProfile.birthDate ? calculateAgeInWeeks(babyProfile.birthDate) : undefined;
-  const availableRuleIds = EASY_FORMULA_RULES.map((rule) => rule.id);
+
+  // Get formula rules from database
+  const allFormulas = await getFormulaRules(babyProfile.id);
+  const availableRuleIds = allFormulas.map((rule) => rule.id);
   const storedFormulaId = babyProfile.selectedEasyFormulaId;
   let validStoredId: EasyFormulaRuleId | undefined = undefined;
   if (storedFormulaId && availableRuleIds.some((id) => id === storedFormulaId)) {
@@ -324,8 +329,13 @@ export async function rescheduleEasyReminders(
   }
 
   const formulaRule = validStoredId
-    ? getEasyFormulaRuleById(validStoredId)
-    : getEasyFormulaRuleByAge(ageWeeks);
+    ? await getFormulaRuleById(validStoredId, babyProfile.id)
+    : await getFormulaRuleByAge(ageWeeks ?? 0, babyProfile.id);
+
+  if (!formulaRule) {
+    console.warn('No formula rule found for scheduling notifications');
+    return 0;
+  }
 
   const scheduleLabels = {
     eat: labels.eat,

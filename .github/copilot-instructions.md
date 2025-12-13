@@ -6,6 +6,37 @@ BabyEase NativeWind is a **React Native baby tracking app** built with **Expo 54
 
 **Critical**: NativeWind 4/Tailwind classes ONLY - `StyleSheet.create()` is banned by ESLint. All components follow shadcn/ui patterns via React Native Reusables.
 
+## Code Organization Philosophy
+
+**NO UNNECESSARY ABSTRACTIONS** - Keep code simple and maintainable:
+
+- **Query keys centralized**: All React Query keys in `constants/query-keys.ts` for global uniqueness
+- **Database functions grouped by feature**: `database/feeding.ts` contains CRUD functions and types
+- **Avoid extra layers**: Don't create hooks wrappers around database functions - use React Query's `useQuery` directly in components
+- **Example Pattern**:
+
+  ```typescript
+  // constants/query-keys.ts - Centralized for uniqueness
+  export const FEEDINGS_QUERY_KEY = ['feedings'] as const;
+  export const feedingByIdKey = (id: number) => ['feeding', id] as const;
+
+  // database/feeding.ts - Database functions
+  export async function getFeedings() {
+    /* ... */
+  }
+  export async function getFeedingById(id: number) {
+    /* ... */
+  }
+
+  // Component usage - Direct useQuery, no wrapper hooks
+  import { useQuery } from '@tanstack/react-query';
+  import { getFeedings } from '@/database/feeding';
+  import { FEEDINGS_QUERY_KEY } from '@/constants/query-keys';
+  const { data } = useQuery({ queryKey: FEEDINGS_QUERY_KEY, queryFn: getFeedings });
+
+  // ❌ WRONG: Don't create hooks/use-feedings.ts wrapper
+  ```
+
 ## Architecture Patterns
 
 ### Styling System - NativeWind (Critical)

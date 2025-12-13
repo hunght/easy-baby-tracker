@@ -9,8 +9,7 @@ import m0002 from './0002_wooden_zuras.sql';
     journal,
     migrations: {
       m0000,
-m0001,
-m0002
+      m0001,
+      m0002
     }
   }
-  

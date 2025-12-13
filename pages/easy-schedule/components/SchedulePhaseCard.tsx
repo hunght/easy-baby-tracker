@@ -27,7 +27,7 @@ export function SchedulePhaseCard({
 }: SchedulePhaseCardProps) {
   const { t } = useLocalization();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = (colorScheme ?? 'light') === 'dark';
 
   const getActivityLabel = (type: string): string => {
     const getUppercaseWord = (text: string): string => {

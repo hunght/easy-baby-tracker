@@ -5,17 +5,22 @@ import { ScrollView, View, Pressable, TouchableOpacity } from 'react-native';
 
 import { Text } from '@/components/ui/text';
 import { useNotification } from '@/components/NotificationContext';
-import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
+import {
+  BABY_PROFILE_QUERY_KEY,
+  formulaRulesByBabyKey,
+  formulaRuleByIdKey,
+  formulaRuleByAgeKey,
+} from '@/constants/query-keys';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
 import { getAppState } from '@/database/app-state';
-import { useBrandColor } from '@/hooks/use-brand-color';
 import {
-  EASY_FORMULA_RULES,
-  type EasyFormulaRuleId,
-  getEasyFormulaRuleByAge,
-  getEasyFormulaRuleById,
-} from '@/lib/easy-schedule-generator';
+  getFormulaRules,
+  getFormulaRuleById,
+  getFormulaRuleByAge,
+} from '@/database/easy-formula-rules';
+import { useBrandColor } from '@/hooks/use-brand-color';
+import type { EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
 import {
   requestNotificationPermissions,
   rescheduleEasyReminders,
@@ -46,16 +51,31 @@ export default function EasyScheduleSelectScreen() {
 
   const ageWeeks = babyProfile?.birthDate ? calculateAgeInWeeks(babyProfile.birthDate) : undefined;
 
-  const availableRuleIds = EASY_FORMULA_RULES.map((rule) => rule.id);
-  const storedFormulaId = babyProfile?.selectedEasyFormulaId;
-  let validStoredId: EasyFormulaRuleId | undefined = undefined;
-  if (storedFormulaId && availableRuleIds.some((id) => id === storedFormulaId)) {
-    validStoredId = storedFormulaId as EasyFormulaRuleId;
-  }
+  // Fetch all available formulas from database
+  const { data: availableFormulas = [] } = useQuery({
+    queryKey: formulaRulesByBabyKey(babyProfile?.id),
+    queryFn: () => getFormulaRules(babyProfile?.id),
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const formulaRule = validStoredId
-    ? getEasyFormulaRuleById(validStoredId)
-    : getEasyFormulaRuleByAge(ageWeeks);
+  // Get the active formula by selected ID
+  const { data: formulaById } = useQuery({
+    queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
+    queryFn: () => getFormulaRuleById(babyProfile!.selectedEasyFormulaId!, babyProfile?.id),
+    enabled: !!babyProfile?.selectedEasyFormulaId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Get the active formula by age as fallback
+  const { data: formulaByAge, isLoading: isLoadingFormula } = useQuery({
+    queryKey: formulaRuleByAgeKey(ageWeeks ?? 0, babyProfile?.id),
+    queryFn: () => getFormulaRuleByAge(ageWeeks!, babyProfile?.id),
+    enabled: ageWeeks !== undefined,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Use selected formula if valid, otherwise use age-based
+  const formulaRule = formulaById || formulaByAge;
 
   const mutation = useMutation({
     mutationFn: async (ruleId: EasyFormulaRuleId) => {
@@ -120,7 +140,15 @@ export default function EasyScheduleSelectScreen() {
       }
 
       showNotification(t('easySchedule.formulaUpdated'), 'success');
-      setTimeout(() => router.back(), 300);
+      setTimeout(() => {
+        try {
+          if (router.canGoBack()) {
+            router.back();
+          }
+        } catch (error) {
+          console.warn('Navigation error:', error);
+        }
+      }, 500);
     },
     onError: (error) => {
       console.error('Failed to update formula:', error);
@@ -150,41 +178,49 @@ export default function EasyScheduleSelectScreen() {
         <View className="w-7" />
       </View>
 
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="p-5 pb-10 gap-3"
-        showsVerticalScrollIndicator={false}>
-        {EASY_FORMULA_RULES.map((rule) => {
-          const isActive = rule.id === formulaRule.id;
-          return (
-            <TouchableOpacity
-              key={rule.id}
-              className={`rounded-lg border p-4 ${
-                isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
-              }`}
-              accessibilityRole="button"
-              accessibilityLabel={t(rule.labelKey)}
-              disabled={mutation.isPending}
-              onPress={() => handleSelectFormula(rule.id)}>
-              <View className="flex-row items-center justify-between">
-                <View className="flex-1">
-                  <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                    {t(rule.labelKey)}
-                  </Text>
-                  <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-                    {t(rule.ageRangeKey)}
-                  </Text>
+      {isLoadingFormula && (
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-muted-foreground">{t('common.loading')}</Text>
+        </View>
+      )}
+
+      {!isLoadingFormula && (
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="p-5 pb-10 gap-3"
+          showsVerticalScrollIndicator={false}>
+          {availableFormulas.map((rule) => {
+            const isActive = rule.id === formulaRule?.id;
+            return (
+              <TouchableOpacity
+                key={rule.id}
+                className={`rounded-lg border p-4 ${
+                  isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
+                }`}
+                accessibilityRole="button"
+                accessibilityLabel={t(rule.labelKey)}
+                disabled={mutation.isPending}
+                onPress={() => handleSelectFormula(rule.id)}>
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-1">
+                    <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+                      {t(rule.labelKey)}
+                    </Text>
+                    <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+                      {t(rule.ageRangeKey)}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={isActive ? 'checkmark-circle' : 'chevron-forward'}
+                    size={20}
+                    color={isActive ? brandColors.colors.lavender : brandColors.colors.black}
+                  />
                 </View>
-                <Ionicons
-                  name={isActive ? 'checkmark-circle' : 'chevron-forward'}
-                  size={20}
-                  color={isActive ? brandColors.colors.lavender : brandColors.colors.black}
-                />
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
     </View>
   );
 }

@@ -9,6 +9,76 @@
 - **SQLite** with Drizzle ORM
 - **React Native Reusables** component library (shadcn/ui pattern)
 
+## Code Organization Philosophy (CRITICAL)
+
+### NO UNNECESSARY ABSTRACTIONS
+**Keep code simple and maintainable - avoid extra layers without clear value**
+
+#### Query Keys - Centralized for Uniqueness
+**All React Query keys must be in `constants/query-keys.ts`** for global uniqueness:
+
+```typescript
+// constants/query-keys.ts
+export const FEEDINGS_QUERY_KEY = ['feedings'] as const;
+export const feedingByIdKey = (id: number) => ['feeding', id] as const;
+```
+
+Why centralized:
+- Prevents key collisions across features
+- Easy to audit all cache keys in one place
+- Ensures consistent naming patterns
+
+#### Database Module Pattern
+Each database module (e.g., `database/feeding.ts`) contains:
+1. **Database CRUD functions**
+2. **Feature-specific types** (if needed)
+
+```typescript
+// database/feeding.ts
+export async function getFeedings() {
+  return await db.select().from(schema.feedings);
+}
+
+export async function getFeedingById(id: number) {
+  return await db.select().from(schema.feedings).where(eq(schema.feedings.id, id));
+}
+```
+
+#### Component Data Fetching Pattern
+Use React Query's `useQuery` directly - **NO custom hooks wrappers**:
+
+```typescript
+// ✅ CORRECT - Direct usage
+import { useQuery } from '@tanstack/react-query';
+import { getFeedings } from '@/database/feeding';
+import { FEEDINGS_QUERY_KEY } from '@/constants/query-keys';
+
+function FeedingScreen() {
+  const { data, isLoading } = useQuery({
+    queryKey: FEEDINGS_QUERY_KEY,
+    queryFn: getFeedings,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ❌ WRONG - Don't create hooks/use-feedings.ts
+export function useFeedings() {
+  return useQuery({ queryKey: FEEDINGS_QUERY_KEY, queryFn: getFeedings });
+}
+```
+
+#### When Custom Hooks ARE Appropriate
+Only create custom hooks when they:
+- Combine multiple queries with complex selection logic
+- Handle stateful UI interactions (modal state, form validation)
+- Manage side effects beyond simple data fetching
+
+#### Organization Summary
+- ✅ Query keys in `constants/query-keys.ts` (global uniqueness)
+- ✅ Database functions in `database/*.ts` (feature-specific)
+- ✅ Direct `useQuery` in components (no wrappers)
+- ❌ Don't create wrapper hooks in `hooks/use-*.ts` for simple queries
+
 ## Styling Rules (CRITICAL)
 
 ### Never Use StyleSheet

@@ -23,9 +23,9 @@ module.exports = defineConfig([
         },
         {
           selector:
-            'TSAsExpression[typeAnnotation.type!="TSTypeReference"][typeAnnotation.typeName.name!="const"]',
+            'TSAsExpression[typeAnnotation.type!="TSTypeReference"][typeAnnotation.typeName.name!="const"][typeAnnotation.typeName.name!="unknown"]',
           message:
-            'Type assertions using "as" are not allowed (except "as const"). Use type guards or proper type narrowing instead.',
+            'Type assertions using "as" are not allowed (except "as const" and "as unknown"). Use type guards or proper type narrowing instead.',
         },
       ],
       // Ban StyleSheet.create - use NativeWind/Tailwind classes instead
@@ -88,6 +88,20 @@ module.exports = defineConfig([
       ],
       // Disable exhaustive-deps rule for react-hooks
       'react-hooks/exhaustive-deps': 'off',
+    },
+  },
+  // Database initialization - allow Proxy type assertions
+  {
+    files: ['database/db.web.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ClassDeclaration',
+          message: 'Classes are not allowed. Please use functional programming patterns instead.',
+        },
+        // Allow all type assertions in db.ts for Proxy pattern
+      ],
     },
   },
   // Node.js scripts configuration

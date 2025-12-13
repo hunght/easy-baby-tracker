@@ -46,6 +46,8 @@ function formatDuration(minutes: number, locale: string): string {
   return `${hours}${locale === 'vi' ? 'g' : 'h'}${mins}${locale === 'vi' ? 'p' : 'm'}`;
 }
 
+const MINUTES_IN_DAY = 1440;
+
 export function ScheduleGroup({ phases, baseMinutes, locale, onPhasePress }: ScheduleGroupProps) {
   const [currentMinutes, setCurrentMinutes] = useState(getCurrentMinutes());
 
@@ -58,16 +60,16 @@ export function ScheduleGroup({ phases, baseMinutes, locale, onPhasePress }: Sch
   }, []);
 
   // Calculate timing map
+  // Use actual item.startTime from schedule items (respects adjustments)
+  // Calculate end time based on start time + duration
   const phaseTimingMap = new Map<number, { startMinutes: number; endMinutes: number }>();
-  let offset = 0;
+
   phases.forEach((item) => {
-    const startMinutes = baseMinutes + offset;
+    // Use the item's actual startTime (this will be the adjusted time if changed)
+    const startMinutes = timeStringToMinutes(item.startTime);
     const endMinutes = startMinutes + item.durationMinutes;
     phaseTimingMap.set(item.order, { startMinutes, endMinutes });
-    offset += item.durationMinutes;
   });
-
-  const MINUTES_IN_DAY = 1440;
   const spansOvernight = Array.from(phaseTimingMap.values()).some(
     (timing) => timing.endMinutes > MINUTES_IN_DAY
   );

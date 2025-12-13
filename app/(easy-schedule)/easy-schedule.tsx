@@ -1,12 +1,16 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, ScrollView, View } from 'react-native';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Text } from '@/components/ui/text';
-import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
-import type { BabyProfileRecord } from '@/database/baby-profile';
-import { getActiveBabyProfile, updateBabyFirstWakeTime } from '@/database/baby-profile';
+import {
+  BABY_PROFILE_QUERY_KEY,
+  formulaRuleByIdKey,
+  formulaRuleByAgeKey,
+} from '@/constants/query-keys';
+import { getActiveBabyProfile } from '@/database/baby-profile';
 import { getAppState } from '@/database/app-state';
+import { getFormulaRuleById, getFormulaRuleByAge } from '@/database/easy-formula-rules';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import {
   requestNotificationPermissions,
@@ -16,14 +20,8 @@ import {
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
 import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
 import { PhaseModal } from '@/pages/easy-schedule/components/PhaseModal';
-import {
-  generateEasySchedule,
-  getEasyFormulaRuleByAge,
-  getEasyFormulaRuleById,
-  EASY_FORMULA_RULES,
-  recalculateScheduleFromItem,
-} from '@/lib/easy-schedule-generator';
-import type { EasyScheduleItem, EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
+import { generateEasySchedule, recalculateScheduleFromItem } from '@/lib/easy-schedule-generator';
+import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
 
 function calculateAgeInWeeks(birthDate: string): number {
   const birth = new Date(birthDate);
@@ -40,9 +38,16 @@ function timeStringToMinutes(time: string): number {
 
 export default function EasyScheduleScreen() {
   const { t, locale } = useLocalization();
-  const queryClient = useQueryClient();
   const wakeTimeSyncedRef = useRef<string | null>(null);
-  const [firstWakeTime, setFirstWakeTime] = useState('07:00');
+
+  const { data: babyProfile } = useQuery({
+    queryKey: BABY_PROFILE_QUERY_KEY,
+    queryFn: getActiveBabyProfile,
+    staleTime: 30 * 1000,
+  });
+
+  // Initialize from baby profile's stored wake time, or default to 07:00
+  const [firstWakeTime, setFirstWakeTime] = useState(babyProfile?.firstWakeTime ?? '07:00');
   const [phaseModalVisible, setPhaseModalVisible] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<{
     item: EasyScheduleItem;
@@ -51,12 +56,7 @@ export default function EasyScheduleScreen() {
     durationLabel: string;
   } | null>(null);
 
-  const { data: babyProfile } = useQuery({
-    queryKey: BABY_PROFILE_QUERY_KEY,
-    queryFn: getActiveBabyProfile,
-    staleTime: 30 * 1000,
-  });
-
+  // Sync local state when baby profile's wake time changes in DB
   useEffect(() => {
     if (babyProfile?.firstWakeTime && babyProfile.firstWakeTime !== wakeTimeSyncedRef.current) {
       wakeTimeSyncedRef.current = babyProfile.firstWakeTime;
@@ -66,65 +66,62 @@ export default function EasyScheduleScreen() {
 
   const ageWeeks = babyProfile?.birthDate ? calculateAgeInWeeks(babyProfile.birthDate) : undefined;
 
-  const labels = {
-    eat: t('easySchedule.activityLabels.eat'),
-    activity: t('easySchedule.activityLabels.activity'),
-    sleep: (napNumber: number) =>
-      t('easySchedule.activityLabels.sleep').replace('{{number}}', String(napNumber)),
-    yourTime: t('easySchedule.activityLabels.yourTime'),
-  };
+  const labels = useMemo(
+    () => ({
+      eat: t('easySchedule.activityLabels.eat'),
+      activity: t('easySchedule.activityLabels.activity'),
+      sleep: (napNumber: number) =>
+        t('easySchedule.activityLabels.sleep').replace('{{number}}', String(napNumber)),
+      yourTime: t('easySchedule.activityLabels.yourTime'),
+    }),
+    [t]
+  );
 
-  // Determine formula rule from database
-  const availableRuleIds = EASY_FORMULA_RULES.map((rule) => rule.id);
-  const storedFormulaId = babyProfile?.selectedEasyFormulaId;
-  let validStoredId: EasyFormulaRuleId | undefined = undefined;
-  if (storedFormulaId && availableRuleIds.some((id) => id === storedFormulaId)) {
-    validStoredId = storedFormulaId as EasyFormulaRuleId;
-  }
+  // Get active formula by selected ID
+  const { data: formulaById } = useQuery({
+    queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
+    queryFn: () => getFormulaRuleById(babyProfile!.selectedEasyFormulaId!, babyProfile?.id),
+    enabled: !!babyProfile?.selectedEasyFormulaId,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const formulaRule = validStoredId
-    ? getEasyFormulaRuleById(validStoredId)
-    : getEasyFormulaRuleByAge(ageWeeks);
+  // Get active formula by age as fallback
+  const { data: formulaByAge, isLoading: isLoadingFormula } = useQuery({
+    queryKey: formulaRuleByAgeKey(ageWeeks ?? 0, babyProfile?.id),
+    queryFn: () => getFormulaRuleByAge(ageWeeks!, babyProfile?.id),
+    enabled: ageWeeks !== undefined,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  const formulaNotice = validStoredId
-    ? t('easySchedule.formulaTable.selectedNotice', { params: { label: t(formulaRule.labelKey) } })
-    : babyProfile
-      ? t('easySchedule.formulaTable.autoDetected', { params: { label: t(formulaRule.labelKey) } })
-      : t('easySchedule.formulaTable.defaultNotice');
+  // Use selected formula if valid, otherwise use age-based
+  const formulaRule = formulaById || formulaByAge;
+
+  const formulaNotice = formulaRule
+    ? babyProfile?.selectedEasyFormulaId
+      ? t('easySchedule.formulaTable.selectedNotice', {
+          params: { label: t(formulaRule.labelKey) },
+        })
+      : babyProfile
+        ? t('easySchedule.formulaTable.autoDetected', {
+            params: { label: t(formulaRule.labelKey) },
+          })
+        : t('easySchedule.formulaTable.defaultNotice')
+    : t('easySchedule.formulaTable.defaultNotice');
 
   const [scheduleItems, setScheduleItems] = useState<EasyScheduleItem[]>([]);
 
   useEffect(() => {
+    if (!formulaRule || isLoadingFormula) return;
+
     const items = generateEasySchedule(firstWakeTime, {
       labels,
       ageWeeks,
       ruleId: formulaRule.id,
     });
     setScheduleItems(items);
-  }, [firstWakeTime, labels.eat, labels.activity, labels.yourTime, ageWeeks, formulaRule.id]);
+  }, [firstWakeTime, labels, ageWeeks, formulaRule, isLoadingFormula]);
 
   const baseMinutes = timeStringToMinutes(firstWakeTime);
-
-  const persistFirstWakeTime = useCallback(
-    async (time: string) => {
-      setFirstWakeTime(time);
-      wakeTimeSyncedRef.current = time;
-
-      if (!babyProfile?.id) {
-        return;
-      }
-
-      try {
-        await updateBabyFirstWakeTime(babyProfile.id, time);
-        queryClient.setQueryData<BabyProfileRecord | null>(BABY_PROFILE_QUERY_KEY, (previous) =>
-          previous ? { ...previous, firstWakeTime: time } : previous
-        );
-      } catch (error) {
-        Alert.alert(t('common.error'), error instanceof Error ? error.message : String(error));
-      }
-    },
-    [babyProfile?.id, queryClient, t]
-  );
 
   const groupedSchedule = (() => {
     const groups: { number: number; items: EasyScheduleItem[] }[] = [];
@@ -244,40 +241,31 @@ export default function EasyScheduleScreen() {
     [babyProfile, labels, t]
   );
 
-  const handleWakeTimeChange = useCallback(
-    (time: string) => {
-      void persistFirstWakeTime(time);
-    },
-    [persistFirstWakeTime]
-  );
+  if (isLoadingFormula || !formulaRule) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-muted-foreground">{t('common.loading')}</Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-background">
-      <ScheduleHeader
-        formulaRule={formulaRule}
-        firstWakeTime={firstWakeTime}
-        onWakeTimeChange={handleWakeTimeChange}
-      />
+      <ScheduleHeader formulaRule={formulaRule} />
 
       <ScrollView contentContainerClassName="p-5 pb-10 gap-3" showsVerticalScrollIndicator={false}>
         <Text className="text-xs text-muted-foreground" numberOfLines={1} ellipsizeMode="tail">
           {formulaNotice}
         </Text>
 
-        {groupedSchedule.map((group, groupIndex) => {
+        {groupedSchedule.map((group, _groupIndex) => {
           const phases = group.items.filter((item) => item.activityType !== 'Y');
-          // Calculate baseMinutes for this group by summing durations of all previous groups
-          let groupBaseMinutes = baseMinutes;
-          for (let i = 0; i < groupIndex; i++) {
-            const previousGroupPhases = groupedSchedule[i].items.filter(
-              (item) => item.activityType !== 'Y'
-            );
-            const previousGroupDuration = previousGroupPhases.reduce(
-              (sum, item) => sum + item.durationMinutes,
-              0
-            );
-            groupBaseMinutes += previousGroupDuration;
-          }
+          // Calculate baseMinutes for this group using the first phase's actual start time
+          // This ensures adjusted schedules are displayed correctly
+          const firstPhase = phases[0];
+          const groupBaseMinutes = firstPhase
+            ? timeStringToMinutes(firstPhase.startTime)
+            : baseMinutes;
           return (
             <ScheduleGroup
               key={group.number}

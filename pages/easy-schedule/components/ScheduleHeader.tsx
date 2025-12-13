@@ -9,15 +9,9 @@ import type { EasyFormulaRule } from '@/lib/easy-schedule-generator';
 
 type ScheduleHeaderProps = {
   formulaRule: EasyFormulaRule;
-  firstWakeTime: string;
-  onWakeTimeChange: (time: string) => void;
 };
 
-export function ScheduleHeader({
-  formulaRule,
-  firstWakeTime: _firstWakeTime,
-  onWakeTimeChange: _onWakeTimeChange,
-}: ScheduleHeaderProps) {
+export function ScheduleHeader({ formulaRule }: ScheduleHeaderProps) {
   const { t } = useLocalization();
   const router = useRouter();
   const brandColors = useBrandColor();
