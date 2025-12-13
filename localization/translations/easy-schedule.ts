@@ -24,6 +24,8 @@ export const easySchedule = {
       pastTitle: 'Block already finished',
       pastMessage: 'Pick a future block to set a reminder.',
       scheduleError: 'Unable to schedule this reminder.',
+      title: '{{emoji}} {{activity}} starting soon',
+      body: '{{activity}} starts at {{time}} (in {{advance}} minutes)',
     },
     phaseModal: {
       setReminder: 'Set schedule reminder',
@@ -232,6 +234,8 @@ export const easySchedule = {
       pastTitle: 'Khung giờ đã qua',
       pastMessage: 'Hãy chọn khung giờ trong tương lai để đặt nhắc.',
       scheduleError: 'Không thể đặt nhắc này.',
+      title: '{{emoji}} {{activity}} sắp bắt đầu',
+      body: '{{activity}} bắt đầu lúc {{time}} (trong {{advance}} phút nữa)',
     },
     phaseModal: {
       setReminder: 'Đặt nhắc lịch',

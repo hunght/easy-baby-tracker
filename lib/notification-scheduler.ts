@@ -4,7 +4,13 @@ import {
   saveScheduledNotification,
   type ScheduledNotificationPayload,
 } from '@/database/scheduled-notifications';
-import * as Notifications from 'expo-notifications';
+import {
+  requestNotificationPermissions,
+  scheduleNotificationAsync,
+  cancelScheduledNotificationAsync,
+  getAllScheduledNotificationsAsync,
+  type NotificationRequest,
+} from '@/lib/notifications-wrapper';
 
 import { EasyScheduleActivityType } from '@/lib/easy-schedule-generator';
 
@@ -14,18 +20,8 @@ export interface ScheduledFeedingNotification {
   feedingType: 'breast' | 'bottle' | 'solids';
 }
 
-// Request permissions for notifications
-export async function requestNotificationPermissions(): Promise<boolean> {
-  const { status: existingStatus } = await Notifications.getPermissionsAsync();
-  let finalStatus = existingStatus;
-
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  return finalStatus === 'granted';
-}
+// Re-export requestNotificationPermissions from wrapper
+export { requestNotificationPermissions };
 
 // Helper to convert ScheduledFeedingNotification to database record
 function convertToDbRecord(
@@ -75,7 +71,7 @@ export async function scheduleFeedingNotification(
 
   // Cancel existing notification if updating
   if (notificationId) {
-    await Notifications.cancelScheduledNotificationAsync(notificationId);
+    await cancelScheduledNotificationAsync(notificationId);
   }
 
   // Calculate trigger time (seconds from now)
@@ -94,7 +90,7 @@ export async function scheduleFeedingNotification(
     solids: 'Solids feeding',
   };
 
-  const notificationIdResult = await Notifications.scheduleNotificationAsync({
+  const notificationIdResult = await scheduleNotificationAsync({
     content: {
       title: 'Time to feed! 🍼',
       body: `It's time for ${feedingTypeLabels[feedingType]}`,
@@ -106,7 +102,7 @@ export async function scheduleFeedingNotification(
       },
     },
     trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      type: 'timeInterval',
       seconds: Math.floor(triggerTime / 1000),
     },
   });
@@ -142,7 +138,7 @@ export async function scheduleEasyScheduleReminder(options: {
     return null;
   }
 
-  const notificationId = await Notifications.scheduleNotificationAsync({
+  const notificationId = await scheduleNotificationAsync({
     content: {
       title: options.notificationTitle,
       body: options.notificationBody,
@@ -154,7 +150,7 @@ export async function scheduleEasyScheduleReminder(options: {
       },
     },
     trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      type: 'timeInterval',
       seconds: Math.floor(diffMs / 1000),
     },
   });
@@ -174,7 +170,7 @@ export async function scheduleEasyScheduleReminder(options: {
 
 // Cancel a scheduled notification
 export async function cancelScheduledNotification(notificationId: string): Promise<void> {
-  await Notifications.cancelScheduledNotificationAsync(notificationId);
+  await cancelScheduledNotificationAsync(notificationId);
   await deleteScheduledNotificationByNotificationId(notificationId);
 }
 
@@ -183,21 +179,21 @@ export async function cancelStoredScheduledNotification(): Promise<void> {
   const active = await getActiveScheduledNotifications();
   const feedingNotification = active.find((n) => n.notificationType === 'feeding');
   if (feedingNotification) {
-    await Notifications.cancelScheduledNotificationAsync(feedingNotification.notificationId);
+    await cancelScheduledNotificationAsync(feedingNotification.notificationId);
     await deleteScheduledNotificationByNotificationId(feedingNotification.notificationId);
   }
 }
 
 // Get all scheduled notifications
-export async function getAllScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
-  return await Notifications.getAllScheduledNotificationsAsync();
+export async function getAllScheduledNotifications(): Promise<NotificationRequest[]> {
+  return await getAllScheduledNotificationsAsync();
 }
 
 // Cancel all scheduled notifications
 export async function cancelAllScheduledNotifications(): Promise<void> {
   const active = await getActiveScheduledNotifications();
   for (const notification of active) {
-    await Notifications.cancelScheduledNotificationAsync(notification.notificationId);
+    await cancelScheduledNotificationAsync(notification.notificationId);
     await deleteScheduledNotificationByNotificationId(notification.notificationId);
   }
 }
@@ -214,7 +210,7 @@ export async function restoreScheduledNotifications(): Promise<ScheduledFeedingN
   }
 
   // Check if the notification still exists in the OS
-  const allScheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const allScheduled = await getAllScheduledNotificationsAsync();
   const notificationExists = allScheduled.some(
     (n) => n.identifier === feedingNotification.notificationId
   );
@@ -237,4 +233,3 @@ export async function restoreScheduledNotifications(): Promise<ScheduledFeedingN
   // Convert database record to ScheduledFeedingNotification
   return convertFromDbRecord(feedingNotification);
 }
-

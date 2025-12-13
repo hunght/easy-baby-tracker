@@ -11,7 +11,7 @@ import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
 import { Stack, useNavigationContainerRef, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Text, View , Platform } from 'react-native';
+import { Text, View, Platform } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -23,6 +23,11 @@ import {
 } from '@/lib/notification-scheduler';
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { LocalizationProvider } from '@/localization/LocalizationProvider';
+import {
+  setNotificationHandler,
+  addNotificationResponseReceivedListener,
+  getLastNotificationResponse,
+} from '@/lib/notifications-wrapper';
 import * as Notifications from 'expo-notifications';
 import migrations from '../drizzle/migrations';
 import { logger } from '@/lib/logger';
@@ -113,16 +118,18 @@ function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Set up notification handler
-    Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        shouldShowAlert: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-        shouldShowBanner: true,
-        shouldShowList: true,
-      }),
-    });
+    // Set up notification handler (only available on native)
+    if (setNotificationHandler) {
+      setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+    }
 
     // Restore scheduled notifications on app startup
     // This ensures notifications persist even after app termination
@@ -149,13 +156,19 @@ function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
     };
 
     // Listen for notification taps when app is in foreground/background
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
-      handleNotificationResponse
-    );
+    let responseSubscription: Notifications.Subscription | undefined;
+    if (addNotificationResponseReceivedListener) {
+      responseSubscription = addNotificationResponseReceivedListener(handleNotificationResponse);
+    }
 
     // Check if app was opened from a notification (when app was closed)
-    const response = Notifications.getLastNotificationResponse();
-    handleNotificationResponse(response);
+    if (getLastNotificationResponse) {
+      const response = getLastNotificationResponse();
+      if (response) {
+        handleNotificationResponse(response);
+      }
+    }
+
     // Listen for notification received events to clean up stored notifications
     const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
       // If it's a feeding notification, clean up the stored state
@@ -167,7 +180,7 @@ function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
-      responseSubscription.remove();
+      responseSubscription?.remove();
       receivedSubscription.remove();
     };
   }, [router]);

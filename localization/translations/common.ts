@@ -65,6 +65,7 @@ export const common = {
     permissionDenied: 'Permission needed',
     permissionDeniedDescription: 'Please grant camera and photo access in Settings to continue.',
     entriesCount: '{{count}} entries',
+    error: 'Error',
     errorTitle: 'Oops',
     photoSaveError: 'Could not save the photo. Please try again.',
     diarySaveError: 'Failed to save diary entry. Please try again.',
@@ -145,6 +146,7 @@ export const common = {
     permissionDeniedDescription:
       'Vui lòng cho phép quyền máy ảnh và ảnh trong Cài đặt để tiếp tục.',
     entriesCount: '{{count}} mục',
+    error: 'Lỗi',
     errorTitle: 'Rất tiếc',
     photoSaveError: 'Không thể lưu ảnh. Vui lòng thử lại.',
     diarySaveError: 'Không thể lưu nhật ký. Vui lòng thử lại.',
