@@ -7,20 +7,16 @@ import {
   BABY_PROFILE_QUERY_KEY,
   formulaRuleByIdKey,
   formulaRuleByAgeKey,
+  todayScheduleAdjustmentsKey,
 } from '@/constants/query-keys';
 import { getActiveBabyProfile } from '@/database/baby-profile';
-import { getAppState } from '@/database/app-state';
 import { getFormulaRuleById, getFormulaRuleByAge } from '@/database/easy-formula-rules';
+import { getTodayScheduleAdjustments } from '@/database/easy-schedule-adjustments';
 import { useLocalization } from '@/localization/LocalizationProvider';
-import {
-  requestNotificationPermissions,
-  rescheduleEasyReminders,
-  type EasyScheduleReminderLabels,
-} from '@/lib/notification-scheduler';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
 import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
 import { PhaseModal } from '@/pages/easy-schedule/components/PhaseModal';
-import { generateEasySchedule, recalculateScheduleFromItem } from '@/lib/easy-schedule-generator';
+import { generateEasySchedule } from '@/lib/easy-schedule-generator';
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
 
 function calculateAgeInWeeks(birthDate: string): number {
@@ -48,8 +44,7 @@ export default function EasyScheduleScreen() {
 
   // Initialize from baby profile's stored wake time, or default to 07:00
   const [firstWakeTime, setFirstWakeTime] = useState(babyProfile?.firstWakeTime ?? '07:00');
-  const [phaseModalVisible, setPhaseModalVisible] = useState(false);
-  const [selectedPhase, setSelectedPhase] = useState<{
+  const [phaseModalData, setPhaseModalData] = useState<{
     item: EasyScheduleItem;
     timing: { startMinutes: number; endMinutes: number };
     endTimeLabel: string;
@@ -96,6 +91,16 @@ export default function EasyScheduleScreen() {
   // Use selected formula if valid, otherwise use age-based
   const formulaRule = formulaById || formulaByAge;
 
+  // Get today's schedule adjustments
+  const { data: todayAdjustments = [], refetch: refetchAdjustments } = useQuery({
+    queryKey: todayScheduleAdjustmentsKey(babyProfile?.id),
+    queryFn: () => getTodayScheduleAdjustments(babyProfile!.id),
+    enabled: !!babyProfile?.id,
+    staleTime: 30 * 1000,
+  });
+
+  const hasAdjustments = todayAdjustments.length > 0;
+
   const formulaNotice = formulaRule
     ? babyProfile?.selectedEasyFormulaId
       ? t('easySchedule.formulaTable.selectedNotice', {
@@ -113,13 +118,36 @@ export default function EasyScheduleScreen() {
   useEffect(() => {
     if (!formulaRule || isLoadingFormula) return;
 
-    const items = generateEasySchedule(firstWakeTime, {
+    let items = generateEasySchedule(firstWakeTime, {
       labels,
       ageWeeks,
       ruleId: formulaRule.id,
     });
+
+    // Apply today's adjustments if any
+    if (todayAdjustments.length > 0) {
+      items = items.map((item) => {
+        const adjustment = todayAdjustments.find((adj) => adj.itemOrder === item.order);
+        if (adjustment) {
+          return {
+            ...item,
+            startTime: adjustment.startTime,
+            // Recalculate duration based on adjusted times
+            durationMinutes: (() => {
+              const [startH, startM] = adjustment.startTime.split(':').map(Number);
+              const [endH, endM] = adjustment.endTime.split(':').map(Number);
+              const startMinutes = startH * 60 + startM;
+              const endMinutes = endH * 60 + endM;
+              return endMinutes - startMinutes;
+            })(),
+          };
+        }
+        return item;
+      });
+    }
+
     setScheduleItems(items);
-  }, [firstWakeTime, labels, ageWeeks, formulaRule, isLoadingFormula]);
+  }, [firstWakeTime, labels, ageWeeks, formulaRule, isLoadingFormula, todayAdjustments]);
 
   const baseMinutes = timeStringToMinutes(firstWakeTime);
 
@@ -155,91 +183,19 @@ export default function EasyScheduleScreen() {
       endTimeLabel: string,
       durationLabel: string
     ) => {
-      setSelectedPhase({
+      setPhaseModalData({
         item,
         timing,
         endTimeLabel,
         durationLabel,
       });
-      setPhaseModalVisible(true);
     },
     []
   );
 
   const closePhaseModal = () => {
-    setPhaseModalVisible(false);
-    setSelectedPhase(null);
+    setPhaseModalData(null);
   };
-
-  const handleAdjustmentApplied = useCallback(
-    async (itemOrder: number, newStartTime: string, newEndTime: string) => {
-      if (!babyProfile) {
-        return;
-      }
-
-      // Recalculate schedule from the adjusted item
-      let updatedItems: EasyScheduleItem[] = [];
-      setScheduleItems((currentItems) => {
-        updatedItems = recalculateScheduleFromItem(
-          currentItems,
-          itemOrder,
-          newStartTime,
-          newEndTime
-        );
-        return updatedItems;
-      });
-
-      // Reschedule reminders if enabled
-      try {
-        const reminderEnabledValue = await getAppState('easyScheduleReminderEnabled');
-        const reminderEnabled = reminderEnabledValue === 'true';
-
-        if (reminderEnabled && updatedItems.length > 0) {
-          const hasPermission = await requestNotificationPermissions();
-          if (hasPermission) {
-            const advanceMinutesValue = await getAppState('easyScheduleReminderAdvanceMinutes');
-            const reminderAdvanceMinutes = advanceMinutesValue
-              ? parseInt(advanceMinutesValue, 10)
-              : 5;
-
-            // Get the first wake time from the updated schedule
-            const firstWakeTimeForReminders = updatedItems[0].startTime;
-
-            const reminderLabels: EasyScheduleReminderLabels = {
-              eat: labels.eat,
-              activity: labels.activity,
-              sleep: labels.sleep,
-              yourTime: labels.yourTime,
-              reminderTitle: (params) =>
-                t('easySchedule.reminder.title', {
-                  params: { emoji: params.emoji, activity: params.activity },
-                }),
-              reminderBody: (params) =>
-                t('easySchedule.reminder.body', {
-                  params: {
-                    activity: params.activity,
-                    time: params.time,
-                    advance: params.advance,
-                  },
-                }),
-            };
-
-            // Reschedule reminders with updated schedule
-            await rescheduleEasyReminders(
-              babyProfile,
-              firstWakeTimeForReminders,
-              reminderAdvanceMinutes,
-              reminderLabels
-            );
-          }
-        }
-      } catch (error) {
-        console.error('Failed to reschedule reminders after adjustment:', error);
-        // Don't show error to user - schedule adjustment succeeded
-      }
-    },
-    [babyProfile, labels, t]
-  );
 
   if (isLoadingFormula || !formulaRule) {
     return (
@@ -257,6 +213,16 @@ export default function EasyScheduleScreen() {
         <Text className="text-xs text-muted-foreground" numberOfLines={1} ellipsizeMode="tail">
           {formulaNotice}
         </Text>
+
+        {hasAdjustments && (
+          <View className="rounded-md border border-accent/30 bg-accent/5 px-3 py-2">
+            <Text className="text-xs font-medium text-accent">
+              {t('easySchedule.customScheduleNotice', {
+                defaultValue: '✨ Custom schedule for today - resets tomorrow',
+              })}
+            </Text>
+          </View>
+        )}
 
         {groupedSchedule.map((group, _groupIndex) => {
           const phases = group.items.filter((item) => item.activityType !== 'Y');
@@ -279,11 +245,14 @@ export default function EasyScheduleScreen() {
       </ScrollView>
 
       <PhaseModal
-        visible={phaseModalVisible}
-        selectedPhase={selectedPhase}
+        phaseData={phaseModalData}
         baseMinutes={baseMinutes}
         onClose={closePhaseModal}
-        onAdjustmentApplied={handleAdjustmentApplied}
+        onAdjustmentSaved={() => {
+          void refetchAdjustments();
+        }}
+        babyProfile={babyProfile ?? null}
+        labels={labels}
       />
     </View>
   );

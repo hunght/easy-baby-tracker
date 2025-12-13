@@ -33,3 +33,6 @@ export const formulaRuleByIdKey = (ruleId: string, babyId?: number) =>
   ['formulaRules', ruleId, babyId] as const;
 export const formulaRuleByAgeKey = (ageWeeks: number, babyId?: number) =>
   ['formulaRules', 'age', ageWeeks, babyId] as const;
+
+export const todayScheduleAdjustmentsKey = (babyId?: number) =>
+  ['scheduleAdjustments', 'today', babyId] as const;

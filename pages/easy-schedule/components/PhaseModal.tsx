@@ -10,6 +10,10 @@ import { useNotification } from '@/components/NotificationContext';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
+import { saveScheduleAdjustment, getTodayDateString } from '@/database/easy-schedule-adjustments';
+
+
+import type { BabyProfileRecord } from '@/database/baby-profile';
 
 const MINUTES_IN_DAY = 1440;
 
@@ -32,8 +36,7 @@ function minutesToTimeString(minutes: number): string {
 }
 
 type PhaseModalProps = {
-  visible: boolean;
-  selectedPhase: {
+  phaseData: {
     item: EasyScheduleItem;
     timing: { startMinutes: number; endMinutes: number };
     endTimeLabel: string;
@@ -41,15 +44,23 @@ type PhaseModalProps = {
   } | null;
   baseMinutes: number;
   onClose: () => void;
-  onAdjustmentApplied: (itemOrder: number, newStartTime: string, newEndTime: string) => void;
+  onAdjustmentSaved: () => void;
+  babyProfile: BabyProfileRecord | null;
+  labels: {
+    eat: string;
+    activity: string;
+    sleep: (napNumber: number) => string;
+    yourTime: string;
+  };
 };
 
 export function PhaseModal({
-  visible,
-  selectedPhase,
+  phaseData,
   baseMinutes: _baseMinutes,
   onClose,
-  onAdjustmentApplied,
+  onAdjustmentSaved,
+  babyProfile,
+  labels: _labels,
 }: PhaseModalProps) {
   const { t } = useLocalization();
   const { showNotification } = useNotification();
@@ -61,19 +72,21 @@ export function PhaseModal({
   const [startTimeDate, setStartTimeDate] = useState(new Date());
   const [endTimeDate, setEndTimeDate] = useState(new Date());
 
+  const visible = phaseData !== null;
+
   // Initialize values when modal opens or phase changes
   useEffect(() => {
-    if (selectedPhase && visible) {
-      const startTime = minutesToTimeString(selectedPhase.timing.startMinutes);
-      const endTime = minutesToTimeString(selectedPhase.timing.endMinutes);
+    if (phaseData) {
+      const startTime = minutesToTimeString(phaseData.timing.startMinutes);
+      const endTime = minutesToTimeString(phaseData.timing.endMinutes);
       setStartTimeValue(startTime);
       setEndTimeValue(endTime);
-      setStartTimeDate(minutesToDate(selectedPhase.timing.startMinutes));
-      setEndTimeDate(minutesToDate(selectedPhase.timing.endMinutes));
+      setStartTimeDate(minutesToDate(phaseData.timing.startMinutes));
+      setEndTimeDate(minutesToDate(phaseData.timing.endMinutes));
     }
-  }, [selectedPhase, visible]);
+  }, [phaseData]);
 
-  if (!selectedPhase) return null;
+  if (!phaseData) return null;
 
   const handleStartTimeChange = (_event: DateTimePickerEvent, date?: Date) => {
     if (date) {
@@ -95,19 +108,33 @@ export function PhaseModal({
     }
   };
 
-  const handleApply = () => {
-    if (startTimeValue && endTimeValue) {
-      // Calculate old values for notification
-      const oldStartTime = minutesToTimeString(selectedPhase.timing.startMinutes);
-      const oldEndTime = minutesToTimeString(selectedPhase.timing.endMinutes);
+  const handleApply = async () => {
+    if (!startTimeValue || !endTimeValue || !phaseData || !babyProfile) {
+      return;
+    }
 
-      // Check if anything changed
-      const startChanged = oldStartTime !== startTimeValue;
-      const endChanged = oldEndTime !== endTimeValue;
+    // Calculate old values for notification
+    const oldStartTime = minutesToTimeString(phaseData.timing.startMinutes);
+    const oldEndTime = minutesToTimeString(phaseData.timing.endMinutes);
 
-      if (startChanged || endChanged) {
-        // Apply the adjustment
-        onAdjustmentApplied(selectedPhase.item.order, startTimeValue, endTimeValue);
+    // Check if anything changed
+    const startChanged = oldStartTime !== startTimeValue;
+    const endChanged = oldEndTime !== endTimeValue;
+
+    if (startChanged || endChanged) {
+      try {
+        // Save adjustment to database for today only
+        const today = getTodayDateString();
+        await saveScheduleAdjustment({
+          babyId: babyProfile.id,
+          adjustmentDate: today,
+          itemOrder: phaseData.item.order,
+          startTime: startTimeValue,
+          endTime: endTimeValue,
+        });
+
+        // Notify parent to refresh schedule
+        onAdjustmentSaved();
 
         // Show success notification with details
         const changes: string[] = [];
@@ -130,17 +157,23 @@ export function PhaseModal({
 
         const notificationMessage =
           t('easySchedule.phaseModal.adjustmentSuccess', {
-            defaultValue: `Schedule adjusted: ${selectedPhase.item.label}`,
-            params: { activity: selectedPhase.item.label },
+            defaultValue: `Schedule adjusted for today: ${phaseData.item.label}`,
+            params: { activity: phaseData.item.label },
           }) + (changes.length > 0 ? `\n${changes.join(', ')}` : '');
 
         showNotification(notificationMessage, 'success');
+      } catch (error) {
+        console.error('Failed to save schedule adjustment:', error);
+        showNotification(
+          t('common.saveError', { defaultValue: 'Failed to save adjustment' }),
+          'error'
+        );
       }
-
-      setShowStartPicker(false);
-      setShowEndPicker(false);
-      onClose();
     }
+
+    setShowStartPicker(false);
+    setShowEndPicker(false);
+    onClose();
   };
 
   const handleClose = () => {
@@ -154,17 +187,15 @@ export function PhaseModal({
       <View className="flex-1 justify-center bg-black/50 p-6 dark:bg-black/70">
         <View className="rounded-lg bg-card p-5 dark:bg-card">
           <View className="mb-2 flex-row items-center justify-between">
-            <Text className="text-lg font-bold text-foreground">{selectedPhase.item.label}</Text>
+            <Text className="text-lg font-bold text-foreground">{phaseData.item.label}</Text>
             <TouchableOpacity onPress={handleClose} testID="modal-close">
               <Ionicons name="close" size={22} color={brandColors.colors.black} />
             </TouchableOpacity>
           </View>
           <Text className="text-base font-semibold text-foreground">
-            {selectedPhase.item.startTime} → {selectedPhase.endTimeLabel}
+            {phaseData.item.startTime} → {phaseData.endTimeLabel}
           </Text>
-          <Text className="mb-4 text-[13px] text-muted-foreground">
-            {selectedPhase.durationLabel}
-          </Text>
+          <Text className="mb-4 text-[13px] text-muted-foreground">{phaseData.durationLabel}</Text>
 
           <View className="gap-4">
             <View className="gap-2">

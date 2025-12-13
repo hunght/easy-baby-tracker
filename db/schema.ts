@@ -322,3 +322,29 @@ export const easyFormulaRules = sqliteTable(
     index('idx_formula_rules_weeks').on(table.minWeeks, table.maxWeeks),
   ]
 );
+
+export const easyScheduleAdjustments = sqliteTable(
+  'easy_schedule_adjustments',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    babyId: integer('baby_id')
+      .notNull()
+      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
+    // Date for which this adjustment applies (YYYY-MM-DD format)
+    adjustmentDate: text('adjustment_date').notNull(),
+    // Schedule item order (position in the schedule)
+    itemOrder: integer('item_order').notNull(),
+    // Adjusted start time (HH:mm format)
+    startTime: text('start_time').notNull(),
+    // Adjusted end time (HH:mm format)
+    endTime: text('end_time').notNull(),
+    createdAt: integer('created_at', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
+  },
+  (table) => [
+    index('idx_schedule_adjustments_baby_id').on(table.babyId),
+    index('idx_schedule_adjustments_date').on(table.adjustmentDate),
+    index('idx_schedule_adjustments_baby_date').on(table.babyId, table.adjustmentDate),
+  ]
+);
