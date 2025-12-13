@@ -6,194 +6,22 @@ import {
 } from '@react-navigation/native';
 import { PortalHost } from '@rn-primitives/portal';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
-import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
-import { Stack, useNavigationContainerRef, useRouter } from 'expo-router';
+import { Stack, useNavigationContainerRef } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { Text, View, Platform } from 'react-native';
+import { View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
 import { NotificationProvider } from '@/components/NotificationContext';
-import { db, expoDb, initDatabase, getDb, getExpoDb } from '@/database/db';
-import {
-  cancelStoredScheduledNotification,
-  restoreScheduledNotifications,
-  restoreEasyScheduleReminders,
-} from '@/lib/notification-scheduler';
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { LocalizationProvider } from '@/localization/LocalizationProvider';
-import {
-  setNotificationHandler,
-  addNotificationResponseReceivedListener,
-  getLastNotificationResponse,
-} from '@/lib/notifications-wrapper';
-import * as Notifications from 'expo-notifications';
-import migrations from '../drizzle/migrations';
+import { DatabaseInitializer } from '@/pages/root-layout/DatabaseInitializer';
 import { logger } from '@/lib/logger';
 
 export const unstable_settings = {
   anchor: '(tabs)/tracking',
 };
-
-// Component that initializes database on web
-function DatabaseInitializer({ children }: { children: React.ReactNode }) {
-  const [dbInitialized, setDbInitialized] = useState(Platform.OS !== 'web');
-  const [initError, setInitError] = useState<Error | null>(null);
-
-  // Initialize database on web before migrations
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      initDatabase()
-        .then(() => {
-          setDbInitialized(true);
-        })
-        .catch((error) => {
-          console.error('Database initialization failed:', error);
-          setInitError(error);
-        });
-    }
-  }, []);
-
-  // Wait for database initialization on web
-  if (!dbInitialized) {
-    if (initError) {
-      return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text>Database initialization error: {initError.message}</Text>
-        </View>
-      );
-    }
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Initializing database...</Text>
-      </View>
-    );
-  }
-
-  return <MigrationHandler>{children}</MigrationHandler>;
-}
-
-// Component that handles migrations and Drizzle Studio
-// This component is only rendered after database is initialized
-function MigrationHandler({ children }: { children: React.ReactNode }) {
-  // Set up Drizzle Studio (use getters for web compatibility)
-  const dbInstance = Platform.OS === 'web' ? getExpoDb() : expoDb;
-  const drizzleDb = Platform.OS === 'web' ? getDb() : db;
-
-  // Always call hooks unconditionally
-  useDrizzleStudio(dbInstance);
-
-  // Run migrations - must be called unconditionally
-  const { success, error } = useMigrations(drizzleDb, migrations);
-
-  if (error) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Migration error: {error.message}</Text>
-      </View>
-    );
-  }
-
-  if (!success) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text>Migration is in progress...</Text>
-      </View>
-    );
-  }
-
-  return <MigrationCompleteHandler>{children}</MigrationCompleteHandler>;
-}
-
-// Component that runs after migrations are complete
-function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-
-  // Initialize notification handler and restore scheduled notifications
-  // This runs only after migrations are complete
-  useEffect(() => {
-    // Skip notifications setup on web (not fully supported)
-    if (Platform.OS === 'web') {
-      return;
-    }
-
-    // Set up notification handler (only available on native)
-    if (setNotificationHandler) {
-      setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-          shouldShowBanner: true,
-          shouldShowList: true,
-        }),
-      });
-    }
-
-    // Restore scheduled notifications on app startup
-    // This ensures notifications persist even after app termination
-    restoreScheduledNotifications().catch((error) => {
-      console.error('Failed to restore scheduled notifications:', error);
-    });
-
-    // Restore and reschedule EASY schedule reminders on app startup
-    // This ensures reminders are always scheduled for the configured number of days ahead
-    restoreEasyScheduleReminders().catch((error) => {
-      console.error('Failed to restore EASY schedule reminders:', error);
-    });
-
-    // Handle notification tap - navigate to appropriate screen
-    const handleNotificationResponse = async (
-      response: Notifications.NotificationResponse | null
-    ) => {
-      if (!response) {
-        return;
-      }
-      const data = response.notification.request.content.data;
-
-      if (data?.type === 'feeding') {
-        // Cancel the scheduled notification since user is now logging the feeding
-        await cancelStoredScheduledNotification();
-        // Navigate to feeding screen
-        router.push('/(tracking)/feeding');
-      }
-      // Add other notification types here as needed
-    };
-
-    // Listen for notification taps when app is in foreground/background
-    let responseSubscription: Notifications.Subscription | undefined;
-    if (addNotificationResponseReceivedListener) {
-      responseSubscription = addNotificationResponseReceivedListener(handleNotificationResponse);
-    }
-
-    // Check if app was opened from a notification (when app was closed)
-    if (getLastNotificationResponse) {
-      const response = getLastNotificationResponse();
-      if (response) {
-        handleNotificationResponse(response);
-      }
-    }
-
-    // Listen for notification received events to clean up stored notifications
-    const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
-      // If it's a feeding notification, clean up the stored state
-      if (notification.request.content.data?.type === 'feeding') {
-        restoreScheduledNotifications().catch((error) => {
-          console.error('Failed to clean up notification after receipt:', error);
-        });
-      }
-    });
-
-    return () => {
-      responseSubscription?.remove();
-      receivedSubscription.remove();
-    };
-  }, [router]);
-
-  return <>{children}</>;
-}
 
 export default function RootLayout() {
   return (
