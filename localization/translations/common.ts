@@ -78,6 +78,8 @@ export const common = {
     deleteSuccess: 'Deleted successfully!',
     deleteError: 'Failed to delete. Please try again.',
     noData: 'No data available',
+    apply: 'Apply',
+    cancel: 'Cancel',
   },
   vi: {
     close: 'Đóng',
@@ -159,5 +161,7 @@ export const common = {
     deleteSuccess: 'Xóa thành công!',
     deleteError: 'Không thể xóa. Vui lòng thử lại.',
     noData: 'Không có dữ liệu',
+    apply: 'Áp dụng',
+    cancel: 'Hủy',
   },
 } as const;

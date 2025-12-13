@@ -1,16 +1,15 @@
+import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { Alert, Modal, TouchableOpacity, View } from 'react-native';
-import { useState } from 'react';
+import { Modal, Pressable, TouchableOpacity, View } from 'react-native';
+import { useState, useEffect } from 'react';
 
 import { Text } from '@/components/ui/text';
+import { Input } from '@/components/ui/input';
+import { DateTimePickerModal } from '@/components/DateTimePickerModal';
+import { useNotification } from '@/components/NotificationContext';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
-import {
-  requestNotificationPermissions,
-  scheduleEasyScheduleReminder,
-} from '@/lib/notification-scheduler';
 
 const MINUTES_IN_DAY = 1440;
 
@@ -42,92 +41,111 @@ type PhaseModalProps = {
   } | null;
   baseMinutes: number;
   onClose: () => void;
-  onAdjustmentApplied: (newWakeTime: string) => void;
+  onAdjustmentApplied: (itemOrder: number, newStartTime: string, newEndTime: string) => void;
 };
 
 export function PhaseModal({
   visible,
   selectedPhase,
-  baseMinutes,
+  baseMinutes: _baseMinutes,
   onClose,
   onAdjustmentApplied,
 }: PhaseModalProps) {
   const { t } = useLocalization();
+  const { showNotification } = useNotification();
   const brandColors = useBrandColor();
-  const [adjustPickerVisible, setAdjustPickerVisible] = useState(false);
-  const [adjustPickerValue, setAdjustPickerValue] = useState(new Date());
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [startTimeValue, setStartTimeValue] = useState('');
+  const [endTimeValue, setEndTimeValue] = useState('');
+  const [startTimeDate, setStartTimeDate] = useState(new Date());
+  const [endTimeDate, setEndTimeDate] = useState(new Date());
+
+  // Initialize values when modal opens or phase changes
+  useEffect(() => {
+    if (selectedPhase && visible) {
+      const startTime = minutesToTimeString(selectedPhase.timing.startMinutes);
+      const endTime = minutesToTimeString(selectedPhase.timing.endMinutes);
+      setStartTimeValue(startTime);
+      setEndTimeValue(endTime);
+      setStartTimeDate(minutesToDate(selectedPhase.timing.startMinutes));
+      setEndTimeDate(minutesToDate(selectedPhase.timing.endMinutes));
+    }
+  }, [selectedPhase, visible]);
 
   if (!selectedPhase) return null;
 
-  const handleScheduleReminder = async () => {
-    const targetDate = minutesToDate(selectedPhase.timing.endMinutes);
-    const now = new Date();
-    const secondsUntil = Math.floor((targetDate.getTime() - now.getTime()) / 1000);
-
-    if (secondsUntil <= 0) {
-      Alert.alert(t('easySchedule.reminder.pastTitle'), t('easySchedule.reminder.pastMessage'));
-      return;
-    }
-
-    const hasPermission = await requestNotificationPermissions();
-    if (!hasPermission) {
-      Alert.alert(
-        t('easySchedule.reminder.permissionDeniedTitle'),
-        t('easySchedule.reminder.permissionDeniedBody')
-      );
-      return;
-    }
-
-    try {
-      const notificationId = await scheduleEasyScheduleReminder({
-        targetDate,
-        activityType: selectedPhase.item.activityType,
-        label: selectedPhase.item.label,
-        notificationTitle: t('easySchedule.reminder.notificationTitle'),
-        notificationBody: t('easySchedule.reminder.notificationBody', {
-          params: { label: selectedPhase.item.label, time: selectedPhase.endTimeLabel },
-        }),
-      });
-
-      if (notificationId) {
-        Alert.alert(
-          t('easySchedule.reminder.scheduledTitle'),
-          t('easySchedule.reminder.scheduledBody', { params: { time: selectedPhase.endTimeLabel } })
-        );
-      } else {
-        Alert.alert(t('common.error'), t('easySchedule.reminder.scheduleError'));
-      }
-    } catch (error) {
-      Alert.alert(t('common.error'), error instanceof Error ? error.message : String(error));
-    }
-  };
-
-  const openAdjustPicker = () => {
-    setAdjustPickerValue(minutesToDate(selectedPhase.timing.startMinutes));
-    setAdjustPickerVisible(true);
-  };
-
-  const handleAdjustPickerChange = (_event: DateTimePickerEvent, date?: Date) => {
+  const handleStartTimeChange = (_event: DateTimePickerEvent, date?: Date) => {
     if (date) {
-      setAdjustPickerValue(date);
+      setStartTimeDate(date);
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const timeString = `${hours}:${minutes}`;
+      setStartTimeValue(timeString);
     }
   };
 
-  const applyAdjustment = () => {
-    const dayOffset = Math.floor(selectedPhase.timing.startMinutes / MINUTES_IN_DAY);
-    const pickedMinutes = adjustPickerValue.getHours() * 60 + adjustPickerValue.getMinutes();
-    const absoluteMinutes = dayOffset * MINUTES_IN_DAY + pickedMinutes;
-    const delta = absoluteMinutes - selectedPhase.timing.startMinutes;
-    const newFirstMinutes = baseMinutes + delta;
-    const newWakeTime = minutesToTimeString(newFirstMinutes);
+  const handleEndTimeChange = (_event: DateTimePickerEvent, date?: Date) => {
+    if (date) {
+      setEndTimeDate(date);
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const timeString = `${hours}:${minutes}`;
+      setEndTimeValue(timeString);
+    }
+  };
 
-    onAdjustmentApplied(newWakeTime);
-    setAdjustPickerVisible(false);
-    onClose();
+  const handleApply = () => {
+    if (startTimeValue && endTimeValue) {
+      // Calculate old values for notification
+      const oldStartTime = minutesToTimeString(selectedPhase.timing.startMinutes);
+      const oldEndTime = minutesToTimeString(selectedPhase.timing.endMinutes);
+
+      // Check if anything changed
+      const startChanged = oldStartTime !== startTimeValue;
+      const endChanged = oldEndTime !== endTimeValue;
+
+      if (startChanged || endChanged) {
+        // Apply the adjustment
+        onAdjustmentApplied(selectedPhase.item.order, startTimeValue, endTimeValue);
+
+        // Show success notification with details
+        const changes: string[] = [];
+        if (startChanged) {
+          changes.push(
+            t('easySchedule.phaseModal.startTimeChanged', {
+              defaultValue: `Start time: ${oldStartTime} → ${startTimeValue}`,
+              params: { old: oldStartTime, new: startTimeValue },
+            })
+          );
+        }
+        if (endChanged) {
+          changes.push(
+            t('easySchedule.phaseModal.endTimeChanged', {
+              defaultValue: `End time: ${oldEndTime} → ${endTimeValue}`,
+              params: { old: oldEndTime, new: endTimeValue },
+            })
+          );
+        }
+
+        const notificationMessage =
+          t('easySchedule.phaseModal.adjustmentSuccess', {
+            defaultValue: `Schedule adjusted: ${selectedPhase.item.label}`,
+            params: { activity: selectedPhase.item.label },
+          }) + (changes.length > 0 ? `\n${changes.join(', ')}` : '');
+
+        showNotification(notificationMessage, 'success');
+      }
+
+      setShowStartPicker(false);
+      setShowEndPicker(false);
+      onClose();
+    }
   };
 
   const handleClose = () => {
-    setAdjustPickerVisible(false);
+    setShowStartPicker(false);
+    setShowEndPicker(false);
     onClose();
   };
 
@@ -147,52 +165,63 @@ export function PhaseModal({
           <Text className="mb-4 text-[13px] text-muted-foreground">
             {selectedPhase.durationLabel}
           </Text>
-          <View className="gap-3">
-            <TouchableOpacity
-              className="flex-row items-center justify-center gap-2 rounded-lg bg-lavender py-3"
-              onPress={handleScheduleReminder}>
-              <Ionicons name="alarm-outline" size={18} color={brandColors.colors.white} />
-              <Text className="text-lavender-foreground font-semibold">
-                {t('easySchedule.phaseModal.setReminder')}
+
+          <View className="gap-4">
+            <View className="gap-2">
+              <Text className="text-xs font-medium text-muted-foreground">
+                {t('easySchedule.phaseModal.startTime')}
               </Text>
+              <Pressable onPress={() => setShowStartPicker(true)}>
+                <Input
+                  value={startTimeValue}
+                  placeholder="HH:mm"
+                  editable={false}
+                  pointerEvents="none"
+                />
+              </Pressable>
+              <DateTimePickerModal
+                visible={showStartPicker}
+                value={startTimeDate}
+                mode="time"
+                onClose={() => setShowStartPicker(false)}
+                onChange={handleStartTimeChange}
+              />
+            </View>
+
+            <View className="gap-2">
+              <Text className="text-xs font-medium text-muted-foreground">
+                {t('easySchedule.phaseModal.endTime')}
+              </Text>
+              <Pressable onPress={() => setShowEndPicker(true)}>
+                <Input
+                  value={endTimeValue}
+                  placeholder="HH:mm"
+                  editable={false}
+                  pointerEvents="none"
+                />
+              </Pressable>
+              <DateTimePickerModal
+                visible={showEndPicker}
+                value={endTimeDate}
+                mode="time"
+                onClose={() => setShowEndPicker(false)}
+                onChange={handleEndTimeChange}
+              />
+            </View>
+          </View>
+
+          <View className="mt-4 flex-row justify-end gap-3">
+            <TouchableOpacity
+              className="items-center rounded-md border border-border px-4 py-2.5"
+              onPress={handleClose}>
+              <Text className="font-semibold text-foreground">{t('common.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-row items-center justify-center gap-2 rounded-lg border border-border py-3"
-              onPress={openAdjustPicker}>
-              <Ionicons name="time-outline" size={18} color={brandColors.colors.lavender} />
-              <Text className="font-semibold text-lavender">
-                {t('easySchedule.phaseModal.adjustTime')}
-              </Text>
+              className="items-center rounded-md bg-lavender px-4 py-2.5"
+              onPress={handleApply}>
+              <Text className="text-lavender-foreground font-semibold">{t('common.apply')}</Text>
             </TouchableOpacity>
           </View>
-          {adjustPickerVisible && (
-            <View className="mt-5 rounded-lg border border-border bg-card p-4">
-              <Text className="mb-2 text-center text-sm font-semibold text-foreground">
-                {t('easySchedule.phaseModal.adjustHeading')}
-              </Text>
-              <DateTimePicker
-                value={adjustPickerValue}
-                mode="time"
-                is24Hour
-                display="spinner"
-                onChange={handleAdjustPickerChange}
-              />
-              <View className="mt-3 flex-row justify-between gap-3">
-                <TouchableOpacity
-                  className="flex-1 items-center rounded-md border border-border py-2.5"
-                  onPress={() => setAdjustPickerVisible(false)}>
-                  <Text className="font-semibold text-foreground">{t('common.cancel')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  className="flex-1 items-center rounded-md bg-lavender py-2.5"
-                  onPress={applyAdjustment}>
-                  <Text className="text-lavender-foreground font-semibold">
-                    {t('common.apply')}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
         </View>
       </View>
     </Modal>

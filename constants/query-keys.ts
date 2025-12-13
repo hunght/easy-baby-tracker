@@ -26,3 +26,10 @@ export const diaryEntryByIdKey = (id: number) => ['diaryEntry', id] as const;
 
 export const TIMELINE_ACTIVITIES_QUERY_KEY = ['timelineActivities'] as const;
 export const SCHEDULED_NOTIFICATIONS_QUERY_KEY = ['scheduledNotifications'] as const;
+
+export const FORMULA_RULES_QUERY_KEY = ['formulaRules'] as const;
+export const formulaRulesByBabyKey = (babyId?: number) => ['formulaRules', babyId] as const;
+export const formulaRuleByIdKey = (ruleId: string, babyId?: number) =>
+  ['formulaRules', ruleId, babyId] as const;
+export const formulaRuleByAgeKey = (ageWeeks: number, babyId?: number) =>
+  ['formulaRules', 'age', ageWeeks, babyId] as const;

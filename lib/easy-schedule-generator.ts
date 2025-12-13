@@ -16,7 +16,12 @@ export type EasyScheduleLabels = {
   yourTime: string;
 };
 
-export type EasyFormulaRuleId = 'newborn' | 'fourToSixMonths' | 'sixToNineMonths' | 'nineToTwelveMonths' | 'toddler';
+export type EasyFormulaRuleId =
+  | 'newborn'
+  | 'fourToSixMonths'
+  | 'sixToNineMonths'
+  | 'nineToTwelveMonths'
+  | 'toddler';
 
 export type EasyFormulaRule = {
   id: EasyFormulaRuleId;
@@ -183,7 +188,8 @@ function addMinutes(time: string, minutes: number): string {
 export function calculateAgeInMonths(birthDate: string): number {
   const birth = new Date(birthDate);
   const today = new Date();
-  const months = (today.getFullYear() - birth.getFullYear()) * 12 + today.getMonth() - birth.getMonth();
+  const months =
+    (today.getFullYear() - birth.getFullYear()) * 12 + today.getMonth() - birth.getMonth();
   return months;
 }
 
@@ -216,9 +222,11 @@ export function getEasyFormulaRuleByAge(ageWeeks?: number | null): EasyFormulaRu
     return DEFAULT_RULE;
   }
 
-  return EASY_FORMULA_RULES.find(
-    (rule) => ageWeeks >= rule.minWeeks && (rule.maxWeeks === null || ageWeeks < rule.maxWeeks)
-  ) ?? DEFAULT_RULE;
+  return (
+    EASY_FORMULA_RULES.find(
+      (rule) => ageWeeks >= rule.minWeeks && (rule.maxWeeks === null || ageWeeks < rule.maxWeeks)
+    ) ?? DEFAULT_RULE
+  );
 }
 
 type GenerateEasyScheduleOptions =
@@ -241,10 +249,14 @@ export function generateEasySchedule(
   options: GenerateEasyScheduleOptions
 ): EasyScheduleItem[] {
   if (!options?.labels) {
-    throw new Error('generateEasySchedule: labels are required. Pass labels from your i18n provider.');
+    throw new Error(
+      'generateEasySchedule: labels are required. Pass labels from your i18n provider.'
+    );
   }
 
-  const rule = options.ruleId ? getEasyFormulaRuleById(options.ruleId) : getEasyFormulaRuleByAge(options.ageWeeks);
+  const rule = options.ruleId
+    ? getEasyFormulaRuleById(options.ruleId)
+    : getEasyFormulaRuleByAge(options.ageWeeks);
   const inferredAgeWeeks =
     options.ageWeeks !== undefined
       ? options.ageWeeks
@@ -289,7 +301,9 @@ export function generateEasy3Schedule(
   options?: { labels?: EasyScheduleLabels }
 ): EasyScheduleItem[] {
   if (!options?.labels) {
-    throw new Error('generateEasy3Schedule: labels are required. Pass labels from your i18n provider.');
+    throw new Error(
+      'generateEasy3Schedule: labels are required. Pass labels from your i18n provider.'
+    );
   }
 
   return generateEasySchedule(firstWakeTime, {
@@ -314,7 +328,11 @@ function buildScheduleFromRule({
   let order = 0;
   let napDurations = [...rule.napDurationsMinutes];
 
-  if (rule.thirdNapDropWakeThreshold && wakeWindow >= rule.thirdNapDropWakeThreshold && napDurations.length > 2) {
+  if (
+    rule.thirdNapDropWakeThreshold &&
+    wakeWindow >= rule.thirdNapDropWakeThreshold &&
+    napDurations.length > 2
+  ) {
     napDurations = napDurations.slice(0, napDurations.length - 1);
   }
 
@@ -388,7 +406,11 @@ function buildToddlerSchedule({
   const feedDuration = rule.feedDurationMinutes;
   const napDuration = rule.napDurationsMinutes[0] ?? 120;
   const afternoonWindow = rule.afternoonActivityRangeMinutes
-    ? clamp(estimateWakeWindow(ageWeeks), rule.afternoonActivityRangeMinutes[0], rule.afternoonActivityRangeMinutes[1])
+    ? clamp(
+        estimateWakeWindow(ageWeeks),
+        rule.afternoonActivityRangeMinutes[0],
+        rule.afternoonActivityRangeMinutes[1]
+      )
     : wakeWindow;
   const nightSleep = rule.nightSleepMinutes ?? 660;
 
@@ -468,4 +490,87 @@ function buildToddlerSchedule({
   });
 
   return items;
+}
+
+/**
+ * Recalculate schedule items after adjusting a specific item's start and end times.
+ * Updates the adjusted item and recalculates all subsequent items in the same day.
+ *
+ * @param items - Current schedule items
+ * @param adjustedItemOrder - Order number of the item to adjust
+ * @param newStartTime - New start time in HH:mm format
+ * @param newEndTime - New end time in HH:mm format
+ * @returns Updated schedule items array
+ */
+export function recalculateScheduleFromItem(
+  items: EasyScheduleItem[],
+  adjustedItemOrder: number,
+  newStartTime: string,
+  newEndTime: string
+): EasyScheduleItem[] {
+  // Helper function to calculate minutes from time string
+  function timeStringToMinutes(time: string): number {
+    const [hours, minutes] = time.split(':').map(Number);
+    return hours * 60 + minutes;
+  }
+
+  // Helper function to calculate minutes difference, handling day boundaries
+  function calculateDurationMinutes(startTime: string, endTime: string): number {
+    const startMins = timeStringToMinutes(startTime);
+    const endMins = timeStringToMinutes(endTime);
+
+    // If end time is earlier than start time, it spans to next day
+    if (endMins < startMins) {
+      return 24 * 60 - startMins + endMins;
+    }
+    return endMins - startMins;
+  }
+
+  // Helper function to add minutes to time string, handling day boundaries
+  function addMinutesToTime(time: string, minutes: number): string {
+    const totalMins = timeStringToMinutes(time) + minutes;
+    const normalizedMins = ((totalMins % (24 * 60)) + 24 * 60) % (24 * 60);
+    const hours = Math.floor(normalizedMins / 60);
+    const mins = normalizedMins % 60;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+  }
+
+  // Find the item to adjust
+  const adjustedItemIndex = items.findIndex((item) => item.order === adjustedItemOrder);
+  if (adjustedItemIndex === -1) {
+    return items; // Item not found, return original
+  }
+
+  // Calculate new duration
+  const newDuration = calculateDurationMinutes(newStartTime, newEndTime);
+  if (newDuration <= 0) {
+    return items; // Invalid duration, return original
+  }
+
+  // Create a copy of items to modify
+  const updatedItems = [...items];
+
+  // Update the adjusted item
+  updatedItems[adjustedItemIndex] = {
+    ...updatedItems[adjustedItemIndex],
+    startTime: newStartTime,
+    durationMinutes: newDuration,
+  };
+
+  // Recalculate subsequent items
+  let currentTime = newEndTime;
+  for (let i = adjustedItemIndex + 1; i < updatedItems.length; i++) {
+    const item = updatedItems[i];
+
+    // Update start time
+    updatedItems[i] = {
+      ...item,
+      startTime: currentTime,
+    };
+
+    // Calculate next start time
+    currentTime = addMinutesToTime(currentTime, item.durationMinutes);
+  }
+
+  return updatedItems;
 }

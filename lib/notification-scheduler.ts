@@ -1,6 +1,7 @@
 import {
   deleteScheduledNotificationByNotificationId,
   getActiveScheduledNotifications,
+  getScheduledNotifications,
   saveScheduledNotification,
   type ScheduledNotificationPayload,
 } from '@/database/scheduled-notifications';
@@ -12,7 +13,16 @@ import {
   type NotificationRequest,
 } from '@/lib/notifications-wrapper';
 
-import { EasyScheduleActivityType } from '@/lib/easy-schedule-generator';
+import {
+  EasyScheduleActivityType,
+  generateEasySchedule,
+  getEasyFormulaRuleByAge,
+  getEasyFormulaRuleById,
+  EASY_FORMULA_RULES,
+  type EasyFormulaRuleId,
+  type EasyScheduleItem,
+} from '@/lib/easy-schedule-generator';
+import type { BabyProfileRecord } from '@/database/baby-profile';
 
 export interface ScheduledFeedingNotification {
   notificationId: string;
@@ -232,4 +242,266 @@ export async function restoreScheduledNotifications(): Promise<ScheduledFeedingN
 
   // Convert database record to ScheduledFeedingNotification
   return convertFromDbRecord(feedingNotification);
+}
+
+// Helper function to calculate age in weeks
+function calculateAgeInWeeks(birthDate: string): number {
+  const birth = new Date(birthDate);
+  const now = new Date();
+  const diffMs = now.getTime() - birth.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  return Math.floor(diffDays / 7);
+}
+
+// Helper function to convert time string to date
+function timeStringToDate(time: string, baseDate: Date = new Date()): Date {
+  const [hours, minutes] = time.split(':').map(Number);
+  const date = new Date(baseDate);
+  date.setHours(hours, minutes, 0, 0);
+
+  // If the time has already passed today, schedule for tomorrow
+  if (date.getTime() <= baseDate.getTime()) {
+    date.setDate(date.getDate() + 1);
+  }
+
+  return date;
+}
+
+// Configuration constant for number of days ahead to schedule EASY reminders
+export const EASY_REMINDER_DAYS_AHEAD = 2;
+
+export interface EasyScheduleReminderLabels {
+  eat: string;
+  activity: string;
+  sleep: (napNumber: number) => string;
+  yourTime: string;
+  reminderTitle: (params: { emoji: string; activity: string }) => string;
+  reminderBody: (params: { activity: string; time: string; advance: number }) => string;
+}
+
+/**
+ * Reschedule EASY schedule reminders based on current baby profile and settings.
+ * Cancels existing reminders and schedules new ones for the specified number of days ahead.
+ *
+ * @param babyProfile - The baby profile with formula and birth date
+ * @param firstWakeTime - First wake time in HH:mm format
+ * @param reminderAdvanceMinutes - Minutes before activity to send reminder
+ * @param labels - Localized labels for activities and notifications
+ * @param daysAhead - Number of days ahead to schedule reminders (default: EASY_REMINDER_DAYS_AHEAD)
+ * @returns Number of reminders scheduled
+ */
+export async function rescheduleEasyReminders(
+  babyProfile: BabyProfileRecord,
+  firstWakeTime: string,
+  reminderAdvanceMinutes: number,
+  labels: EasyScheduleReminderLabels,
+  daysAhead: number = EASY_REMINDER_DAYS_AHEAD
+): Promise<number> {
+  // Cancel existing EASY schedule reminders
+  const existingNotifications = await getScheduledNotifications({
+    notificationType: 'sleep',
+  });
+  for (const notification of existingNotifications) {
+    try {
+      const data = notification.data ? JSON.parse(notification.data) : null;
+      // Check if it's an EASY schedule reminder (has activityType in data)
+      if (data && data.activityType) {
+        await cancelScheduledNotificationAsync(notification.notificationId);
+        await deleteScheduledNotificationByNotificationId(notification.notificationId);
+      }
+    } catch (error) {
+      console.error('Error canceling existing notification:', error);
+    }
+  }
+
+  // Generate the EASY schedule
+  const ageWeeks = babyProfile.birthDate ? calculateAgeInWeeks(babyProfile.birthDate) : undefined;
+  const availableRuleIds = EASY_FORMULA_RULES.map((rule) => rule.id);
+  const storedFormulaId = babyProfile.selectedEasyFormulaId;
+  let validStoredId: EasyFormulaRuleId | undefined = undefined;
+  if (storedFormulaId && availableRuleIds.some((id) => id === storedFormulaId)) {
+    validStoredId = storedFormulaId as EasyFormulaRuleId;
+  }
+
+  const formulaRule = validStoredId
+    ? getEasyFormulaRuleById(validStoredId)
+    : getEasyFormulaRuleByAge(ageWeeks);
+
+  const scheduleLabels = {
+    eat: labels.eat,
+    activity: labels.activity,
+    sleep: labels.sleep,
+    yourTime: labels.yourTime,
+  };
+
+  const scheduleItems: EasyScheduleItem[] = generateEasySchedule(firstWakeTime, {
+    labels: scheduleLabels,
+    ageWeeks,
+    ruleId: formulaRule.id,
+  });
+
+  // Filter out 'Y' activities and schedule reminders for E, A, S
+  const activitiesToRemind = scheduleItems.filter((item) => item.activityType !== 'Y');
+
+  const now = new Date();
+  let scheduledCount = 0;
+
+  // Schedule reminders for the specified number of days ahead
+  for (let dayOffset = 0; dayOffset < daysAhead; dayOffset++) {
+    const baseDate = new Date(now);
+    baseDate.setDate(baseDate.getDate() + dayOffset);
+    baseDate.setHours(0, 0, 0, 0);
+
+    for (const item of activitiesToRemind) {
+      const activityStartDate = timeStringToDate(item.startTime, baseDate);
+      const reminderDate = new Date(
+        activityStartDate.getTime() - reminderAdvanceMinutes * 60 * 1000
+      );
+
+      // Only schedule if reminder time is in the future
+      if (reminderDate.getTime() > now.getTime()) {
+        // Get activity label
+        let activityLabel = item.label;
+        if (item.activityType === 'S') {
+          // Extract nap number from sleep label if possible
+          const napMatch = activityLabel.match(/\d+/);
+          const napNumber = napMatch ? parseInt(napMatch[0], 10) : 1;
+          activityLabel = labels.sleep(napNumber);
+        }
+
+        // Create notification title and body
+        const activityEmojis: Record<string, string> = {
+          E: '🍼',
+          A: '🧸',
+          S: '😴',
+        };
+        const emoji = activityEmojis[item.activityType] || '📅';
+        const notificationTitle = labels.reminderTitle({ emoji, activity: activityLabel });
+        const notificationBody = labels.reminderBody({
+          activity: activityLabel,
+          time: item.startTime,
+          advance: reminderAdvanceMinutes,
+        });
+
+        try {
+          const notificationId = await scheduleEasyScheduleReminder({
+            targetDate: reminderDate,
+            activityType: item.activityType,
+            label: activityLabel,
+            notificationTitle,
+            notificationBody,
+          });
+
+          if (notificationId) {
+            scheduledCount++;
+          }
+        } catch (error) {
+          console.error(`Failed to schedule reminder for ${item.startTime}:`, error);
+        }
+      }
+    }
+  }
+
+  console.log(`Scheduled ${scheduledCount} EASY reminders`);
+  return scheduledCount;
+}
+
+/**
+ * Restore and reschedule EASY schedule reminders on app startup.
+ * This ensures reminders are always scheduled for the configured number of days ahead.
+ * Should be called after app initialization and migrations are complete.
+ */
+export async function restoreEasyScheduleReminders(): Promise<void> {
+  try {
+    // Check if reminders are enabled
+    const { getAppState } = await import('@/database/app-state');
+    const reminderEnabledValue = await getAppState('easyScheduleReminderEnabled');
+    const reminderEnabled = reminderEnabledValue === 'true';
+
+    if (!reminderEnabled) {
+      return;
+    }
+
+    // Get active baby profile
+    const { getActiveBabyProfile } = await import('@/database/baby-profile');
+    const babyProfile = await getActiveBabyProfile();
+
+    if (!babyProfile) {
+      return;
+    }
+
+    // Get reminder settings
+    const advanceMinutesValue = await getAppState('easyScheduleReminderAdvanceMinutes');
+    const reminderAdvanceMinutes = advanceMinutesValue ? parseInt(advanceMinutesValue, 10) : 5;
+    const firstWakeTime = babyProfile.firstWakeTime || '07:00';
+
+    // Get current locale for translations
+    const { getLocales } = await import('expo-localization');
+    const { translationObject } = await import('@/localization/translations');
+    const locales = getLocales();
+    const detectedLocale = locales[0]?.languageCode?.toLowerCase() || 'en';
+    const locale: 'en' | 'vi' = detectedLocale === 'vi' ? 'vi' : 'en';
+    const translations = translationObject[locale] || translationObject.en;
+
+    const t = (key: string, options?: { params?: Record<string, string | number> }) => {
+      const keys = key.split('.');
+      let value: unknown = translations;
+      for (const k of keys) {
+        if (value && typeof value === 'object' && k in value) {
+          value = (value as Record<string, unknown>)[k];
+        } else {
+          // Fallback to English
+          value = translationObject.en;
+          for (const k2 of keys) {
+            if (value && typeof value === 'object' && k2 in value) {
+              value = (value as Record<string, unknown>)[k2];
+            } else {
+              return key;
+            }
+          }
+          break;
+        }
+      }
+
+      if (typeof value !== 'string') {
+        return key;
+      }
+
+      if (options?.params) {
+        return value.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, token: string) => {
+          const paramValue = options.params?.[token];
+          return paramValue !== undefined && paramValue !== null ? String(paramValue) : '';
+        });
+      }
+
+      return value;
+    };
+
+    // Build labels
+    const labels: EasyScheduleReminderLabels = {
+      eat: t('easySchedule.activityLabels.eat'),
+      activity: t('easySchedule.activityLabels.activity'),
+      sleep: (napNumber: number) =>
+        t('easySchedule.activityLabels.sleep', { params: { number: napNumber } }),
+      yourTime: t('easySchedule.activityLabels.yourTime'),
+      reminderTitle: (params) =>
+        t('easySchedule.reminder.title', {
+          params: { emoji: params.emoji, activity: params.activity },
+        }),
+      reminderBody: (params) =>
+        t('easySchedule.reminder.body', {
+          params: {
+            activity: params.activity,
+            time: params.time,
+            advance: params.advance,
+          },
+        }),
+    };
+
+    // Reschedule reminders
+    await rescheduleEasyReminders(babyProfile, firstWakeTime, reminderAdvanceMinutes, labels);
+  } catch (error) {
+    console.error('Failed to restore EASY schedule reminders:', error);
+    // Don't throw - this is a background operation that shouldn't block app startup
+  }
 }

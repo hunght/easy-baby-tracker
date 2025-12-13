@@ -20,6 +20,7 @@ import { db, expoDb, initDatabase, getDb, getExpoDb } from '@/database/db';
 import {
   cancelStoredScheduledNotification,
   restoreScheduledNotifications,
+  restoreEasyScheduleReminders,
 } from '@/lib/notification-scheduler';
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { LocalizationProvider } from '@/localization/LocalizationProvider';
@@ -135,6 +136,12 @@ function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
     // This ensures notifications persist even after app termination
     restoreScheduledNotifications().catch((error) => {
       console.error('Failed to restore scheduled notifications:', error);
+    });
+
+    // Restore and reschedule EASY schedule reminders on app startup
+    // This ensures reminders are always scheduled for the configured number of days ahead
+    restoreEasyScheduleReminders().catch((error) => {
+      console.error('Failed to restore EASY schedule reminders:', error);
     });
 
     // Handle notification tap - navigate to appropriate screen

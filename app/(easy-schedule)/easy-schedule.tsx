@@ -6,7 +6,13 @@ import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getActiveBabyProfile, updateBabyFirstWakeTime } from '@/database/baby-profile';
+import { getAppState } from '@/database/app-state';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import {
+  requestNotificationPermissions,
+  rescheduleEasyReminders,
+  type EasyScheduleReminderLabels,
+} from '@/lib/notification-scheduler';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
 import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
 import { PhaseModal } from '@/pages/easy-schedule/components/PhaseModal';
@@ -15,6 +21,7 @@ import {
   getEasyFormulaRuleByAge,
   getEasyFormulaRuleById,
   EASY_FORMULA_RULES,
+  recalculateScheduleFromItem,
 } from '@/lib/easy-schedule-generator';
 import type { EasyScheduleItem, EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
 
@@ -168,10 +175,73 @@ export default function EasyScheduleScreen() {
   };
 
   const handleAdjustmentApplied = useCallback(
-    (newWakeTime: string) => {
-      void persistFirstWakeTime(newWakeTime);
+    async (itemOrder: number, newStartTime: string, newEndTime: string) => {
+      if (!babyProfile) {
+        return;
+      }
+
+      // Recalculate schedule from the adjusted item
+      let updatedItems: EasyScheduleItem[] = [];
+      setScheduleItems((currentItems) => {
+        updatedItems = recalculateScheduleFromItem(
+          currentItems,
+          itemOrder,
+          newStartTime,
+          newEndTime
+        );
+        return updatedItems;
+      });
+
+      // Reschedule reminders if enabled
+      try {
+        const reminderEnabledValue = await getAppState('easyScheduleReminderEnabled');
+        const reminderEnabled = reminderEnabledValue === 'true';
+
+        if (reminderEnabled && updatedItems.length > 0) {
+          const hasPermission = await requestNotificationPermissions();
+          if (hasPermission) {
+            const advanceMinutesValue = await getAppState('easyScheduleReminderAdvanceMinutes');
+            const reminderAdvanceMinutes = advanceMinutesValue
+              ? parseInt(advanceMinutesValue, 10)
+              : 5;
+
+            // Get the first wake time from the updated schedule
+            const firstWakeTimeForReminders = updatedItems[0].startTime;
+
+            const reminderLabels: EasyScheduleReminderLabels = {
+              eat: labels.eat,
+              activity: labels.activity,
+              sleep: labels.sleep,
+              yourTime: labels.yourTime,
+              reminderTitle: (params) =>
+                t('easySchedule.reminder.title', {
+                  params: { emoji: params.emoji, activity: params.activity },
+                }),
+              reminderBody: (params) =>
+                t('easySchedule.reminder.body', {
+                  params: {
+                    activity: params.activity,
+                    time: params.time,
+                    advance: params.advance,
+                  },
+                }),
+            };
+
+            // Reschedule reminders with updated schedule
+            await rescheduleEasyReminders(
+              babyProfile,
+              firstWakeTimeForReminders,
+              reminderAdvanceMinutes,
+              reminderLabels
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Failed to reschedule reminders after adjustment:', error);
+        // Don't show error to user - schedule adjustment succeeded
+      }
     },
-    [persistFirstWakeTime]
+    [babyProfile, labels, t]
   );
 
   const handleWakeTimeChange = useCallback(

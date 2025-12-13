@@ -8,6 +8,7 @@ import { useNotification } from '@/components/NotificationContext';
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
+import { getAppState } from '@/database/app-state';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import {
   EASY_FORMULA_RULES,
@@ -15,6 +16,11 @@ import {
   getEasyFormulaRuleByAge,
   getEasyFormulaRuleById,
 } from '@/lib/easy-schedule-generator';
+import {
+  requestNotificationPermissions,
+  rescheduleEasyReminders,
+  type EasyScheduleReminderLabels,
+} from '@/lib/notification-scheduler';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 function calculateAgeInWeeks(birthDate: string): number {
@@ -58,10 +64,61 @@ export default function EasyScheduleSelectScreen() {
       }
       await updateSelectedEasyFormula(babyProfile.id, ruleId);
     },
-    onSuccess: (_data, ruleId) => {
-      queryClient.setQueryData<BabyProfileRecord | null>(BABY_PROFILE_QUERY_KEY, (previous) =>
-        previous ? { ...previous, selectedEasyFormulaId: ruleId } : previous
+    onSuccess: async (_data, ruleId) => {
+      // Update query cache with new formula
+      const updatedProfile = queryClient.setQueryData<BabyProfileRecord | null>(
+        BABY_PROFILE_QUERY_KEY,
+        (previous) => (previous ? { ...previous, selectedEasyFormulaId: ruleId } : previous)
       );
+
+      // Check if reminders are enabled and reschedule them
+      const reminderEnabledValue = await getAppState('easyScheduleReminderEnabled');
+      const reminderEnabled = reminderEnabledValue === 'true';
+
+      if (reminderEnabled && updatedProfile) {
+        try {
+          const hasPermission = await requestNotificationPermissions();
+          if (hasPermission) {
+            const advanceMinutesValue = await getAppState('easyScheduleReminderAdvanceMinutes');
+            const reminderAdvanceMinutes = advanceMinutesValue
+              ? parseInt(advanceMinutesValue, 10)
+              : 5;
+
+            const firstWakeTime = updatedProfile.firstWakeTime || '07:00';
+
+            const labels: EasyScheduleReminderLabels = {
+              eat: t('easySchedule.activityLabels.eat'),
+              activity: t('easySchedule.activityLabels.activity'),
+              sleep: (napNumber: number) =>
+                t('easySchedule.activityLabels.sleep').replace('{{number}}', String(napNumber)),
+              yourTime: t('easySchedule.activityLabels.yourTime'),
+              reminderTitle: (params) =>
+                t('easySchedule.reminder.title', {
+                  params: { emoji: params.emoji, activity: params.activity },
+                }),
+              reminderBody: (params) =>
+                t('easySchedule.reminder.body', {
+                  params: {
+                    activity: params.activity,
+                    time: params.time,
+                    advance: params.advance,
+                  },
+                }),
+            };
+
+            await rescheduleEasyReminders(
+              updatedProfile,
+              firstWakeTime,
+              reminderAdvanceMinutes,
+              labels
+            );
+          }
+        } catch (error) {
+          console.error('Failed to reschedule reminders after formula change:', error);
+          // Don't show error to user - formula update succeeded, reminder update is secondary
+        }
+      }
+
       showNotification(t('easySchedule.formulaUpdated'), 'success');
       setTimeout(() => router.back(), 300);
     },

@@ -9,7 +9,9 @@ export const feedings = sqliteTable(
       .references(() => babyProfiles.id, { onDelete: 'cascade' }),
     type: text('type').notNull().$type<'breast' | 'bottle' | 'solids'>(),
     // Start time (timestamp in seconds)
-    startTime: integer('startTime', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    startTime: integer('startTime', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
     // Duration in seconds (optional)
     duration: integer('duration', { mode: 'number' }),
     // Breast feeding specific: left and right side durations
@@ -23,7 +25,9 @@ export const feedings = sqliteTable(
     amountGrams: real('amountGrams'),
     // Common fields
     notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    recordedAt: integer('recordedAt', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
     index('idx_feedings_baby_id').on(table.babyId),
@@ -41,13 +45,17 @@ export const sleepSessions = sqliteTable(
       .references(() => babyProfiles.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull().$type<'nap' | 'night'>(),
     // Start time (timestamp in seconds)
-    startTime: integer('startTime', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    startTime: integer('startTime', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
     // End time (timestamp in seconds, optional)
     endTime: integer('endTime', { mode: 'number' }),
     // Total duration in seconds (optional)
     duration: integer('duration', { mode: 'number' }),
     notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    recordedAt: integer('recordedAt', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
     index('idx_sleep_sessions_baby_id').on(table.babyId),
@@ -66,7 +74,9 @@ export const diaryEntries = sqliteTable(
     title: text('title'),
     content: text('content'),
     photoUri: text('photoUri'),
-    createdAt: integer('createdAt', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    createdAt: integer('createdAt', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
     index('idx_diary_entries_baby_id').on(table.babyId),
@@ -83,13 +93,17 @@ export const diaperChanges = sqliteTable(
       .references(() => babyProfiles.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull().$type<'wet' | 'soiled' | 'mixed' | 'dry'>(),
     // Time of diaper change (timestamp in seconds)
-    time: integer('time', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    time: integer('time', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
     // Wetness level (1-3, optional)
     wetness: integer('wetness', { mode: 'number' }),
     // Color of poop (optional)
     color: text('color'),
     notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    recordedAt: integer('recordedAt', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
     index('idx_diaper_changes_baby_id').on(table.babyId),
@@ -106,7 +120,9 @@ export const babyProfiles = sqliteTable('baby_profiles', {
   dueDate: text('due_date').notNull(),
   firstWakeTime: text('first_wake_time').default('07:00').notNull(),
   selectedEasyFormulaId: text('selected_easy_formula_id'),
-  createdAt: integer('created_at', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+  createdAt: integer('created_at', { mode: 'number' })
+    .notNull()
+    .$defaultFn(() => Math.floor(Date.now() / 1000)),
 });
 
 export const concernChoices = sqliteTable(
@@ -118,9 +134,7 @@ export const concernChoices = sqliteTable(
       .references(() => babyProfiles.id, { onDelete: 'cascade' }),
     concernId: text('concern_id').notNull(),
   },
-  (table) => [
-    index('idx_concern_choices_baby_id').on(table.babyId),
-  ]
+  (table) => [index('idx_concern_choices_baby_id').on(table.babyId)]
 );
 
 export const pumpings = sqliteTable(
@@ -131,7 +145,9 @@ export const pumpings = sqliteTable(
       .notNull()
       .references(() => babyProfiles.id, { onDelete: 'cascade' }),
     // Start time (timestamp in seconds)
-    startTime: integer('startTime', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    startTime: integer('startTime', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
     // Total amount pumped in ml
     amountMl: real('amountMl').notNull(),
     // Left and right side amounts
@@ -144,7 +160,9 @@ export const pumpings = sqliteTable(
     duration: integer('duration', { mode: 'number' }),
     // Common fields
     notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    recordedAt: integer('recordedAt', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
     index('idx_pumpings_baby_id').on(table.babyId),
@@ -162,7 +180,9 @@ export const healthRecords = sqliteTable(
       .references(() => babyProfiles.id, { onDelete: 'cascade' }),
     type: text('type').notNull().$type<'temperature' | 'medicine' | 'symptoms'>(),
     // Time of the health record (timestamp in seconds)
-    time: integer('time', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    time: integer('time', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
     // Temperature specific: temperature in Celsius
     temperature: real('temperature'),
     // Medicine specific: medicine type and name
@@ -172,7 +192,9 @@ export const healthRecords = sqliteTable(
     symptoms: text('symptoms'),
     // Common fields
     notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    recordedAt: integer('recordedAt', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
     index('idx_health_records_baby_id').on(table.babyId),
@@ -190,7 +212,9 @@ export const growthRecords = sqliteTable(
       .notNull()
       .references(() => babyProfiles.id, { onDelete: 'cascade' }),
     // Time of the growth measurement (timestamp in seconds)
-    time: integer('time', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    time: integer('time', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
     // Weight in kg
     weightKg: real('weightKg'),
     // Height in cm
@@ -199,7 +223,9 @@ export const growthRecords = sqliteTable(
     headCircumferenceCm: real('headCircumferenceCm'),
     // Common fields
     notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    recordedAt: integer('recordedAt', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
     index('idx_growth_records_baby_id').on(table.babyId),
@@ -221,7 +247,9 @@ export const scheduledNotifications = sqliteTable(
       .notNull()
       .references(() => babyProfiles.id, { onDelete: 'cascade' }),
     // Notification type (e.g., 'feeding', 'pumping', etc.)
-    notificationType: text('notification_type').notNull().$type<'feeding' | 'pumping' | 'sleep' | 'diaper'>(),
+    notificationType: text('notification_type')
+      .notNull()
+      .$type<'feeding' | 'pumping' | 'sleep' | 'diaper'>(),
     // OS notification identifier
     notificationId: text('notification_id').notNull(),
     // Scheduled time (timestamp in seconds)
@@ -229,12 +257,68 @@ export const scheduledNotifications = sqliteTable(
     // Additional data stored as JSON (e.g., feedingType for feeding notifications)
     data: text('data'),
     // Created timestamp
-    createdAt: integer('created_at', { mode: 'number' }).notNull().$defaultFn(() => Math.floor(Date.now() / 1000)),
+    createdAt: integer('created_at', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
     index('idx_scheduled_notifications_baby_id').on(table.babyId),
     index('idx_scheduled_notifications_type').on(table.notificationType),
     index('idx_scheduled_notifications_notification_id').on(table.notificationId),
     index('idx_scheduled_notifications_scheduled_time').on(table.scheduledTime),
+  ]
+);
+
+export const easyFormulaRules = sqliteTable(
+  'easy_formula_rules',
+  {
+    id: text('id').primaryKey().notNull(), // 'newborn', 'fourToSixMonths', etc. or 'custom_<babyId>_<timestamp>'
+    babyId: integer('baby_id').references(() => babyProfiles.id, { onDelete: 'cascade' }), // NULL for predefined, set for user-created
+    isCustom: integer('is_custom', { mode: 'boolean' }).notNull().default(false),
+    minWeeks: integer('min_weeks').notNull(),
+    maxWeeks: integer('max_weeks'), // NULL for open-ended (toddler+)
+
+    // Translation keys for predefined, or direct text for custom
+    labelKey: text('label_key'),
+    labelText: text('label_text'),
+    ageRangeKey: text('age_range_key'),
+    ageRangeText: text('age_range_text'),
+    cycleKey: text('cycle_key'),
+    cycleText: text('cycle_text'),
+    eatKey: text('eat_key'),
+    eatText: text('eat_text'),
+    activityKey: text('activity_key'),
+    activityText: text('activity_text'),
+    sleepKey: text('sleep_key'),
+    sleepText: text('sleep_text'),
+    yourTimeKey: text('your_time_key'),
+    yourTimeText: text('your_time_text'),
+    logicKeys: text('logic_keys'), // JSON array of translation keys
+    logicTexts: text('logic_texts'), // JSON array of text strings
+
+    // Schedule parameters
+    cycleLengthMinutes: integer('cycle_length_minutes'),
+    activityRangeMin: integer('activity_range_min').notNull(),
+    activityRangeMax: integer('activity_range_max').notNull(),
+    feedDurationMinutes: integer('feed_duration_minutes').notNull(),
+    napDurationsMinutes: text('nap_durations_minutes').notNull(), // JSON array [120, 120, 90]
+    thirdNapDropWakeThreshold: integer('third_nap_drop_wake_threshold'),
+    morningNapCapMinutes: integer('morning_nap_cap_minutes'),
+    afternoonActivityRangeMin: integer('afternoon_activity_range_min'),
+    afternoonActivityRangeMax: integer('afternoon_activity_range_max'),
+    nightSleepMinutes: integer('night_sleep_minutes'),
+    bedtimeRoutineMinutes: integer('bedtime_routine_minutes'),
+
+    createdAt: integer('created_at', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
+    updatedAt: integer('updated_at', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
+  },
+  (table) => [
+    index('idx_formula_rules_baby_id').on(table.babyId),
+    index('idx_formula_rules_custom').on(table.isCustom),
+    index('idx_formula_rules_weeks').on(table.minWeeks, table.maxWeeks),
   ]
 );

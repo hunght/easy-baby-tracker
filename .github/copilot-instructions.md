@@ -2,92 +2,82 @@
 
 ## Project Overview
 
-BabyEase NativeWind is a **React Native baby tracking app** built with **Expo 54+** (New Architecture), **Expo Router**, **NativeWind 4** (Tailwind CSS), **Clerk Auth**, and **SQLite** (Drizzle ORM). This is a complete UI refactor of the original BabyEase app, migrating from StyleSheet patterns to a modern component library using [React Native Reusables](https://rnr-docs.vercel.app/).
+BabyEase NativeWind is a **React Native baby tracking app** built with **Expo 54+** (New Architecture), **Expo Router**, **NativeWind 4**, **Clerk Auth**, and **SQLite** (Drizzle ORM). This is a complete UI refactor using [React Native Reusables](https://rnr-docs.vercel.app/) components with Tailwind CSS instead of StyleSheet patterns.
 
-**Key Difference from BabyEase**: This project uses **NativeWind/Tailwind** for styling instead of `StyleSheet.create()`. All UI components follow the shadcn/ui pattern via React Native Reusables.
+**Critical**: NativeWind 4/Tailwind classes ONLY - `StyleSheet.create()` is banned by ESLint. All components follow shadcn/ui patterns via React Native Reusables.
 
 ## Architecture Patterns
 
 ### Styling System - NativeWind (Critical)
 
-- **Never use `StyleSheet.create()`** - This project uses Tailwind utility classes exclusively
-- **Utility function**: `cn()` from `@/lib/utils` merges Tailwind classes (uses `clsx` + `tailwind-merge`)
-- **Theme colors**: Defined as CSS variables in `global.css`, accessed via Tailwind classes
-
-  ```tsx
-  // ✅ Correct
-  <View className="bg-primary text-primary-foreground rounded-lg p-4">
-
-  // ❌ Wrong - never use StyleSheet in this project
-  const styles = StyleSheet.create({ container: { backgroundColor: '#5B7FFF' } });
-  ```
-
+- **NEVER `StyleSheet.create()`** - ESLint bans it. Use `className` prop with Tailwind utilities exclusively
+- **`cn()` utility** (`@/lib/utils`): Merges Tailwind classes using `clsx` + `tailwind-merge`
+- **Theme**: CSS variables in `global.css` → Tailwind classes (e.g., `bg-primary`, `text-foreground`)
 - **Brand colors**: `bg-primary` (#5B7FFF), `bg-accent` (#FF8AB8), `bg-mint` (#7FE3CC), `bg-lavender` (#C7B9FF)
-- **Border radius**: Cards = `rounded-lg` (12px), Buttons = `rounded-md` (8px), Pills = `rounded-pill` (24px)
-- **Dark mode**: Use `className` with Tailwind's dark mode support (e.g., `dark:bg-background`)
+- **Radius tokens**: `rounded-lg` (12px cards), `rounded-md` (8px buttons), `rounded-pill` (24px)
+- **Dark mode**: Use `dark:` prefix (e.g., `dark:bg-background`), auto-switches via `useColorScheme()`
+
+```tsx
+// ✅ Correct
+<View className="rounded-lg bg-primary p-4">
+  <Text className="text-xl font-bold text-foreground">Title</Text>
+</View>;
+
+// ❌ Wrong - triggers ESLint error
+const styles = StyleSheet.create({ container: { backgroundColor: '#5B7FFF' } });
+```
 
 ### UI Components - React Native Reusables
 
-- **Base components**: `components/ui/` (Button, Card, Badge, Input, Label, Text, Separator, etc.)
-- **Installation**: `npx @react-native-reusables/cli@latest add <component-name>`
-- **Pattern**: All components use `cn()` for className merging and CVA (Class Variance Authority) for variants
-- **Example**:
+- **Library**: `components/ui/` contains Button, Card, Badge, Input, Label, Text, Separator, etc.
+- **Install command**: `npx @react-native-reusables/cli@latest add <component-name>`
+- **Pattern**: All use `cn()` + CVA (Class Variance Authority) for variants
+- **Custom components**: TimeField, DatePickerField, TimePickerField, ModalHeader, NotificationBar
 
-  ```tsx
-  import { Button } from '@/components/ui/button';
-  import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+```tsx
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-  <Card className="rounded-lg">
-    <CardHeader>
-      <CardTitle>Feeding Log</CardTitle>
-    </CardHeader>
-    <CardContent>
-      <Button variant="default" size="lg">
-        Save
-      </Button>
-    </CardContent>
-  </Card>;
-  ```
-
-- **Custom UI**: TimeField, DatePickerField, NotificationBar (in `components/ui/`)
+<Card className="rounded-lg">
+  <CardHeader>
+    <CardTitle>Feeding Log</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <Button variant="default" size="lg">
+      Save
+    </Button>
+  </CardContent>
+</Card>;
+```
 
 ### Authentication - Clerk
 
-- **Provider**: Clerk handles OAuth (Apple, Google, GitHub) + email/password auth
 - **Hooks**: `useSignIn()`, `useSignUp()`, `useUser()`, `useAuth()`, `useSSO()` from `@clerk/clerk-expo`
-- **Auth screens**: `app/(auth)/` contains sign-in, sign-up, forgot-password, verify-email flows
-- **Social login**: `components/social-connections.tsx` handles OAuth with `startSSOFlow()`
-- **Session management**: Use `setActive({ session })` after successful sign-in
-- **Auth pattern**:
-  ```tsx
-  const { signIn, setActive, isLoaded } = useSignIn();
-  const signInAttempt = await signIn.create({ identifier: email, password });
-  if (signInAttempt.status === 'complete') {
-    await setActive({ session: signInAttempt.createdSessionId });
-  }
-  ```
-- **Note**: Clerk integration is complete in auth screens but NOT enforced app-wide (no ClerkProvider wrapping)
+- **Auth screens**: `app/(auth)/` - sign-in, sign-up, forgot-password, verify-email
+- **OAuth**: `components/social-connections.tsx` uses `startSSOFlow()` for Apple/Google/GitHub
+- **Session**: Call `setActive({ session: signInAttempt.createdSessionId })` after successful sign-in
+- **Note**: Clerk integration complete in auth screens but NOT app-wide (no ClerkProvider wrapper)
 
-### Database & State (Same as BabyEase)
+### Database & State
 
-- **SQLite**: Drizzle ORM (`drizzle-orm/expo-sqlite`), schema in `db/schema.ts`
-- **Timestamps**: Unix seconds (`Math.floor(Date.now() / 1000)`), never milliseconds
-- **Modules**: `database/*.ts` with `save{Activity}`, `get{Activities}`, auto-inject `babyId` via `requireActiveBabyProfileId()`
-- **React Query**: `@tanstack/react-query` for data fetching, keys in `constants/query-keys.ts`
-- **Migrations**: Auto-run on startup via `useMigrations` in `app/_layout.tsx`
+- **SQLite + Drizzle ORM**: Schema in `db/schema.ts`, migrations in `drizzle/`
+- **Web support**: Auto-initialized via `DatabaseInitializer` in `app/_layout.tsx` (uses SharedArrayBuffer)
+- **Timestamps**: ALWAYS Unix seconds (`Math.floor(Date.now() / 1000)`), NEVER milliseconds
+- **Database modules** (`database/*.ts`): `save{Activity}()`, `get{Activities}()` auto-inject `babyId` via `requireActiveBabyProfileId()`
+- **React Query**: Keys in `constants/query-keys.ts`, mutations invalidate queries on success
+- **Migrations**: Auto-run on startup via `useMigrations`, generate with `npm run db:generate`
+- **Dev tools**: `expo-drizzle-studio-plugin` opens in Expo dev tools (native only)
 
 ### Routing & Navigation
 
-- **Expo Router**: File-based routing (tabs in `app/(tabs)/`, modals at top-level)
-- **Auth flow**: `app/(auth)/sign-in.tsx`, `sign-up.tsx`, `forgot-password.tsx`, etc.
-- **Modals**: Activity screens use `presentation: 'modal'` (feeding, sleep, diaper, etc.)
-- **Navigation**: `router.push()`, `router.back()`, `useLocalSearchParams<{ id: string }>()`
+- **Expo Router**: File-based routing - tabs in `app/(tabs)/`, modals at root, auth in `app/(auth)/`
+- **Modal screens**: Activity trackers (feeding, sleep, diaper) use `presentation: 'modal'` in stack options
+- **Navigation**: `router.push()`, `router.back()`, edit mode via `useLocalSearchParams<{ id: string }>()`
 
 ### Localization
 
-- **System**: `LocalizationProvider` + `useLocalization()` hook
-- **Usage**: `const { t } = useLocalization(); t('feeding.types.breast')`
-- **Files**: `localization/translations/*.ts` (English/Vietnamese)
+- **Hook**: `useLocalization()` provides `t()` function: `t('feeding.types.breast')`
+- **Translations**: `localization/translations/*.ts` (English/Vietnamese)
 
 ## Development Workflows
 
@@ -96,56 +86,59 @@ BabyEase NativeWind is a **React Native baby tracking app** built with **Expo 54
 1. **Always use Tailwind classes** - Reference `docs/color-migration.md` for color mappings
 2. **Add new components**: `npx @react-native-reusables/cli@latest add <name>`
 3. **Check dark mode**: Test with `className="dark:..."` modifiers
-4. **Migration status**: This project is actively migrating from StyleSheet to NativeWind (see `docs/ui-refactor-plan.md`)
-   - ✅ **Completed**: All tab screens (`(tabs)/*.tsx`), feeding screen, auth screens
-   - 🔄 **In progress**: Remaining activity screens (`sleep.tsx`, `diaper.tsx`, etc.), onboarding (`index.tsx` still has StyleSheet)
-   - When editing files, prefer migrating StyleSheet usage to Tailwind classes
+4. **Migration status**: Actively migrating from StyleSheet to NativeWind
+   - ✅ Completed: All tab screens, feeding screen, auth screens
+   - 🔄 In progress: Remaining activity screens, onboarding
+   - When editing files, migrate StyleSheet usage to Tailwind classes
 
 ### Database Changes
 
 1. Edit `db/schema.ts`
-2. Run `npm run db:generate` (creates migration)
-3. Restart app (migrations auto-run)
-4. Browse: `npm run db:studio`
+2. Run `npm run db:generate` (creates migration in `drizzle/`)
+3. Restart app (migrations auto-run via `useMigrations` in `_layout.tsx`)
+4. Browse with Drizzle Studio via Expo dev tools (native only)
 
-### Building & Testing
+### Development Commands
 
-- **Local dev**: `npm start` (or `npm run ios`/`android`)
-- **Type check**: `npm run type-check` (fails on `any` types)
-- **Lint**: `npm run lint:fix` (enforces no classes, no unused vars, no `any`)
-- **Format**: `npm run format` (Prettier with Tailwind plugin)
+- **Dev**: `npm start` / `npm run ios` / `npm run android` / `npm run web`
+- **Type check**: `npm run type-check` (strict mode, fails on `any`)
+- **Lint/format**: `npm run lint:fix`, `npm run format`
+- **Database**: `npm run db:generate` (migration), browse via Expo dev tools
+- **Build**: EAS Build configured in `eas.json` (profiles: development, preview, production)
 
-### Clerk Setup (First-Time)
+### First-Time Setup
 
-1. Set up Clerk account at [go.clerk.com](https://go.clerk.com)
-2. Enable Email/Phone/Username + OAuth (Apple, GitHub, Google)
-3. Rename `.env.example` → `.env.local`, add `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY`
+1. **Clerk Auth**: Add `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` to `.env.local` (copy from [Clerk dashboard](https://go.clerk.com))
+2. **Enable OAuth**: In Clerk dashboard, enable Apple, GitHub, Google under SSO Connections
+3. **Install deps**: `npm install`
+4. **Start dev**: `npm start`
 
 ## Code Conventions
 
 ### TypeScript
 
-- **Strict mode**: Enabled, `any` banned by ESLint
-- **Type inference**: Use Drizzle's `$inferSelect`/`$inferInsert`
+- **Strict mode**: Enabled, `any` banned by ESLint (fails build)
+- **Type inference**: Use Drizzle's `$inferSelect`/`$inferInsert` for DB types
 - **Path alias**: `@/*` → project root
+- **No type assertions**: Use type guards instead of `as` (except `as const`)
 
 ### ESLint Rules (Strict)
 
 - **No classes**: Functional patterns only (enforced)
 - **No `any`**: Fails build
 - **No unused vars**: Enforced (prefix `_` to ignore)
-- **No eslint-disable comments**: Fix issues, don't suppress
-- **No unused styles**: N/A (no StyleSheet in this project)
+- **No eslint-disable**: Fix issues, don't suppress
+- **No StyleSheet imports**: Banned by `no-restricted-imports`
 
 ### Component Patterns
 
 - **Functional only**: No class components
 - **Styling**: Use `className` prop with Tailwind utilities
 - **Forms**: Local `useState`, submit via React Query mutation
-- **Form validation**: Simple client-side validation with local error state (see `components/sign-in-form.tsx`)
+- **Form validation**: Simple client-side validation with local error state
 - **Edit mode**: `useLocalSearchParams<{ id }>()`, load with `useQuery`
-- **Loading states**: Use `ActivityIndicator` from React Native or `isSaving` local state
-- **Error handling**: `onError` callback in mutations shows notification via `showNotification()` from `NotificationContext`
+- **Loading states**: `ActivityIndicator` or `isSaving` local state
+- **Error handling**: `onError` in mutations shows `showNotification()` from `NotificationContext`
 - **Save pattern**:
   ```tsx
   const mutation = useMutation({
@@ -192,7 +185,7 @@ BabyEase NativeWind is a **React Native baby tracking app** built with **Expo 54
 
 1. Create modal screen `app/{activity}.tsx` using Tailwind classes
 2. Use components: `Button`, `Card`, `Input`, `Badge` from `components/ui/`
-3. Add database module in `database/{activity}.ts` (same pattern as BabyEase)
+3. Add database module in `database/{activity}.ts` (same pattern as existing)
 4. Register route in `app/_layout.tsx` with `presentation: 'modal'`
 5. Add translations to `localization/translations/{activity}.ts`
 
@@ -202,7 +195,7 @@ BabyEase NativeWind is a **React Native baby tracking app** built with **Expo 54
 npx @react-native-reusables/cli@latest add accordion
 ```
 
-This installs the component + dependencies to `components/ui/`
+Installs component + dependencies to `components/ui/`
 
 ### Convert StyleSheet to NativeWind
 

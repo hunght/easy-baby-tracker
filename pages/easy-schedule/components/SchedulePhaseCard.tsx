@@ -3,7 +3,7 @@ import { TouchableOpacity, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
-import { useColorScheme } from '@/hooks/use-color-scheme.web';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 type SchedulePhaseCardProps = {
