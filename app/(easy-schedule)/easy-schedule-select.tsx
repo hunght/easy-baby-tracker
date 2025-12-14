@@ -7,7 +7,9 @@ import { Text } from '@/components/ui/text';
 import { useNotification } from '@/components/NotificationContext';
 import {
   BABY_PROFILE_QUERY_KEY,
-  formulaRulesByBabyKey,
+  PREDEFINED_FORMULA_RULES_QUERY_KEY,
+  userCustomFormulaRulesKey,
+  daySpecificFormulaRulesKey,
   formulaRuleByIdKey,
   formulaRuleByAgeKey,
 } from '@/constants/query-keys';
@@ -15,9 +17,11 @@ import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
 import { getAppState } from '@/database/app-state';
 import {
-  getFormulaRules,
   getFormulaRuleById,
   getFormulaRuleByAge,
+  getPredefinedFormulaRules,
+  getUserCustomFormulaRules,
+  getDaySpecificFormulaRules,
 } from '@/database/easy-formula-rules';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import type { EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
@@ -51,10 +55,26 @@ export default function EasyScheduleSelectScreen() {
 
   const ageWeeks = babyProfile?.birthDate ? calculateAgeInWeeks(babyProfile.birthDate) : undefined;
 
-  // Fetch all available formulas from database
-  const { data: availableFormulas = [] } = useQuery({
-    queryKey: formulaRulesByBabyKey(babyProfile?.id),
-    queryFn: () => getFormulaRules(babyProfile?.id),
+  // Fetch predefined formulas
+  const { data: predefinedRules = [], isLoading: isLoadingPredefined } = useQuery({
+    queryKey: PREDEFINED_FORMULA_RULES_QUERY_KEY,
+    queryFn: getPredefinedFormulaRules,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch user custom formulas
+  const { data: userCustomRules = [], isLoading: isLoadingUserCustom } = useQuery({
+    queryKey: userCustomFormulaRulesKey(babyProfile?.id ?? 0),
+    queryFn: () => getUserCustomFormulaRules(babyProfile!.id),
+    enabled: !!babyProfile?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch day-specific (temporary) formulas
+  const { data: daySpecificRules = [], isLoading: isLoadingDaySpecific } = useQuery({
+    queryKey: daySpecificFormulaRulesKey(babyProfile?.id ?? 0),
+    queryFn: () => getDaySpecificFormulaRules(babyProfile!.id),
+    enabled: !!babyProfile?.id,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -67,7 +87,7 @@ export default function EasyScheduleSelectScreen() {
   });
 
   // Get the active formula by age as fallback
-  const { data: formulaByAge, isLoading: isLoadingFormula } = useQuery({
+  const { data: formulaByAge } = useQuery({
     queryKey: formulaRuleByAgeKey(ageWeeks ?? 0, babyProfile?.id),
     queryFn: () => getFormulaRuleByAge(ageWeeks!, babyProfile?.id),
     enabled: ageWeeks !== undefined,
@@ -76,6 +96,8 @@ export default function EasyScheduleSelectScreen() {
 
   // Use selected formula if valid, otherwise use age-based
   const formulaRule = formulaById || formulaByAge;
+
+  const isLoadingFormula = isLoadingPredefined || isLoadingUserCustom || isLoadingDaySpecific;
 
   const mutation = useMutation({
     mutationFn: async (ruleId: EasyFormulaRuleId) => {
@@ -187,38 +209,137 @@ export default function EasyScheduleSelectScreen() {
       {!isLoadingFormula && (
         <ScrollView
           className="flex-1"
-          contentContainerClassName="p-5 pb-10 gap-3"
+          contentContainerClassName="p-5 pb-10 gap-4"
           showsVerticalScrollIndicator={false}>
-          {availableFormulas.map((rule) => {
-            const isActive = rule.id === formulaRule?.id;
-            return (
-              <TouchableOpacity
-                key={rule.id}
-                className={`rounded-lg border p-4 ${
-                  isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
-                }`}
-                accessibilityRole="button"
-                accessibilityLabel={t(rule.labelKey)}
-                disabled={mutation.isPending}
-                onPress={() => handleSelectFormula(rule.id)}>
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-1">
-                    <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                      {t(rule.labelKey)}
-                    </Text>
-                    <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-                      {t(rule.ageRangeKey)}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name={isActive ? 'checkmark-circle' : 'chevron-forward'}
-                    size={20}
-                    color={isActive ? brandColors.colors.lavender : brandColors.colors.black}
-                  />
-                </View>
-              </TouchableOpacity>
-            );
-          })}
+          {/* Predefined Rules Group */}
+          {predefinedRules.length > 0 && (
+            <View className="gap-2">
+              <Text className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('easySchedule.formulaGroups.predefined')}
+              </Text>
+              {predefinedRules.map((rule) => {
+                const isActive = rule.id === formulaRule?.id;
+                return (
+                  <TouchableOpacity
+                    key={rule.id}
+                    className={`rounded-lg border p-4 ${
+                      isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
+                    }`}
+                    accessibilityRole="button"
+                    accessibilityLabel={rule.labelKey ? t(rule.labelKey) : rule.labelText || ''}
+                    disabled={mutation.isPending}
+                    onPress={() => handleSelectFormula(rule.id)}>
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1">
+                        <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+                          {rule.labelKey ? t(rule.labelKey) : rule.labelText || rule.id}
+                        </Text>
+                        <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+                          {rule.ageRangeKey ? t(rule.ageRangeKey) : rule.ageRangeText || ''}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={isActive ? 'checkmark-circle' : 'chevron-forward'}
+                        size={20}
+                        color={isActive ? brandColors.colors.lavender : brandColors.colors.black}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* User Custom Rules Group */}
+          {userCustomRules.length > 0 && (
+            <View className="gap-2">
+              <Text className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('easySchedule.formulaGroups.userCustom')}
+              </Text>
+              {userCustomRules.map((rule) => {
+                const isActive = rule.id === formulaRule?.id;
+                return (
+                  <TouchableOpacity
+                    key={rule.id}
+                    className={`rounded-lg border p-4 ${
+                      isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
+                    }`}
+                    accessibilityRole="button"
+                    accessibilityLabel={rule.labelText || rule.labelKey || rule.id}
+                    disabled={mutation.isPending}
+                    onPress={() => handleSelectFormula(rule.id)}>
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1">
+                        <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+                          {rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)}
+                        </Text>
+                        <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+                          {rule.ageRangeText ||
+                            (rule.ageRangeKey ? t(rule.ageRangeKey) : '') ||
+                            t('easySchedule.formulaGroups.custom')}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={isActive ? 'checkmark-circle' : 'chevron-forward'}
+                        size={20}
+                        color={isActive ? brandColors.colors.lavender : brandColors.colors.black}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
+          {/* Day-Specific (Temporary) Rules Group */}
+          {daySpecificRules.length > 0 && (
+            <View className="gap-2">
+              <Text className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                {t('easySchedule.formulaGroups.daySpecific')}
+              </Text>
+              {daySpecificRules.map((rule) => {
+                const isActive = rule.id === formulaRule?.id;
+                const dateStr = rule.validDate
+                  ? new Date(rule.validDate).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : '';
+                return (
+                  <TouchableOpacity
+                    key={rule.id}
+                    className={`rounded-lg border p-4 ${
+                      isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
+                    }`}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      rule.labelText ||
+                      (rule.labelKey ? t(rule.labelKey) : rule.id) +
+                        (dateStr ? ` - ${dateStr}` : '')
+                    }
+                    disabled={mutation.isPending}
+                    onPress={() => handleSelectFormula(rule.id)}>
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1">
+                        <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+                          {rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)}
+                        </Text>
+                        <Text className="text-xs text-muted-foreground" numberOfLines={1}>
+                          {dateStr || t('easySchedule.formulaGroups.temporary')}
+                        </Text>
+                      </View>
+                      <Ionicons
+                        name={isActive ? 'checkmark-circle' : 'chevron-forward'}
+                        size={20}
+                        color={isActive ? brandColors.colors.lavender : brandColors.colors.black}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
         </ScrollView>
       )}
     </View>

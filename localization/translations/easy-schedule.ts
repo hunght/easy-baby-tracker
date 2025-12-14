@@ -10,6 +10,13 @@ export const easySchedule = {
     infoTitle: 'How E.A.S.Y. Works',
     selectFormulaTitle: 'Select Formula',
     formulaUpdated: 'Formula updated successfully',
+    formulaGroups: {
+      predefined: 'Predefined Formulas',
+      userCustom: 'Custom Formulas',
+      daySpecific: 'Temporary (Day-Specific)',
+      custom: 'Custom',
+      temporary: 'Temporary',
+    },
     customScheduleNotice: '✨ Custom schedule for today - resets tomorrow',
     viewMore: 'View more',
     scheduleFor: 'Schedule {{number}}',
@@ -239,6 +246,13 @@ export const easySchedule = {
     firstWakeTimeTitle: 'Chọn giờ thức đầu tiên',
     formulaUpdated: 'Đã cập nhật công thức thành công',
     customScheduleNotice: '✨ Lịch trình tùy chỉnh cho hôm nay - đặt lại vào ngày mai',
+    formulaGroups: {
+      predefined: 'Công thức có sẵn',
+      userCustom: 'Công thức tùy chỉnh',
+      daySpecific: 'Tạm thời (Theo ngày)',
+      custom: 'Tùy chỉnh',
+      temporary: 'Tạm thời',
+    },
     currentPhase: {
       now: 'Đang diễn ra',
       remaining: 'Còn {{time}}',

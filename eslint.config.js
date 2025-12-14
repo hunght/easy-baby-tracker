@@ -14,6 +14,21 @@ module.exports = defineConfig([
       '@typescript-eslint': typescriptPlugin,
       'unused-imports': unusedImportsPlugin,
     },
+    settings: {
+      'import/resolver': {
+        typescript: {
+          alwaysTryTypes: true,
+          project: './tsconfig.json',
+        },
+        node: {
+          extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        },
+      },
+      'import/parsers': {
+        '@typescript-eslint/parser': ['.ts', '.tsx'],
+      },
+      'import/ignore': ['node_modules', '\\.d\\.ts$'],
+    },
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -45,15 +60,6 @@ module.exports = defineConfig([
       'react-native/no-unused-styles': 'error',
       // Detect unused imports and exports
       'unused-imports/no-unused-imports': 'error',
-      'unused-imports/no-unused-vars': [
-        'warn',
-        {
-          vars: 'all',
-          varsIgnorePattern: '^_',
-          args: 'after-used',
-          argsIgnorePattern: '^_',
-        },
-      ],
       // Detect unused variables and properties
       '@typescript-eslint/no-unused-vars': [
         'error',
@@ -66,6 +72,48 @@ module.exports = defineConfig([
           caughtErrors: 'all',
         },
       ],
+      // Detect unused exports (functions, variables, types, etc.)
+      'unused-imports/no-unused-vars': [
+        'error', // Changed from 'warn' to 'error'
+        {
+          vars: 'all',
+          varsIgnorePattern: '^_',
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+        },
+      ],
+      // Detect unused module exports (cross-file analysis)
+      'import/no-unused-modules': [
+        'error',
+        {
+          unusedExports: true,
+          missingExports: false,
+          src: ['./'],
+          ignoreExports: [
+            // Expo Router files (default exports are used by framework)
+            'app/**',
+            // UI components (React Native Reusables - used dynamically)
+            'components/ui/**',
+            // Config files
+            '*.config.js',
+            '*.config.ts',
+            'drizzle.config.ts',
+            // Database migrations/seeding (used programmatically)
+            'database/easy-formula-rules.ts',
+            // Type definitions and utilities that might be imported dynamically
+            'database/db.web.ts',
+            // Internal types that might be used in same module
+            'components/TimeField.tsx',
+            // Types/interfaces exported for external use
+            'lib/notifications-wrapper.ts',
+            'lib/easy-schedule-generator.ts',
+            'hooks/use-color-scheme.web.ts',
+            'localization/LocalizationProvider.tsx',
+          ],
+        },
+      ],
+      // Disable namespace import errors for React Native Reusables (they use internal APIs)
+      'import/namespace': 'off',
       // Also enable the base no-unused-vars rule (TypeScript version takes precedence)
       'no-unused-vars': 'off',
       // Ban the use of 'any' type
@@ -88,6 +136,19 @@ module.exports = defineConfig([
       ],
       // Disable exhaustive-deps rule for react-hooks
       'react-hooks/exhaustive-deps': 'off',
+    },
+  },
+  // App route files - ignore unused exports (Expo Router uses default exports)
+  {
+    files: [
+      'app/**/*.tsx',
+      'app/**/*.ts',
+      'drizzle.config.ts',
+      '*.config.js',
+      '*.config.ts',
+    ],
+    rules: {
+      'unused-imports/no-unused-vars': 'off', // Allow unused exports in route/config files
     },
   },
   // Database initialization - allow Proxy type assertions

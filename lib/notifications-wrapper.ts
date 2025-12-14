@@ -108,22 +108,6 @@ function getAllWebScheduledNotifications(): NotificationRequest[] {
 
 // Unified API
 
-export async function getNotificationPermissions(): Promise<NotificationPermissionStatus> {
-  if (Platform.OS === 'web') {
-    if (!isWebNotificationSupported()) {
-      return 'denied';
-    }
-    return Notification.permission === 'granted'
-      ? 'granted'
-      : Notification.permission === 'denied'
-        ? 'denied'
-        : 'undetermined';
-  }
-
-  const { status } = await ExpoNotifications.getPermissionsAsync();
-  return status === 'granted' ? 'granted' : status === 'denied' ? 'denied' : 'undetermined';
-}
-
 export async function requestNotificationPermissions(): Promise<boolean> {
   if (Platform.OS === 'web') {
     const permission = await requestWebNotificationPermission();

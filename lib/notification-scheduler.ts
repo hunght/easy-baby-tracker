@@ -26,7 +26,7 @@ import {
   getFormulaRules,
 } from '@/database/easy-formula-rules';
 
-export interface ScheduledFeedingNotification {
+interface ScheduledFeedingNotification {
   notificationId: string;
   scheduledTime: string; // ISO string
   feedingType: 'breast' | 'bottle' | 'solids';
@@ -137,7 +137,7 @@ export async function scheduleFeedingNotification(
   return notificationIdResult;
 }
 
-export async function scheduleEasyScheduleReminder(options: {
+async function scheduleEasyScheduleReminder(options: {
   targetDate: Date;
   activityType: EasyScheduleActivityType;
   label: string;
@@ -196,20 +196,6 @@ export async function cancelStoredScheduledNotification(): Promise<void> {
   }
 }
 
-// Get all scheduled notifications
-export async function getAllScheduledNotifications(): Promise<NotificationRequest[]> {
-  return await getAllScheduledNotificationsAsync();
-}
-
-// Cancel all scheduled notifications
-export async function cancelAllScheduledNotifications(): Promise<void> {
-  const active = await getActiveScheduledNotifications();
-  for (const notification of active) {
-    await cancelScheduledNotificationAsync(notification.notificationId);
-    await deleteScheduledNotificationByNotificationId(notification.notificationId);
-  }
-}
-
 // Restore and validate scheduled notifications on app startup
 // This ensures notifications persist even after app termination
 export async function restoreScheduledNotifications(): Promise<ScheduledFeedingNotification | null> {
@@ -224,7 +210,7 @@ export async function restoreScheduledNotifications(): Promise<ScheduledFeedingN
   // Check if the notification still exists in the OS
   const allScheduled = await getAllScheduledNotificationsAsync();
   const notificationExists = allScheduled.some(
-    (n) => n.identifier === feedingNotification.notificationId
+    (n: NotificationRequest) => n.identifier === feedingNotification.notificationId
   );
 
   if (!notificationExists) {
@@ -270,7 +256,7 @@ function timeStringToDate(time: string, baseDate: Date = new Date()): Date {
 }
 
 // Configuration constant for number of days ahead to schedule EASY reminders
-export const EASY_REMINDER_DAYS_AHEAD = 2;
+const EASY_REMINDER_DAYS_AHEAD = 2;
 
 export interface EasyScheduleReminderLabels {
   eat: string;

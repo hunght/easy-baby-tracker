@@ -1,10 +1,10 @@
-import { and, eq, gte, isNull, lte, or, type SQLWrapper } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, isNull, lte, or, type SQLWrapper } from 'drizzle-orm';
 
 import { db } from '@/database/db';
 import * as schema from '@/db/schema';
 import type { EasyFormulaRule, EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
 
-type FormulaRuleInsert = typeof schema.easyFormulaRules.$inferInsert;
+export type FormulaRuleInsert = typeof schema.easyFormulaRules.$inferInsert;
 type FormulaRuleSelect = typeof schema.easyFormulaRules.$inferSelect;
 
 /**
@@ -137,7 +137,9 @@ function dbToFormulaRule(record: FormulaRuleSelect): EasyFormulaRule {
     minWeeks: record.minWeeks,
     maxWeeks: record.maxWeeks,
     labelKey: record.labelKey ?? record.labelText ?? '',
+    labelText: record.labelText ?? null,
     ageRangeKey: record.ageRangeKey ?? record.ageRangeText ?? '',
+    ageRangeText: record.ageRangeText ?? null,
     cycleKey: record.cycleKey ?? record.cycleText ?? '',
     eatKey: record.eatKey ?? record.eatText ?? '',
     activityKey: record.activityKey ?? record.activityText ?? '',
@@ -146,6 +148,7 @@ function dbToFormulaRule(record: FormulaRuleSelect): EasyFormulaRule {
     logicKeys: JSON.parse(record.logicKeys ?? record.logicTexts ?? '[]'),
     // Parse phases from JSON, default to empty array if missing (old data)
     phases: record.phases ? JSON.parse(record.phases) : [],
+    validDate: record.validDate ?? null,
   };
 }
 
@@ -279,6 +282,68 @@ export async function getFormulaRuleByDate(
     .limit(1);
 
   return records[0] ? dbToFormulaRule(records[0]) : null;
+}
+
+/**
+ * Get predefined formula rules (not custom, not day-specific)
+ */
+export async function getPredefinedFormulaRules(): Promise<EasyFormulaRule[]> {
+  const records = await db
+    .select()
+    .from(schema.easyFormulaRules)
+    .where(
+      and(eq(schema.easyFormulaRules.isCustom, false), isNull(schema.easyFormulaRules.validDate))
+    )
+    .orderBy(schema.easyFormulaRules.minWeeks);
+
+  return records.map(dbToFormulaRule);
+}
+
+/**
+ * Get user custom formula rules (custom, not day-specific, for specific baby)
+ */
+export async function getUserCustomFormulaRules(babyId: number): Promise<EasyFormulaRule[]> {
+  const records = await db
+    .select()
+    .from(schema.easyFormulaRules)
+    .where(
+      and(
+        eq(schema.easyFormulaRules.babyId, babyId),
+        eq(schema.easyFormulaRules.isCustom, true),
+        isNull(schema.easyFormulaRules.validDate)
+      )
+    )
+    .orderBy(schema.easyFormulaRules.createdAt);
+
+  return records.map(dbToFormulaRule);
+}
+
+/**
+ * Get day-specific (temporary) formula rules for a baby
+ * These are custom rules that apply only to a specific date
+ */
+export async function getDaySpecificFormulaRules(babyId: number): Promise<EasyFormulaRule[]> {
+  const records = await db
+    .select()
+    .from(schema.easyFormulaRules)
+    .where(
+      and(
+        eq(schema.easyFormulaRules.babyId, babyId),
+        eq(schema.easyFormulaRules.isCustom, true),
+        isNotNull(schema.easyFormulaRules.validDate)
+      )
+    )
+    .orderBy(schema.easyFormulaRules.validDate);
+
+  const rules = records.map(dbToFormulaRule);
+
+  // Sort by date, most recent first
+  return rules.sort((a, b) => {
+    if (a.validDate && b.validDate) {
+      return b.validDate.localeCompare(a.validDate);
+    }
+    return 0;
+  });
 }
 
 /**

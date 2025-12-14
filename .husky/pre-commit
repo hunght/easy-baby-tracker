@@ -1,5 +1,5 @@
 # Type-check entire project
 npm run type-check
 
-# Format and lint staged files
+# Format and lint staged files (ESLint detects unused imports/vars and unused exports)
 npx lint-staged

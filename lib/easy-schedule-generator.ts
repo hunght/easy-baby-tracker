@@ -32,7 +32,9 @@ export type EasyFormulaRule = {
   minWeeks: number;
   maxWeeks: number | null;
   labelKey: string;
+  labelText?: string | null; // For custom rules that use direct text
   ageRangeKey: string;
+  ageRangeText?: string | null; // For custom rules that use direct text
   cycleKey: string;
   eatKey: string;
   activityKey: string;
@@ -41,6 +43,8 @@ export type EasyFormulaRule = {
   logicKeys: readonly string[];
   // Schedule phases - array of cycles with durations in minutes
   phases: readonly EasyCyclePhase[];
+  // Day-specific rule: if set, this rule only applies to this date (YYYY-MM-DD format)
+  validDate?: string | null;
 };
 
 /**
@@ -52,24 +56,6 @@ function addMinutes(time: string, minutes: number): string {
   date.setHours(hours, mins, 0, 0);
   date.setMinutes(date.getMinutes() + minutes);
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
-/**
- * Calculate age in months from birthdate
- */
-export function calculateAgeInMonths(birthDate: string): number {
-  const birth = new Date(birthDate);
-  const today = new Date();
-  const months =
-    (today.getFullYear() - birth.getFullYear()) * 12 + today.getMonth() - birth.getMonth();
-  return months;
-}
-
-export function calculateAgeInWeeks(birthDate: string): number {
-  const birth = new Date(birthDate);
-  const today = new Date();
-  const diffMs = today.getTime() - birth.getTime();
-  return Math.max(Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000)), 0);
 }
 
 type GenerateEasyScheduleOptions = {

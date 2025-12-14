@@ -1,4 +1,4 @@
-import { and, eq, gte, lte } from 'drizzle-orm';
+import { and, eq, gte } from 'drizzle-orm';
 
 import { getActiveBabyProfileId, requireActiveBabyProfileId } from '@/database/baby-profile';
 import { db } from '@/database/db';
@@ -9,7 +9,7 @@ type ScheduledNotificationSelect = typeof schema.scheduledNotifications.$inferSe
 type ScheduledNotificationInsert = typeof schema.scheduledNotifications.$inferInsert;
 
 // Re-export specific types
-export type ScheduledNotificationType = ScheduledNotificationSelect['notificationType'];
+type ScheduledNotificationType = ScheduledNotificationSelect['notificationType'];
 export type ScheduledNotificationRecord = ScheduledNotificationSelect;
 
 // Payload for creating scheduled notifications
@@ -45,34 +45,12 @@ export async function saveScheduledNotification(
   return result[0]?.id ?? 0;
 }
 
-// Get scheduled notification by notification ID
-export async function getScheduledNotificationByNotificationId(
-  notificationId: string,
-  babyId?: number
-): Promise<ScheduledNotificationRecord | null> {
-  const resolvedBabyId = await resolveBabyId(babyId);
-  const result = await db
-    .select()
-    .from(schema.scheduledNotifications)
-    .where(
-      and(
-        eq(schema.scheduledNotifications.notificationId, notificationId),
-        eq(schema.scheduledNotifications.babyId, resolvedBabyId)
-      )
-    )
-    .limit(1);
-
-  return result[0] ?? null;
-}
-
 // Get all scheduled notifications for a baby
-export async function getScheduledNotifications(
-  options?: {
-    babyId?: number;
-    notificationType?: ScheduledNotificationType;
-    includeExpired?: boolean;
-  }
-): Promise<ScheduledNotificationRecord[]> {
+export async function getScheduledNotifications(options?: {
+  babyId?: number;
+  notificationType?: ScheduledNotificationType;
+  includeExpired?: boolean;
+}): Promise<ScheduledNotificationRecord[]> {
   const { babyId: providedBabyId, notificationType, includeExpired = true } = options ?? {};
   const babyId = await resolveBabyId(providedBabyId);
 
@@ -130,38 +108,3 @@ export async function deleteScheduledNotificationByNotificationId(
       )
     );
 }
-
-// Delete a scheduled notification by database ID
-export async function deleteScheduledNotification(
-  id: number,
-  babyId?: number
-): Promise<void> {
-  const resolvedBabyId = await resolveBabyId(babyId);
-  await db
-    .delete(schema.scheduledNotifications)
-    .where(
-      and(
-        eq(schema.scheduledNotifications.id, id),
-        eq(schema.scheduledNotifications.babyId, resolvedBabyId)
-      )
-    );
-}
-
-// Clean up expired scheduled notifications
-export async function cleanupExpiredScheduledNotifications(babyId?: number): Promise<number> {
-  const resolvedBabyId = await resolveBabyId(babyId);
-  const now = Math.floor(Date.now() / 1000);
-
-  const result = await db
-    .delete(schema.scheduledNotifications)
-    .where(
-      and(
-        eq(schema.scheduledNotifications.babyId, resolvedBabyId),
-        lte(schema.scheduledNotifications.scheduledTime, now) // scheduledTime <= now (past)
-      )
-    )
-    .returning({ id: schema.scheduledNotifications.id });
-
-  return result.length;
-}
-
