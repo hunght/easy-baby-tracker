@@ -23,8 +23,6 @@ export const SCHEDULED_NOTIFICATIONS_QUERY_KEY = ['scheduledNotifications'] as c
 export const FORMULA_RULES_QUERY_KEY = ['formulaRules'] as const;
 export const formulaRuleByIdKey = (ruleId: string, babyId?: number) =>
   ['formulaRules', ruleId, babyId] as const;
-export const formulaRuleByAgeKey = (ageWeeks: number, babyId?: number) =>
-  ['formulaRules', 'age', ageWeeks, babyId] as const;
 export const PREDEFINED_FORMULA_RULES_QUERY_KEY = ['formulaRules', 'predefined'] as const;
 export const userCustomFormulaRulesKey = (babyId: number) =>
   ['formulaRules', 'userCustom', babyId] as const;

@@ -256,8 +256,20 @@ export async function updateSelectedEasyFormula(
   babyId: number,
   formulaId: string | null
 ): Promise<void> {
+  // Update the selected formula in database
   await db
     .update(schema.babyProfiles)
     .set({ selectedEasyFormulaId: formulaId })
     .where(eq(schema.babyProfiles.id, babyId));
+
+  // // Reschedule reminders if enabled (handled in backend for consistency)
+  // if (formulaId) {
+  //   try {
+  //     const { restoreEasyScheduleReminders } = await import('@/lib/notification-scheduler');
+  //     await restoreEasyScheduleReminders();
+  //   } catch (error) {
+  //     console.error('Failed to reschedule reminders after formula change:', error);
+  //     // Don't throw - formula update succeeded, reminder update is secondary
+  //   }
+  // }
 }

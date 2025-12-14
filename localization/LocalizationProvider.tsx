@@ -1,6 +1,5 @@
 import * as ExpoLocalization from 'expo-localization';
-import { useSegments } from 'expo-router';
-import { ReactNode, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { ReactNode, createContext, useContext, useMemo, useState } from 'react';
 
 import { Locale, translations } from './translations';
 import { supportedLocales } from './translations/index';
@@ -47,13 +46,6 @@ const interpolate = (template: string, params?: TranslateParams) => {
   });
 };
 
-// Track current page/route for better error context
-let currentPage = 'unknown';
-
-export function setCurrentPageForTranslation(page: string) {
-  currentPage = page;
-}
-
 const translateKey = (locale: Locale, key: string, options?: TranslateOptions): string => {
   const localized = resolveTemplate(key, locale);
   const fallback = resolveTemplate(key, fallbackLocale);
@@ -63,12 +55,12 @@ const translateKey = (locale: Locale, key: string, options?: TranslateOptions): 
     if (typeof fallback === 'string') {
       // Translation exists in fallback but not in current locale
       console.warn(
-        `[Translation] Missing key "${key}" for locale "${locale}" on page "${currentPage}", using fallback "${fallbackLocale}"`
+        `[Translation] Missing key "${key}" for locale "${locale}", using fallback "${fallbackLocale}"`
       );
     } else if (!options?.defaultValue) {
       // Translation doesn't exist in any locale and no defaultValue provided
       console.error(
-        `[Translation] Missing key "${key}" for locale "${locale}" and fallback "${fallbackLocale}" on page "${currentPage}". Using key as fallback.`
+        `[Translation] Missing key "${key}" for locale "${locale}" and fallback "${fallbackLocale}". Using key as fallback.`
       );
     }
   }
@@ -90,14 +82,9 @@ const detectInitialLocale = (): Locale => {
 
 export function LocalizationProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>(detectInitialLocale);
-  const segments = useSegments();
 
-  // Update current page for translation logging
-  useEffect(() => {
-    const pagePath = segments.length > 0 ? `/${segments.join('/')}` : '/';
-    setCurrentPageForTranslation(pagePath);
-    console.log(`[Page] Opened: ${pagePath} (locale: ${locale})`);
-  }, [segments, locale]);
+  // Note: useSegments removed to avoid navigation context issues during early renders
+  // Page tracking is now optional and can be re-added when navigation context is guaranteed
 
   const value = useMemo<LocalizationContextValue>(
     () => ({

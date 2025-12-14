@@ -2,7 +2,12 @@ import { and, eq, gte, isNotNull, isNull, lte, or, type SQLWrapper } from 'drizz
 
 import { db } from '@/database/db';
 import * as schema from '@/db/schema';
-import type { EasyFormulaRule, EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
+import type {
+  EasyFormulaRule,
+  EasyFormulaRuleId,
+  EasyCyclePhase,
+} from '@/lib/easy-schedule-generator';
+import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
 
 export type FormulaRuleInsert = typeof schema.easyFormulaRules.$inferInsert;
 type FormulaRuleSelect = typeof schema.easyFormulaRules.$inferSelect;
@@ -451,4 +456,99 @@ export async function deleteCustomFormulaRule(ruleId: string, babyId: number): P
         eq(schema.easyFormulaRules.isCustom, true)
       )
     );
+}
+
+/**
+ * Calculate duration in minutes between two time strings (HH:MM)
+ */
+function calculateDurationMinutes(startTime: string, endTime: string): number {
+  const [startHours, startMins] = startTime.split(':').map(Number);
+  const [endHours, endMins] = endTime.split(':').map(Number);
+
+  let startMinutes = startHours * 60 + startMins;
+  let endMinutes = endHours * 60 + endMins;
+
+  // Handle crossing midnight
+  if (endMinutes < startMinutes) {
+    endMinutes += 24 * 60;
+  }
+
+  return endMinutes - startMinutes;
+}
+
+/**
+ * Adjust schedule phase timing and update formula rule
+ * Gets current formula from baby profile, calculates new duration, and saves updated phases
+ */
+export async function adjustSchedulePhaseTiming(
+  babyId: number,
+  itemOrder: number,
+  newStartTime: string,
+  newEndTime: string
+): Promise<string> {
+  // Get baby profile and verify formula is selected
+  const babyProfile = await getActiveBabyProfile();
+  if (!babyProfile || babyProfile.id !== babyId) {
+    throw new Error('Baby profile not found');
+  }
+
+  if (!babyProfile.selectedEasyFormulaId) {
+    throw new Error('No formula selected for baby profile. Please select a formula first.');
+  }
+
+  // Get current formula rule
+  const currentRule = await getFormulaRuleById(babyProfile.selectedEasyFormulaId, babyId);
+  if (!currentRule) {
+    throw new Error(`Formula rule with ID "${babyProfile.selectedEasyFormulaId}" not found`);
+  }
+
+  // Calculate which cycle and item type is being adjusted
+  // Each EASY cycle has 4 schedule items: E=0, A=1, S=2, Y=3
+  const cycleIndex = Math.floor(itemOrder / 4);
+  const itemTypeIndex = itemOrder % 4; // 0=Eat, 1=Activity, 2=Sleep, 3=YourTime(overlaps Sleep)
+
+  if (cycleIndex >= currentRule.phases.length) {
+    throw new Error(`Invalid item order ${itemOrder} for ${currentRule.phases.length} cycles`);
+  }
+
+  // Calculate new duration from time adjustment
+  const newDuration = calculateDurationMinutes(newStartTime, newEndTime);
+  if (newDuration <= 0) {
+    throw new Error('Invalid duration: end time must be after start time');
+  }
+
+  // Clone phases and update the adjusted one
+  const phases: EasyCyclePhase[] = currentRule.phases.map((phase, idx) => {
+    if (idx === cycleIndex) {
+      // Update the specific property based on item type
+      switch (itemTypeIndex) {
+        case 0: // Eat
+          return { ...phase, eat: newDuration };
+        case 1: // Activity
+          return { ...phase, activity: newDuration };
+        case 2: // Sleep
+        case 3: // Your Time (overlaps with Sleep, adjust Sleep)
+          return { ...phase, sleep: newDuration };
+        default:
+          return { ...phase };
+      }
+    }
+    return { ...phase };
+  });
+
+  // Get today's date
+  const today = new Date().toISOString().split('T')[0];
+
+  // Clone the formula rule for today with adjusted phases
+  const daySpecificRuleId = await cloneFormulaRuleForDate(
+    babyId,
+    babyProfile.selectedEasyFormulaId,
+    today,
+    phases
+  );
+
+  // Update selectedEasyFormulaId to the day-specific rule
+  await updateSelectedEasyFormula(babyId, daySpecificRuleId);
+
+  return daySpecificRuleId;
 }

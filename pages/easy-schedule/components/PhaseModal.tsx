@@ -11,19 +11,12 @@ import { useNotification } from '@/components/NotificationContext';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
-import { recalculateScheduleFromItem } from '@/lib/easy-schedule-generator';
-import { cloneFormulaRuleForDate } from '@/database/easy-formula-rules';
-import { updateSelectedEasyFormula } from '@/database/baby-profile';
+import { adjustSchedulePhaseTiming } from '@/database/easy-formula-rules';
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 
 import type { BabyProfileRecord } from '@/database/baby-profile';
 
 const MINUTES_IN_DAY = 1440;
-
-function getTodayDateString(): string {
-  const now = new Date();
-  return now.toISOString().split('T')[0];
-}
 
 function minutesToDate(minutes: number): Date {
   const dayOffset = Math.floor(minutes / MINUTES_IN_DAY);
@@ -53,18 +46,9 @@ type PhaseModalProps = {
   onClose: () => void;
   onAdjustmentSaved: () => void;
   babyProfile: BabyProfileRecord | null;
-  scheduleItems: EasyScheduleItem[];
-  currentFormulaRuleId: string; // ID of the current formula rule to clone
 };
 
-export function PhaseModal({
-  phaseData,
-  onClose,
-  onAdjustmentSaved: _onAdjustmentSaved,
-  babyProfile,
-  scheduleItems,
-  currentFormulaRuleId,
-}: PhaseModalProps) {
+export function PhaseModal({ phaseData, onClose, babyProfile }: PhaseModalProps) {
   const { t } = useLocalization();
   const { showNotification } = useNotification();
   const brandColors = useBrandColor();
@@ -134,58 +118,16 @@ export function PhaseModal({
         throw new Error('Missing required data');
       }
 
-      const today = getTodayDateString();
-
-      // Recalculate schedule with the new adjustment
-      const recalculatedItems = recalculateScheduleFromItem(
-        scheduleItems,
+      // Call backend function to adjust phase timing and save
+      return await adjustSchedulePhaseTiming(
+        babyProfile.id,
         phaseData.item.order,
         startTimeValue,
         endTimeValue
       );
-
-      // Convert schedule items back to phases format
-      // Each EASY cycle has 4 items: E, A, S, Y
-      // We need to group them into phases: { eat, activity, sleep }
-      const phases: { eat: number; activity: number; sleep: number }[] = [];
-
-      for (let i = 0; i < recalculatedItems.length; i += 4) {
-        const eatItem = recalculatedItems[i];
-        const activityItem = recalculatedItems[i + 1];
-        const sleepItem = recalculatedItems[i + 2];
-        // Skip Y item (i + 3) as it overlaps with S
-
-        if (eatItem && activityItem && sleepItem) {
-          phases.push({
-            eat: eatItem.durationMinutes,
-            activity: activityItem.durationMinutes,
-            sleep: sleepItem.durationMinutes,
-          });
-        }
-      }
-
-      // Clone the formula rule for today with adjusted phases
-      let daySpecificRuleId: string | undefined;
-      if (phases.length > 0) {
-        daySpecificRuleId = await cloneFormulaRuleForDate(
-          babyProfile.id,
-          currentFormulaRuleId,
-          today,
-          phases
-        );
-        // Update selectedEasyFormulaId to the day-specific rule so it shows as selected
-        if (daySpecificRuleId) {
-          await updateSelectedEasyFormula(babyProfile.id, daySpecificRuleId);
-        }
-      }
-      return daySpecificRuleId;
     },
     onSuccess: () => {
-      // Invalidate queries to refresh day-specific rule and baby profile
-      const today = getTodayDateString();
-      queryClient.invalidateQueries({
-        queryKey: ['formulaRule', 'date', babyProfile?.id, today],
-      });
+      // Invalidate queries to refresh formula rule and baby profile
       queryClient.invalidateQueries({
         queryKey: BABY_PROFILE_QUERY_KEY,
       });

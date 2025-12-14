@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScrollView, View } from 'react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 
 import { Text } from '@/components/ui/text';
@@ -23,7 +23,6 @@ export default function EasyScheduleScreen() {
   const { t, locale } = useLocalization();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const wakeTimeSyncedRef = useRef<string | null>(null);
 
   const { data: babyProfile } = useQuery({
     queryKey: BABY_PROFILE_QUERY_KEY,
@@ -31,22 +30,15 @@ export default function EasyScheduleScreen() {
     staleTime: 30 * 1000,
   });
 
-  // Initialize from baby profile's stored wake time, or default to 07:00
-  const [firstWakeTime, setFirstWakeTime] = useState(babyProfile?.firstWakeTime ?? '07:00');
+  // Use wake time from baby profile, or default to 07:00
+  const firstWakeTime = babyProfile?.firstWakeTime ?? '07:00';
+
   const [phaseModalData, setPhaseModalData] = useState<{
     item: EasyScheduleItem;
     timing: { startMinutes: number; endMinutes: number };
     endTimeLabel: string;
     durationLabel: string;
   } | null>(null);
-
-  // Sync local state when baby profile's wake time changes in DB
-  useEffect(() => {
-    if (babyProfile?.firstWakeTime && babyProfile.firstWakeTime !== wakeTimeSyncedRef.current) {
-      wakeTimeSyncedRef.current = babyProfile.firstWakeTime;
-      setFirstWakeTime(babyProfile.firstWakeTime);
-    }
-  }, [babyProfile?.firstWakeTime]);
 
   const labels = useMemo(
     () => ({
@@ -209,8 +201,6 @@ export default function EasyScheduleScreen() {
           });
         }}
         babyProfile={babyProfile ?? null}
-        scheduleItems={scheduleItems}
-        currentFormulaRuleId={formulaRule?.id ?? ''}
       />
     </View>
   );
