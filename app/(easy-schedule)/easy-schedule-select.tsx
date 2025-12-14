@@ -11,14 +11,12 @@ import {
   userCustomFormulaRulesKey,
   daySpecificFormulaRulesKey,
   formulaRuleByIdKey,
-  formulaRuleByAgeKey,
 } from '@/constants/query-keys';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
 import { getAppState } from '@/database/app-state';
 import {
   getFormulaRuleById,
-  getFormulaRuleByAge,
   getPredefinedFormulaRules,
   getUserCustomFormulaRules,
   getDaySpecificFormulaRules,
@@ -32,14 +30,6 @@ import {
 } from '@/lib/notification-scheduler';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
-function calculateAgeInWeeks(birthDate: string): number {
-  const birth = new Date(birthDate);
-  const now = new Date();
-  const diffMs = now.getTime() - birth.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  return Math.floor(diffDays / 7);
-}
-
 export default function EasyScheduleSelectScreen() {
   const { t } = useLocalization();
   const router = useRouter();
@@ -52,8 +42,6 @@ export default function EasyScheduleSelectScreen() {
     queryFn: getActiveBabyProfile,
     staleTime: 30 * 1000,
   });
-
-  const ageWeeks = babyProfile?.birthDate ? calculateAgeInWeeks(babyProfile.birthDate) : undefined;
 
   // Fetch predefined formulas
   const { data: predefinedRules = [], isLoading: isLoadingPredefined } = useQuery({
@@ -78,24 +66,13 @@ export default function EasyScheduleSelectScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Get the active formula by selected ID
-  const { data: formulaById } = useQuery({
+  // Get the active formula by selected ID from database
+  const { data: formulaRule } = useQuery({
     queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
     queryFn: () => getFormulaRuleById(babyProfile!.selectedEasyFormulaId!, babyProfile?.id),
     enabled: !!babyProfile?.selectedEasyFormulaId,
     staleTime: 5 * 60 * 1000,
   });
-
-  // Get the active formula by age as fallback
-  const { data: formulaByAge } = useQuery({
-    queryKey: formulaRuleByAgeKey(ageWeeks ?? 0, babyProfile?.id),
-    queryFn: () => getFormulaRuleByAge(ageWeeks!, babyProfile?.id),
-    enabled: ageWeeks !== undefined,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Use selected formula if valid, otherwise use age-based
-  const formulaRule = formulaById || formulaByAge;
 
   const isLoadingFormula = isLoadingPredefined || isLoadingUserCustom || isLoadingDaySpecific;
 

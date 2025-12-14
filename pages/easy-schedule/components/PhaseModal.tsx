@@ -13,6 +13,8 @@ import { useLocalization } from '@/localization/LocalizationProvider';
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
 import { recalculateScheduleFromItem } from '@/lib/easy-schedule-generator';
 import { cloneFormulaRuleForDate } from '@/database/easy-formula-rules';
+import { updateSelectedEasyFormula } from '@/database/baby-profile';
+import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 
 import type { BabyProfileRecord } from '@/database/baby-profile';
 
@@ -163,15 +165,29 @@ export function PhaseModal({
       }
 
       // Clone the formula rule for today with adjusted phases
+      let daySpecificRuleId: string | undefined;
       if (phases.length > 0) {
-        await cloneFormulaRuleForDate(babyProfile.id, currentFormulaRuleId, today, phases);
+        daySpecificRuleId = await cloneFormulaRuleForDate(
+          babyProfile.id,
+          currentFormulaRuleId,
+          today,
+          phases
+        );
+        // Update selectedEasyFormulaId to the day-specific rule so it shows as selected
+        if (daySpecificRuleId) {
+          await updateSelectedEasyFormula(babyProfile.id, daySpecificRuleId);
+        }
       }
+      return daySpecificRuleId;
     },
     onSuccess: () => {
-      // Invalidate queries to refresh day-specific rule
+      // Invalidate queries to refresh day-specific rule and baby profile
       const today = getTodayDateString();
       queryClient.invalidateQueries({
         queryKey: ['formulaRule', 'date', babyProfile?.id, today],
+      });
+      queryClient.invalidateQueries({
+        queryKey: BABY_PROFILE_QUERY_KEY,
       });
 
       // Calculate old values for notification

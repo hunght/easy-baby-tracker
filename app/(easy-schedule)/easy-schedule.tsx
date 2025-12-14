@@ -1,33 +1,18 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScrollView, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 
 import { Text } from '@/components/ui/text';
-import {
-  BABY_PROFILE_QUERY_KEY,
-  formulaRuleByIdKey,
-  formulaRuleByAgeKey,
-} from '@/constants/query-keys';
+import { BABY_PROFILE_QUERY_KEY, formulaRuleByIdKey } from '@/constants/query-keys';
 import { getActiveBabyProfile } from '@/database/baby-profile';
-import {
-  getFormulaRuleById,
-  getFormulaRuleByAge,
-  getFormulaRuleByDate,
-} from '@/database/easy-formula-rules';
+import { getFormulaRuleById } from '@/database/easy-formula-rules';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
 import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
 import { PhaseModal } from '@/pages/easy-schedule/components/PhaseModal';
 import { generateEasySchedule } from '@/lib/easy-schedule-generator';
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
-
-function calculateAgeInWeeks(birthDate: string): number {
-  const birth = new Date(birthDate);
-  const now = new Date();
-  const diffMs = now.getTime() - birth.getTime();
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  return Math.floor(diffDays / 7);
-}
 
 function timeStringToMinutes(time: string): number {
   const [hours, minutes] = time.split(':').map(Number);
@@ -36,6 +21,7 @@ function timeStringToMinutes(time: string): number {
 
 export default function EasyScheduleScreen() {
   const { t, locale } = useLocalization();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const wakeTimeSyncedRef = useRef<string | null>(null);
 
@@ -62,8 +48,6 @@ export default function EasyScheduleScreen() {
     }
   }, [babyProfile?.firstWakeTime]);
 
-  const ageWeeks = babyProfile?.birthDate ? calculateAgeInWeeks(babyProfile.birthDate) : undefined;
-
   const labels = useMemo(
     () => ({
       eat: t('easySchedule.activityLabels.eat'),
@@ -75,52 +59,32 @@ export default function EasyScheduleScreen() {
     [t]
   );
 
-  // Get today's date
-  const today = useMemo(() => {
-    const now = new Date();
-    return now.toISOString().split('T')[0];
-  }, []);
-
-  // Get day-specific formula rule for today (if exists)
-  const { data: daySpecificRule } = useQuery({
-    queryKey: ['formulaRule', 'date', babyProfile?.id, today],
-    queryFn: () => getFormulaRuleByDate(babyProfile!.id, today),
-    enabled: !!babyProfile?.id,
-    staleTime: 30 * 1000,
-  });
-
-  // Get active formula by selected ID (only if no day-specific rule)
-  const { data: formulaById } = useQuery({
+  // Get active formula by selected ID
+  const { data: formulaRule, isLoading: isLoadingFormula } = useQuery({
     queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
     queryFn: () => getFormulaRuleById(babyProfile!.selectedEasyFormulaId!, babyProfile?.id),
-    enabled: !!babyProfile?.selectedEasyFormulaId && !daySpecificRule,
+    enabled: !!babyProfile?.selectedEasyFormulaId,
     staleTime: 5 * 60 * 1000,
   });
 
-  // Get active formula by age as fallback (only if no day-specific rule)
-  const { data: formulaByAge, isLoading: isLoadingFormula } = useQuery({
-    queryKey: formulaRuleByAgeKey(ageWeeks ?? 0, babyProfile?.id),
-    queryFn: () => getFormulaRuleByAge(ageWeeks!, babyProfile?.id),
-    enabled: ageWeeks !== undefined && !daySpecificRule,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Redirect to selection page if no formula is selected
+  useEffect(() => {
+    if (babyProfile && !isLoadingFormula && !babyProfile.selectedEasyFormulaId) {
+      router.replace('/(easy-schedule)/easy-schedule-select');
+    }
+  }, [babyProfile, isLoadingFormula, router]);
 
-  // Use day-specific rule first, then selected formula, then age-based
-  const formulaRule = daySpecificRule || formulaById || formulaByAge;
-
-  // Check if there's a day-specific rule (custom schedule for today)
-  const hasCustomSchedule = !!daySpecificRule;
+  // Check if there's a day-specific rule (custom schedule) by checking if validDate exists
+  const hasCustomSchedule = !!formulaRule?.validDate;
 
   const formulaNotice = formulaRule
-    ? babyProfile?.selectedEasyFormulaId
-      ? t('easySchedule.formulaTable.selectedNotice', {
-          params: { label: t(formulaRule.labelKey) },
-        })
-      : babyProfile
-        ? t('easySchedule.formulaTable.autoDetected', {
-            params: { label: t(formulaRule.labelKey) },
-          })
-        : t('easySchedule.formulaTable.defaultNotice')
+    ? t('easySchedule.formulaTable.selectedNotice', {
+        params: {
+          label: formulaRule.labelKey
+            ? t(formulaRule.labelKey)
+            : formulaRule.labelText || formulaRule.id,
+        },
+      })
     : t('easySchedule.formulaTable.defaultNotice');
 
   const [scheduleItems, setScheduleItems] = useState<EasyScheduleItem[]>([]);
@@ -236,12 +200,12 @@ export default function EasyScheduleScreen() {
         phaseData={phaseModalData}
         onClose={closePhaseModal}
         onAdjustmentSaved={() => {
-          // Invalidate queries to refresh day-specific rule and adjustments
+          // Invalidate formula rule query and baby profile to refresh UI
           queryClient.invalidateQueries({
-            queryKey: ['formulaRule', 'date', babyProfile?.id, today],
+            queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
           });
           queryClient.invalidateQueries({
-            queryKey: ['timeAdjustments', babyProfile?.id, today],
+            queryKey: BABY_PROFILE_QUERY_KEY,
           });
         }}
         babyProfile={babyProfile ?? null}
