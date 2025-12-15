@@ -86,6 +86,11 @@ Only create custom hooks when they:
 - ✅ **ALWAYS** use Tailwind utility classes via `className` prop
 - Use `cn()` from `@/lib/utils` to merge Tailwind classes
 
+### NativeWind Shadow Classes Exception
+- ⚠️ **EXCEPTION**: Shadow classes (`shadow-*`) on `Pressable`/`TouchableOpacity` cause navigation context errors
+- ✅ Use native `style` prop for shadows on pressable components (see Common Gotchas)
+- ✅ Shadow classes are safe on `View` components
+
 ### Theme Colors
 - Brand colors: `bg-primary` (#5B7FFF), `bg-accent` (#FF8AB8), `bg-mint` (#7FE3CC), `bg-lavender` (#C7B9FF)
 - Border radius: Cards = `rounded-lg` (12px), Buttons = `rounded-md` (8px), Pills = `rounded-pill` (24px)
@@ -231,6 +236,35 @@ const mutation = useMutation({
 - **Edit mode queries**: Always set `enabled: isEditing` to avoid unnecessary fetches
 - **React Native Reusables**: Not all shadcn/ui components available - check `docs/ui-components-library.md`
 - **TabsTrigger children**: Must wrap text in `<Text>` component
+- **NativeWind shadow classes bug (CRITICAL)**: Shadow utility classes (`shadow-md`, `shadow-sm`, `shadow-lg`, `shadow-lavender/15`, `shadow-black/5`, etc.) on `Pressable` or `TouchableOpacity` components cause the error: `"Couldn't find a navigation context. Have you wrapped your app with 'NavigationContainer'?"`. This is a known NativeWind 4 bug where shadow classes internally require navigation context during style computation.
+
+  **Affected components**: `Pressable`, `TouchableOpacity`, and any component that renders these (e.g., `Card` with `onPress` prop)
+
+  **Safe components**: `View` components can use shadow classes safely - the bug only affects pressable components.
+
+  **Workaround**: Always use React Native's native `style` prop for shadows on pressable components:
+
+```tsx
+// ❌ DON'T - Causes navigation context error
+<Pressable className="shadow-md shadow-lavender/15">
+<Card className="shadow-sm" onPress={handlePress}>
+<TouchableOpacity className="shadow-sm shadow-black/5">
+
+// ✅ DO - Use native style prop
+<Pressable
+  style={{
+    shadowColor: 'rgba(199, 185, 255, 0.15)',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 4, // Required for Android
+  }}>
+
+// ✅ DO - View components are safe
+<View className="shadow-sm shadow-black/5">
+```
+
+  **Files already fixed**: `components/ui/card.tsx`, `app/(tabs)/settings.tsx`, `app/(profiles)/profile-selection.tsx`, `app/(tracking)/feeding.tsx`, `pages/easy-schedule/components/SchedulePhaseCard.tsx`
 
 ## Component Organization
 

@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
@@ -16,18 +16,22 @@ import {
 
 // Component that runs after migrations are complete
 export function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
+  console.log('[MigrationCompleteHandler] Component rendering');
 
   // Initialize notification handler and restore scheduled notifications
   // This runs only after migrations are complete
   useEffect(() => {
+    console.log('[MigrationCompleteHandler] useEffect running');
+
     // Skip notifications setup on web (not fully supported)
     if (Platform.OS === 'web') {
+      console.log('[MigrationCompleteHandler] Skipping on web platform');
       return;
     }
 
     // Set up notification handler (only available on native)
     if (setNotificationHandler) {
+      console.log('[MigrationCompleteHandler] Setting up notification handler');
       setNotificationHandler({
         handleNotification: async () => ({
           shouldShowAlert: true,
@@ -41,15 +45,27 @@ export function MigrationCompleteHandler({ children }: { children: React.ReactNo
 
     // Restore scheduled notifications on app startup
     // This ensures notifications persist even after app termination
+    console.log('[MigrationCompleteHandler] Calling restoreScheduledNotifications');
     restoreScheduledNotifications().catch((error) => {
-      console.error('Failed to restore scheduled notifications:', error);
+      console.error('[MigrationCompleteHandler] Failed to restore scheduled notifications:', error);
     });
 
     // Restore and reschedule EASY schedule reminders on app startup
     // This ensures reminders are always scheduled for the configured number of days ahead
-    restoreEasyScheduleReminders().catch((error) => {
-      console.error('Failed to restore EASY schedule reminders:', error);
-    });
+    console.log('[MigrationCompleteHandler] Calling restoreEasyScheduleReminders');
+    restoreEasyScheduleReminders()
+      .then(() => {
+        console.log(
+          '[MigrationCompleteHandler] restoreEasyScheduleReminders completed successfully'
+        );
+      })
+      .catch((error) => {
+        console.error(
+          '[MigrationCompleteHandler] Failed to restore EASY schedule reminders:',
+          error
+        );
+        console.error('[MigrationCompleteHandler] Error stack:', error.stack);
+      });
 
     // Handle notification tap - navigate to appropriate screen
     const handleNotificationResponse = async (
@@ -63,8 +79,11 @@ export function MigrationCompleteHandler({ children }: { children: React.ReactNo
       if (data?.type === 'feeding') {
         // Cancel the scheduled notification since user is now logging the feeding
         await cancelStoredScheduledNotification();
-        // Navigate to feeding screen
-        router.push('/(tracking)/feeding');
+        // Navigate to feeding screen - use imperative router (doesn't require hook context)
+        // Delay to ensure navigation is ready
+        setTimeout(() => {
+          router.push('/(tracking)/feeding');
+        }, 100);
       }
       // Add other notification types here as needed
     };
@@ -97,7 +116,7 @@ export function MigrationCompleteHandler({ children }: { children: React.ReactNo
       responseSubscription?.remove();
       receivedSubscription.remove();
     };
-  }, [router]);
+  }, []);
 
   return <>{children}</>;
 }

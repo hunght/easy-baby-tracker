@@ -102,6 +102,9 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
 export function useLocalization() {
   const context = useContext(LocalizationContext);
   if (!context) {
+    console.error(
+      '[useLocalization] Context not found - component may be outside LocalizationProvider'
+    );
     throw new Error('useLocalization must be used within LocalizationProvider');
   }
   return context;

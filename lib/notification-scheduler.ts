@@ -271,10 +271,16 @@ export async function rescheduleEasyReminders(
   labels: EasyScheduleReminderLabels,
   daysAhead: number = EASY_REMINDER_DAYS_AHEAD
 ): Promise<number> {
+  console.log('[rescheduleEasyReminders] Starting for baby profile:', babyProfile.id);
+
   // Cancel existing EASY schedule reminders
   const existingNotifications = await getScheduledNotifications({
     notificationType: 'sleep',
   });
+  console.log(
+    '[rescheduleEasyReminders] Found existing notifications:',
+    existingNotifications.length
+  );
   for (const notification of existingNotifications) {
     try {
       const data = notification.data ? JSON.parse(notification.data) : null;
@@ -385,21 +391,29 @@ export async function rescheduleEasyReminders(
  * Should be called after app initialization and migrations are complete.
  */
 export async function restoreEasyScheduleReminders(): Promise<void> {
+  console.log('[restoreEasyScheduleReminders] Starting');
   try {
     // Check if reminders are enabled
     const { getAppState } = await import('@/database/app-state');
     const reminderEnabledValue = await getAppState('easyScheduleReminderEnabled');
     const reminderEnabled = reminderEnabledValue === 'true';
+    console.log('[restoreEasyScheduleReminders] Reminder enabled:', reminderEnabled);
 
     if (!reminderEnabled) {
+      console.log('[restoreEasyScheduleReminders] Reminders disabled, exiting');
       return;
     }
 
     // Get active baby profile
     const { getActiveBabyProfile } = await import('@/database/baby-profile');
     const babyProfile = await getActiveBabyProfile();
+    console.log(
+      '[restoreEasyScheduleReminders] Baby profile:',
+      babyProfile ? `found (id: ${babyProfile.id})` : 'not found'
+    );
 
     if (!babyProfile) {
+      console.log('[restoreEasyScheduleReminders] No baby profile, exiting');
       return;
     }
 

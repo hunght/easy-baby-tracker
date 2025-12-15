@@ -82,7 +82,9 @@ export default function EasyScheduleScreen() {
   const [scheduleItems, setScheduleItems] = useState<EasyScheduleItem[]>([]);
 
   useEffect(() => {
-    if (!formulaRule || isLoadingFormula) return;
+    if (!formulaRule || isLoadingFormula) {
+      return;
+    }
 
     // Generate schedule from formula rule phases
     const items = generateEasySchedule(firstWakeTime, {
@@ -176,6 +178,7 @@ export default function EasyScheduleScreen() {
           const groupBaseMinutes = firstPhase
             ? timeStringToMinutes(firstPhase.startTime)
             : baseMinutes;
+
           return (
             <ScheduleGroup
               key={group.number}

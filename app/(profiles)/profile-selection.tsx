@@ -60,7 +60,14 @@ export default function ProfileSelectionScreen() {
               <Pressable
                 key={profile.id}
                 onPress={() => handleSelectProfile(profile.id)}
-                className="gap-1 rounded-2xl bg-card p-5 shadow-sm">
+                className="gap-1 rounded-2xl bg-card p-5"
+                style={{
+                  shadowColor: 'rgba(0, 0, 0, 0.05)',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 1,
+                  shadowRadius: 2,
+                  elevation: 1,
+                }}>
                 <Text className="text-xl font-bold text-neutral-900">{profile.nickname}</Text>
                 <Text className="text-base text-neutral-500">
                   {t('common.monthsOld', { params: { count: monthsOld } })}

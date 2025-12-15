@@ -345,7 +345,14 @@ export default function FeedingScreen() {
           <View className="mb-6 gap-2">
             <Pressable
               onPress={handleScheduleReminder}
-              className={`flex-row items-center justify-center gap-2 rounded-xl px-5 py-3.5 shadow-sm ${scheduledNotificationId ? 'bg-muted-foreground' : 'bg-blue-500'}`}>
+              className={`flex-row items-center justify-center gap-2 rounded-xl px-5 py-3.5 ${scheduledNotificationId ? 'bg-muted-foreground' : 'bg-blue-500'}`}
+              style={{
+                shadowColor: 'rgba(0, 0, 0, 0.05)',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 1,
+                shadowRadius: 2,
+                elevation: 1,
+              }}>
               <MaterialCommunityIcons
                 name={scheduledNotificationId ? 'bell-off' : 'bell'}
                 size={20}

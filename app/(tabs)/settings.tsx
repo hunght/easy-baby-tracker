@@ -73,7 +73,14 @@ export default function SettingsScreen() {
             return (
               <Pressable
                 key={profile.id}
-                className="flex-row items-center justify-between rounded-lg bg-card p-5 shadow-sm"
+                className="flex-row items-center justify-between rounded-lg bg-card p-5"
+                style={{
+                  shadowColor: 'rgba(0, 0, 0, 0.05)',
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 1,
+                  shadowRadius: 2,
+                  elevation: 1,
+                }}
                 onPress={() =>
                   router.push({
                     pathname: '/profile-edit',

@@ -1,4 +1,4 @@
-import { TouchableOpacity, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { Text } from '@/components/ui/text';
 
@@ -100,14 +100,20 @@ export function SchedulePhaseCard({
   const clampedProgress = Math.min(Math.max(progressRatio, 0), 1);
 
   return (
-    <TouchableOpacity
+    <Pressable
       className={`relative min-h-[94px] flex-1 items-start justify-center overflow-hidden rounded-lg px-2.5 py-2.5 ${
-        isCurrentPhase
-          ? 'border border-lavender shadow-md shadow-lavender/15 dark:shadow-lavender/30'
-          : 'border border-transparent'
+        isCurrentPhase ? 'border border-lavender' : 'border border-transparent'
       } ${!isCurrentPhase && isPastPhase ? 'opacity-60' : ''}`}
-      style={{ backgroundColor: phaseStyles.container.backgroundColor }}
-      activeOpacity={0.9}
+      style={{
+        backgroundColor: phaseStyles.container.backgroundColor,
+        ...(isCurrentPhase && {
+          shadowColor: isDark ? 'rgba(199, 185, 255, 0.30)' : 'rgba(199, 185, 255, 0.15)',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 1,
+          shadowRadius: 6,
+          elevation: 4,
+        }),
+      }}
       onPress={onPress}>
       {isCurrentPhase && (
         <View
@@ -127,6 +133,6 @@ export function SchedulePhaseCard({
         </Text>
         <Text className="mt-0.5 text-xs text-muted-foreground">{duration}</Text>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 }
