@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { ScrollView, View, Pressable, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Pressable, TouchableOpacity, Alert } from 'react-native';
 
 import { Text } from '@/components/ui/text';
 import { useNotification } from '@/components/NotificationContext';
@@ -18,6 +18,7 @@ import {
   getPredefinedFormulaRules,
   getUserCustomFormulaRules,
   getDaySpecificFormulaRules,
+  deleteCustomFormulaRule,
 } from '@/database/easy-formula-rules';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import type { EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
@@ -96,11 +97,63 @@ export default function EasyScheduleSelectScreen() {
     mutation.mutate(ruleId);
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: async (payload: { ruleId: string; babyId: number }) => {
+      await deleteCustomFormulaRule(payload.ruleId, payload.babyId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userCustomFormulaRulesKey(babyProfile?.id ?? 0) });
+      queryClient.invalidateQueries({ queryKey: daySpecificFormulaRulesKey(babyProfile?.id ?? 0) });
+      showNotification(t('common.deleteSuccess'), 'success');
+    },
+    onError: (error) => {
+      console.error('Failed to delete formula:', error);
+      showNotification(t('common.deleteError'), 'error');
+    },
+  });
+
+  const handleDeleteFormula = (ruleId: string, ruleName: string) => {
+    // Check if this is the currently active formula
+    if (formulaRule?.id === ruleId) {
+      showNotification(t('easySchedule.deleteFormula.cannotDeleteActive'), 'error');
+      return;
+    }
+
+    if (!babyProfile?.id) {
+      showNotification(t('common.error'), 'error');
+      return;
+    }
+
+    Alert.alert(
+      t('easySchedule.deleteFormula.title'),
+      t('easySchedule.deleteFormula.message', { params: { name: ruleName } }),
+      [
+        {
+          text: t('easySchedule.deleteFormula.cancel'),
+          style: 'cancel',
+        },
+        {
+          text: t('easySchedule.deleteFormula.confirm'),
+          style: 'destructive',
+          onPress: () => {
+            deleteMutation.mutate({ ruleId, babyId: babyProfile.id });
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View className="flex-1 bg-background">
       <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-4">
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/');
+            }
+          }}
           accessibilityRole="button"
           accessibilityLabel={t('common.close')}>
           <Text className="text-base font-semibold text-accent">{t('common.close')}</Text>
@@ -111,7 +164,12 @@ export default function EasyScheduleSelectScreen() {
           ellipsizeMode="tail">
           {t('easySchedule.selectFormulaTitle')}
         </Text>
-        <View className="w-7" />
+        <Pressable
+          onPress={() => router.push('/(easy-schedule)/easy-schedule-create')}
+          accessibilityRole="button"
+          accessibilityLabel={t('easySchedule.createFormula')}>
+          <Ionicons name="add-circle-outline" size={28} color={brandColors.colors.primary} />
+        </Pressable>
       </View>
 
       {isLoadingFormula && (
@@ -134,16 +192,18 @@ export default function EasyScheduleSelectScreen() {
               {predefinedRules.map((rule) => {
                 const isActive = rule.id === formulaRule?.id;
                 return (
-                  <TouchableOpacity
+                  <View
                     key={rule.id}
-                    className={`rounded-lg border p-4 ${
+                    className={`flex-row items-center gap-2 rounded-lg border ${
                       isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
-                    }`}
-                    accessibilityRole="button"
-                    accessibilityLabel={rule.labelKey ? t(rule.labelKey) : rule.labelText || ''}
-                    disabled={mutation.isPending}
-                    onPress={() => handleSelectFormula(rule.id)}>
-                    <View className="flex-row items-center justify-between">
+                    }`}>
+                    <TouchableOpacity
+                      className="flex-1 p-4"
+                      accessibilityRole="button"
+                      accessibilityLabel={rule.labelKey ? t(rule.labelKey) : rule.labelText || ''}
+                      onPress={() =>
+                        router.push(`/(easy-schedule)/easy-schedule-form?ruleId=${rule.id}`)
+                      }>
                       <View className="flex-1">
                         <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
                           {rule.labelKey ? t(rule.labelKey) : rule.labelText || rule.id}
@@ -152,13 +212,30 @@ export default function EasyScheduleSelectScreen() {
                           {rule.ageRangeKey ? t(rule.ageRangeKey) : rule.ageRangeText || ''}
                         </Text>
                       </View>
-                      <Ionicons
-                        name={isActive ? 'checkmark-circle' : 'chevron-forward'}
-                        size={20}
-                        color={isActive ? brandColors.colors.lavender : brandColors.colors.black}
-                      />
-                    </View>
-                  </TouchableOpacity>
+                    </TouchableOpacity>
+                    {isActive ? (
+                      <View className="px-4 py-4">
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={24}
+                          color={brandColors.colors.primary}
+                        />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        className="px-4 py-4"
+                        accessibilityRole="button"
+                        accessibilityLabel="Select formula"
+                        disabled={mutation.isPending}
+                        onPress={() => handleSelectFormula(rule.id)}>
+                        <Ionicons
+                          name="radio-button-off"
+                          size={24}
+                          color={brandColors.colors.secondary}
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 );
               })}
             </View>
@@ -173,16 +250,18 @@ export default function EasyScheduleSelectScreen() {
               {userCustomRules.map((rule) => {
                 const isActive = rule.id === formulaRule?.id;
                 return (
-                  <TouchableOpacity
+                  <View
                     key={rule.id}
-                    className={`rounded-lg border p-4 ${
+                    className={`flex-row items-center gap-2 rounded-lg border ${
                       isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
-                    }`}
-                    accessibilityRole="button"
-                    accessibilityLabel={rule.labelText || rule.labelKey || rule.id}
-                    disabled={mutation.isPending}
-                    onPress={() => handleSelectFormula(rule.id)}>
-                    <View className="flex-row items-center justify-between">
+                    }`}>
+                    <TouchableOpacity
+                      className="flex-1 p-4"
+                      accessibilityRole="button"
+                      accessibilityLabel={rule.labelText || rule.labelKey || rule.id}
+                      onPress={() =>
+                        router.push(`/(easy-schedule)/easy-schedule-form?ruleId=${rule.id}`)
+                      }>
                       <View className="flex-1">
                         <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
                           {rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)}
@@ -193,13 +272,47 @@ export default function EasyScheduleSelectScreen() {
                             t('easySchedule.formulaGroups.custom')}
                         </Text>
                       </View>
+                    </TouchableOpacity>
+                    {isActive ? (
+                      <View className="px-4 py-4">
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={24}
+                          color={brandColors.colors.primary}
+                        />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        className="px-4 py-4"
+                        accessibilityRole="button"
+                        accessibilityLabel="Select formula"
+                        disabled={mutation.isPending}
+                        onPress={() => handleSelectFormula(rule.id)}>
+                        <Ionicons
+                          name="radio-button-off"
+                          size={24}
+                          color={brandColors.colors.secondary}
+                        />
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      className="p-4"
+                      accessibilityRole="button"
+                      accessibilityLabel="Delete"
+                      disabled={deleteMutation.isPending}
+                      onPress={() =>
+                        handleDeleteFormula(
+                          rule.id,
+                          rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)
+                        )
+                      }>
                       <Ionicons
-                        name={isActive ? 'checkmark-circle' : 'chevron-forward'}
+                        name="trash-outline"
                         size={20}
-                        color={isActive ? brandColors.colors.lavender : brandColors.colors.black}
+                        color={brandColors.colors.destructive}
                       />
-                    </View>
-                  </TouchableOpacity>
+                    </TouchableOpacity>
+                  </View>
                 );
               })}
             </View>
@@ -221,20 +334,22 @@ export default function EasyScheduleSelectScreen() {
                     })
                   : '';
                 return (
-                  <TouchableOpacity
+                  <View
                     key={rule.id}
-                    className={`rounded-lg border p-4 ${
+                    className={`flex-row items-center gap-2 rounded-lg border ${
                       isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
-                    }`}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      rule.labelText ||
-                      (rule.labelKey ? t(rule.labelKey) : rule.id) +
-                        (dateStr ? ` - ${dateStr}` : '')
-                    }
-                    disabled={mutation.isPending}
-                    onPress={() => handleSelectFormula(rule.id)}>
-                    <View className="flex-row items-center justify-between">
+                    }`}>
+                    <TouchableOpacity
+                      className="flex-1 p-4"
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        rule.labelText ||
+                        (rule.labelKey ? t(rule.labelKey) : rule.id) +
+                          (dateStr ? ` - ${dateStr}` : '')
+                      }
+                      onPress={() =>
+                        router.push(`/(easy-schedule)/easy-schedule-form?ruleId=${rule.id}`)
+                      }>
                       <View className="flex-1">
                         <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
                           {rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)}
@@ -243,13 +358,47 @@ export default function EasyScheduleSelectScreen() {
                           {dateStr || t('easySchedule.formulaGroups.temporary')}
                         </Text>
                       </View>
+                    </TouchableOpacity>
+                    {isActive ? (
+                      <View className="px-4 py-4">
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={24}
+                          color={brandColors.colors.primary}
+                        />
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        className="px-4 py-4"
+                        accessibilityRole="button"
+                        accessibilityLabel="Select formula"
+                        disabled={mutation.isPending}
+                        onPress={() => handleSelectFormula(rule.id)}>
+                        <Ionicons
+                          name="radio-button-off"
+                          size={24}
+                          color={brandColors.colors.secondary}
+                        />
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      className="p-4"
+                      accessibilityRole="button"
+                      accessibilityLabel="Delete"
+                      disabled={deleteMutation.isPending}
+                      onPress={() =>
+                        handleDeleteFormula(
+                          rule.id,
+                          rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)
+                        )
+                      }>
                       <Ionicons
-                        name={isActive ? 'checkmark-circle' : 'chevron-forward'}
+                        name="trash-outline"
                         size={20}
-                        color={isActive ? brandColors.colors.lavender : brandColors.colors.black}
+                        color={brandColors.colors.destructive}
                       />
-                    </View>
-                  </TouchableOpacity>
+                    </TouchableOpacity>
+                  </View>
                 );
               })}
             </View>

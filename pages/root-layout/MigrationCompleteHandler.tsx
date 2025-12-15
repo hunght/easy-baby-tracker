@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
+import { seedPredefinedFormulas } from '@/database/easy-formula-rules';
 import {
   cancelStoredScheduledNotification,
   restoreScheduledNotifications,
@@ -28,6 +29,12 @@ export function MigrationCompleteHandler({ children }: { children: React.ReactNo
       console.log('[MigrationCompleteHandler] Skipping on web platform');
       return;
     }
+
+    // Seed predefined formulas if not already present
+    console.log('[MigrationCompleteHandler] Seeding predefined formulas');
+    seedPredefinedFormulas().catch((error) => {
+      console.error('[MigrationCompleteHandler] Failed to seed formulas:', error);
+    });
 
     // Set up notification handler (only available on native)
     if (setNotificationHandler) {

@@ -18,115 +18,26 @@ type FormulaRuleSelect = typeof schema.easyFormulaRules.$inferSelect;
 export async function seedPredefinedFormulas(): Promise<void> {
   const predefinedRules: FormulaRuleInsert[] = [
     {
-      id: 'newborn',
+      id: 'easy3',
       isCustom: false,
       minWeeks: 0,
-      maxWeeks: 16,
-      labelKey: 'easySchedule.formulas.newborn.label',
-      ageRangeKey: 'easySchedule.formulas.newborn.ageRange',
-      cycleKey: 'easySchedule.formulas.newborn.cycle',
-      eatKey: 'easySchedule.formulas.newborn.eat',
-      activityKey: 'easySchedule.formulas.newborn.activity',
-      sleepKey: 'easySchedule.formulas.newborn.sleep',
-      yourTimeKey: 'easySchedule.formulas.newborn.yourTime',
-      logicKeys: JSON.stringify([
-        'easySchedule.formulas.newborn.logic.cycle',
-        'easySchedule.formulas.newborn.logic.activity',
-      ]),
-      // 4 naps: Eat 35m, Activity 55m, Sleep varies
+      maxWeeks: 6,
+      labelKey: 'easySchedule.formulas.easy3.label',
+      ageRangeKey: 'easySchedule.formulas.easy3.ageRange',
+      description: `<b>Độ tuổi được áp dụng:</b> Khi bé được khoảng 0-6 tuần: Mẹ có thể bắt đầu áp dụng EASY 3 sau khi bé được khoảng 2 tuần tuổi và có cân nặng trung bình từ từ 2.9 kg trở lên. Các bé sinh non dưới 28 tuần sẽ cần đạt đủ số cân nặng trung bình, và cần đưa về tuổi hiệu chỉnh (tức tuổi trên ngày dự kiến sinh) thì mới áp dụng E.A.S.Y.
+
+<b>Ăn:</b> Mỗi cử bú cách nhau khoảng 2.5-3 giờ, bé được ăn ngay sau khi ngủ dậy, bé bú một cử mất khoảng 20-40 phút.
+
+<b>Hoạt động:</b> Sau khi ăn xong bé được ợ hơi ký, được thay bỉm và mẹ quan sát tín hiệu để thực hiện trình tự ngủ cho bé. Tổng thời gian để bé hoạt động, bao gồm cả thực hiện trình tự ngủ khá ngắn chỉ khoảng 20-30 phút.
+
+<b>Ngủ:</b> Bé ngủ 4 giấc ngày bao gồm 3 giấc dài 1,5-2h và 1 giấc ngắn cuối ngày từ 30-40 phút. Bé ngủ đêm 11-13 giờ và thời gian thức trước các giấc ngủ của bé là 45-60 phút.`,
+      // 4 naps: E 45m, A 15m, S varies (2h, 2h, 2h, 45m)
       phases: JSON.stringify([
-        { eat: 35, activity: 55, sleep: 120 },
-        { eat: 35, activity: 55, sleep: 120 },
-        { eat: 35, activity: 55, sleep: 90 },
-        { eat: 35, activity: 55, sleep: 60 },
+        { eat: 45, activity: 15, sleep: 120 },
+        { eat: 45, activity: 15, sleep: 120 },
+        { eat: 45, activity: 15, sleep: 120 },
+        { eat: 45, activity: 15, sleep: 45 },
       ]),
-    },
-    {
-      id: 'fourToSixMonths',
-      isCustom: false,
-      minWeeks: 16,
-      maxWeeks: 24,
-      labelKey: 'easySchedule.formulas.fourToSixMonths.label',
-      ageRangeKey: 'easySchedule.formulas.fourToSixMonths.ageRange',
-      cycleKey: 'easySchedule.formulas.fourToSixMonths.cycle',
-      eatKey: 'easySchedule.formulas.fourToSixMonths.eat',
-      activityKey: 'easySchedule.formulas.fourToSixMonths.activity',
-      sleepKey: 'easySchedule.formulas.fourToSixMonths.sleep',
-      yourTimeKey: 'easySchedule.formulas.fourToSixMonths.yourTime',
-      logicKeys: JSON.stringify([
-        'easySchedule.formulas.fourToSixMonths.logic.cycle',
-        'easySchedule.formulas.fourToSixMonths.logic.balance',
-      ]),
-      // 3 naps: Eat 30m, Activity 90m, Sleep varies
-      phases: JSON.stringify([
-        { eat: 30, activity: 90, sleep: 120 },
-        { eat: 30, activity: 90, sleep: 120 },
-        { eat: 30, activity: 90, sleep: 90 },
-      ]),
-    },
-    {
-      id: 'sixToNineMonths',
-      isCustom: false,
-      minWeeks: 24,
-      maxWeeks: 40,
-      labelKey: 'easySchedule.formulas.sixToNineMonths.label',
-      ageRangeKey: 'easySchedule.formulas.sixToNineMonths.ageRange',
-      cycleKey: 'easySchedule.formulas.sixToNineMonths.cycle',
-      eatKey: 'easySchedule.formulas.sixToNineMonths.eat',
-      activityKey: 'easySchedule.formulas.sixToNineMonths.activity',
-      sleepKey: 'easySchedule.formulas.sixToNineMonths.sleep',
-      yourTimeKey: 'easySchedule.formulas.sixToNineMonths.yourTime',
-      logicKeys: JSON.stringify([
-        'easySchedule.formulas.sixToNineMonths.logic.window',
-        'easySchedule.formulas.sixToNineMonths.logic.dropNap',
-      ]),
-      // 3 naps: Eat 30m, Activity 120m, Sleep varies
-      phases: JSON.stringify([
-        { eat: 30, activity: 120, sleep: 90 },
-        { eat: 30, activity: 120, sleep: 90 },
-        { eat: 30, activity: 120, sleep: 60 },
-      ]),
-    },
-    {
-      id: 'nineToTwelveMonths',
-      isCustom: false,
-      minWeeks: 40,
-      maxWeeks: 52,
-      labelKey: 'easySchedule.formulas.nineToTwelveMonths.label',
-      ageRangeKey: 'easySchedule.formulas.nineToTwelveMonths.ageRange',
-      cycleKey: 'easySchedule.formulas.nineToTwelveMonths.cycle',
-      eatKey: 'easySchedule.formulas.nineToTwelveMonths.eat',
-      activityKey: 'easySchedule.formulas.nineToTwelveMonths.activity',
-      sleepKey: 'easySchedule.formulas.nineToTwelveMonths.sleep',
-      yourTimeKey: 'easySchedule.formulas.nineToTwelveMonths.yourTime',
-      logicKeys: JSON.stringify([
-        'easySchedule.formulas.nineToTwelveMonths.logic.feedBalance',
-        'easySchedule.formulas.nineToTwelveMonths.logic.capNap',
-      ]),
-      // 2 naps: Eat 25m, Activity 150m, Sleep varies
-      phases: JSON.stringify([
-        { eat: 25, activity: 150, sleep: 90 },
-        { eat: 25, activity: 150, sleep: 120 },
-      ]),
-    },
-    {
-      id: 'toddler',
-      isCustom: false,
-      minWeeks: 52,
-      maxWeeks: null,
-      labelKey: 'easySchedule.formulas.toddler.label',
-      ageRangeKey: 'easySchedule.formulas.toddler.ageRange',
-      cycleKey: 'easySchedule.formulas.toddler.cycle',
-      eatKey: 'easySchedule.formulas.toddler.eat',
-      activityKey: 'easySchedule.formulas.toddler.activity',
-      sleepKey: 'easySchedule.formulas.toddler.sleep',
-      yourTimeKey: 'easySchedule.formulas.toddler.yourTime',
-      logicKeys: JSON.stringify([
-        'easySchedule.formulas.toddler.logic.napStart',
-        'easySchedule.formulas.toddler.logic.duration',
-      ]),
-      // 1 nap: Eat 20m, Activity 240m, Sleep 120m
-      phases: JSON.stringify([{ eat: 20, activity: 240, sleep: 120 }]),
     },
   ];
 
@@ -145,12 +56,7 @@ function dbToFormulaRule(record: FormulaRuleSelect): EasyFormulaRule {
     labelText: record.labelText ?? null,
     ageRangeKey: record.ageRangeKey ?? record.ageRangeText ?? '',
     ageRangeText: record.ageRangeText ?? null,
-    cycleKey: record.cycleKey ?? record.cycleText ?? '',
-    eatKey: record.eatKey ?? record.eatText ?? '',
-    activityKey: record.activityKey ?? record.activityText ?? '',
-    sleepKey: record.sleepKey ?? record.sleepText ?? '',
-    yourTimeKey: record.yourTimeKey ?? record.yourTimeText ?? '',
-    logicKeys: JSON.parse(record.logicKeys ?? record.logicTexts ?? '[]'),
+    description: record.description ?? null,
     // Parse phases from JSON, default to empty array if missing (old data)
     phases: record.phases ? JSON.parse(record.phases) : [],
     validDate: record.validDate ?? null,
@@ -427,12 +333,7 @@ export async function createCustomFormulaRule(
     maxWeeks: rule.maxWeeks,
     labelText: rule.name,
     ageRangeText: `${rule.minWeeks} - ${rule.maxWeeks ?? '∞'} weeks`,
-    cycleText: rule.cycleKey,
-    eatText: rule.eatKey,
-    activityText: rule.activityKey,
-    sleepText: rule.sleepKey,
-    yourTimeText: rule.yourTimeKey,
-    logicTexts: JSON.stringify(rule.logicKeys),
+    description: rule.description ?? null,
     phases: JSON.stringify(rule.phases),
   };
 
@@ -441,6 +342,34 @@ export async function createCustomFormulaRule(
     .values(insert)
     .returning({ id: schema.easyFormulaRules.id });
   return result[0].id;
+}
+
+/**
+ * Update custom formula rule
+ */
+export async function updateCustomFormulaRule(
+  ruleId: string,
+  babyId: number,
+  rule: Omit<EasyFormulaRule, 'id'> & { name: string }
+): Promise<void> {
+  await db
+    .update(schema.easyFormulaRules)
+    .set({
+      labelText: rule.name,
+      ageRangeText: `${rule.minWeeks} - ${rule.maxWeeks ?? '∞'} weeks`,
+      minWeeks: rule.minWeeks,
+      maxWeeks: rule.maxWeeks,
+      description: rule.description ?? null,
+      phases: JSON.stringify(rule.phases),
+      updatedAt: Math.floor(Date.now() / 1000),
+    })
+    .where(
+      and(
+        eq(schema.easyFormulaRules.id, ruleId),
+        eq(schema.easyFormulaRules.babyId, babyId),
+        eq(schema.easyFormulaRules.isCustom, true)
+      )
+    );
 }
 
 /**

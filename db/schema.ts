@@ -289,18 +289,8 @@ export const easyFormulaRules = sqliteTable(
     labelText: text('label_text'),
     ageRangeKey: text('age_range_key'),
     ageRangeText: text('age_range_text'),
-    cycleKey: text('cycle_key'),
-    cycleText: text('cycle_text'),
-    eatKey: text('eat_key'),
-    eatText: text('eat_text'),
-    activityKey: text('activity_key'),
-    activityText: text('activity_text'),
-    sleepKey: text('sleep_key'),
-    sleepText: text('sleep_text'),
-    yourTimeKey: text('your_time_key'),
-    yourTimeText: text('your_time_text'),
-    logicKeys: text('logic_keys'), // JSON array of translation keys
-    logicTexts: text('logic_texts'), // JSON array of text strings
+    // HTML description for custom formulas
+    description: text('description'),
 
     // Schedule phases - JSON array of cycles, each cycle contains durations in minutes
     // Format: [{ eat: 35, activity: 55, sleep: 120 }, { eat: 30, activity: 60, sleep: 90 }, ...]

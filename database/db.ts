@@ -8,7 +8,13 @@ const expoDb = openDatabaseSync(DATABASE_NAME, {
   enableChangeListener: false,
 });
 
-const db = drizzle(expoDb);
+const db = drizzle(expoDb, {
+  logger: {
+    logQuery(query, params) {
+      console.log('🔵 [query]', query, '📦 [params]', params);
+    },
+  },
+});
 
 // Export instances directly - no Proxy needed on native
 export { expoDb, db };

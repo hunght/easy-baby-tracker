@@ -35,12 +35,8 @@ export type EasyFormulaRule = {
   labelText?: string | null; // For custom rules that use direct text
   ageRangeKey: string;
   ageRangeText?: string | null; // For custom rules that use direct text
-  cycleKey: string;
-  eatKey: string;
-  activityKey: string;
-  sleepKey: string;
-  yourTimeKey: string;
-  logicKeys: readonly string[];
+  // HTML description for custom formulas
+  description?: string | null;
   // Schedule phases - array of cycles with durations in minutes
   phases: readonly EasyCyclePhase[];
   // Day-specific rule: if set, this rule only applies to this date (YYYY-MM-DD format)

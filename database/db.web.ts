@@ -38,7 +38,13 @@ export async function initDatabase(): Promise<void> {
         enableChangeListener: false,
       });
 
-      _db = drizzle(_expoDb);
+      _db = drizzle(_expoDb, {
+        logger: {
+          logQuery(query, params) {
+            console.log('🔵 [query]', query, '📦 [params]', params);
+          },
+        },
+      });
     } catch (error) {
       console.error('Failed to initialize database:', error);
       initPromise = null;
