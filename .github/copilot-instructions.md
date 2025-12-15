@@ -2,9 +2,17 @@
 
 ## Project Overview
 
-BabyEase NativeWind is a **React Native baby tracking app** built with **Expo 54+** (New Architecture), **Expo Router**, **NativeWind 4**, **Clerk Auth**, and **SQLite** (Drizzle ORM). This is a complete UI refactor using [React Native Reusables](https://rnr-docs.vercel.app/) components with Tailwind CSS instead of StyleSheet patterns.
+BabyEase NativeWind is a **React Native baby tracking app** built with:
 
-**Critical**: NativeWind 4/Tailwind classes ONLY - `StyleSheet.create()` is banned by ESLint. All components follow shadcn/ui patterns via React Native Reusables.
+- **Expo 54+** (New Architecture) with iOS, Android, and **full web support**
+- **Expo Router** (file-based routing)
+- **NativeWind 4** (Tailwind CSS for React Native)
+- **Clerk Auth** (authentication with OAuth)
+- **SQLite + Drizzle ORM** (local database with WASM-based web support)
+- **React Native Reusables** (shadcn/ui-inspired components)
+- **React Query** (data fetching and caching)
+
+**Critical**: NativeWind 4/Tailwind classes ONLY - `StyleSheet.create()` is **banned by ESLint**. All components follow shadcn/ui patterns via React Native Reusables.
 
 ## Code Organization Philosophy
 
@@ -92,18 +100,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 ### Database & State
 
 - **SQLite + Drizzle ORM**: Schema in `db/schema.ts`, migrations in `drizzle/`
-- **Web support**: Auto-initialized via `DatabaseInitializer` in `app/_layout.tsx` (uses SharedArrayBuffer)
+- **Web support**: WASM-based SQLite initialization via `DatabaseInitializer` in `app/_layout.tsx`
+  - Uses `openDatabaseAsync()` on web (async), `openDatabaseSync()` on native
+  - Metro config adds WASM support + SharedArrayBuffer headers (`Cross-Origin-Embedder-Policy`, `Cross-Origin-Opener-Policy`)
+  - Native: `database/db.ts`, Web: `database/db.web.ts` with Proxy pattern for lazy initialization
 - **Timestamps**: ALWAYS Unix seconds (`Math.floor(Date.now() / 1000)`), NEVER milliseconds
 - **Database modules** (`database/*.ts`): `save{Activity}()`, `get{Activities}()` auto-inject `babyId` via `requireActiveBabyProfileId()`
-- **React Query**: Keys in `constants/query-keys.ts`, mutations invalidate queries on success
-- **Migrations**: Auto-run on startup via `useMigrations`, generate with `npm run db:generate`
+- **React Query**: Keys centralized in `constants/query-keys.ts`, mutations invalidate queries on success
+- **Migrations**: Auto-run on startup via `MigrationHandler`, generate with `npm run db:generate`
 - **Dev tools**: `expo-drizzle-studio-plugin` opens in Expo dev tools (native only)
 
 ### Routing & Navigation
 
-- **Expo Router**: File-based routing - tabs in `app/(tabs)/`, modals at root, auth in `app/(auth)/`
-- **Modal screens**: Activity trackers (feeding, sleep, diaper) use `presentation: 'modal'` in stack options
+- **Expo Router**: File-based routing with route groups:
+  - `app/(tabs)/` - Main tab navigation (tracking, stats, easy schedule, settings)
+  - `app/(tracking)/` - Modal screens for activities (feeding, sleep, diaper, etc.)
+  - `app/(profiles)/` - Baby profile management modals
+  - `app/(auth)/` - Authentication screens (sign-in, sign-up, etc.)
+  - `app/(dev)/` - Development utilities
+- **Modal screens**: Use `presentation: 'modal'` in `_layout.tsx` within route groups
 - **Navigation**: `router.push()`, `router.back()`, edit mode via `useLocalSearchParams<{ id: string }>()`
+- **Anchor tab**: Set to `(tabs)/tracking` via `unstable_settings` in root `_layout.tsx`
 
 ### Localization
 
@@ -136,6 +153,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 - **Lint/format**: `npm run lint:fix`, `npm run format`
 - **Database**: `npm run db:generate` (migration), browse via Expo dev tools
 - **Build**: EAS Build configured in `eas.json` (profiles: development, preview, production)
+- **Publishing**:
+  - `npm run publish` - Full iOS + Android build & submit
+  - `npm run publish:android` / `npm run publish:ios` - Platform-specific
+  - `npm run publish:build-only` / `npm run publish:submit-only` - Split workflow
+- **Android Release**: `npm run release:android` (automated versioning & Google Play promotion)
+  - Supports `--patch`, `--minor`, `--major` for version bumps
+  - `--auto-promote` for automatic staged rollout promotion
+  - Uses `scripts/release-android.js` for automation
 
 ### First-Time Setup
 
@@ -214,11 +239,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 ### Add New Activity Screen
 
-1. Create modal screen `app/{activity}.tsx` using Tailwind classes
+1. Create modal screen `app/(tracking)/{activity}.tsx` using Tailwind classes
 2. Use components: `Button`, `Card`, `Input`, `Badge` from `components/ui/`
-3. Add database module in `database/{activity}.ts` (same pattern as existing)
-4. Register route in `app/_layout.tsx` with `presentation: 'modal'`
-5. Add translations to `localization/translations/{activity}.ts`
+3. Add database module in `database/{activity}.ts` (follow pattern: `save{Activity}()`, `get{Activities}()`, auto-inject `babyId`)
+4. Add query keys to `constants/query-keys.ts`
+5. Modal registration handled automatically by route group `app/(tracking)/_layout.tsx`
+6. Add translations to `localization/translations/{activity}.ts`
 
 ### Add React Native Reusables Component
 
