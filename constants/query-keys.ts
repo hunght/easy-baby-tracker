@@ -28,3 +28,8 @@ export const userCustomFormulaRulesKey = (babyId: number) =>
   ['formulaRules', 'userCustom', babyId] as const;
 export const daySpecificFormulaRulesKey = (babyId: number) =>
   ['formulaRules', 'daySpecific', babyId] as const;
+
+// Habits
+export const HABIT_DEFINITIONS_QUERY_KEY = ['habitDefinitions'] as const;
+export const BABY_HABITS_QUERY_KEY = ['babyHabits'] as const;
+export const HABIT_LOGS_QUERY_KEY = ['habitLogs'] as const;

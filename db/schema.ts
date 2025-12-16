@@ -313,3 +313,80 @@ export const easyFormulaRules = sqliteTable(
     unique('idx_formula_rules_baby_date_unique').on(table.babyId, table.validDate),
   ]
 );
+
+// ============================================
+// HABIT TRACKING TABLES
+// ============================================
+
+// Predefined habit definitions
+export const habitDefinitions = sqliteTable('habit_definitions', {
+  id: text('id').primaryKey().notNull(), // e.g., 'tummy_time', 'brushing_teeth'
+  category: text('category')
+    .notNull()
+    .$type<'health' | 'learning' | 'physical' | 'sleep' | 'social' | 'nutrition'>(),
+  iconName: text('icon_name').notNull(), // Lucide icon name
+  labelKey: text('label_key').notNull(), // Translation key for habit name
+  descriptionKey: text('description_key').notNull(), // Translation key for description
+  minAgeMonths: integer('min_age_months').default(0),
+  maxAgeMonths: integer('max_age_months'), // NULL for no upper limit
+  defaultFrequency: text('default_frequency')
+    .notNull()
+    .$type<'daily' | 'twice_daily' | 'multiple_daily' | 'weekly'>(),
+  sortOrder: integer('sort_order').default(0), // For ordering within category
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+});
+
+// User's selected habits for each baby
+export const babyHabits = sqliteTable(
+  'baby_habits',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    babyId: integer('baby_id')
+      .notNull()
+      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
+    habitDefinitionId: text('habit_definition_id')
+      .notNull()
+      .references(() => habitDefinitions.id),
+    isActive: integer('is_active', { mode: 'boolean' }).default(true),
+    targetFrequency: text('target_frequency').$type<
+      'daily' | 'twice_daily' | 'multiple_daily' | 'weekly'
+    >(), // Override default frequency
+    reminderTime: text('reminder_time'), // Optional reminder HH:MM
+    reminderDays: text('reminder_days'), // JSON array of days: [0,1,2,3,4,5,6] for Sun-Sat, or preset like "daily", "weekdays", "weekends"
+    createdAt: integer('created_at', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
+  },
+  (table) => [
+    index('idx_baby_habits_baby_id').on(table.babyId),
+    index('idx_baby_habits_definition').on(table.habitDefinitionId),
+    unique('idx_baby_habits_unique').on(table.babyId, table.habitDefinitionId),
+  ]
+);
+
+// Individual habit log entries
+export const habitLogs = sqliteTable(
+  'habit_logs',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    babyId: integer('baby_id')
+      .notNull()
+      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
+    babyHabitId: integer('baby_habit_id')
+      .notNull()
+      .references(() => babyHabits.id, { onDelete: 'cascade' }),
+    completedAt: integer('completed_at', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
+    duration: integer('duration', { mode: 'number' }), // Optional duration in seconds
+    notes: text('notes'),
+    recordedAt: integer('recorded_at', { mode: 'number' })
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
+  },
+  (table) => [
+    index('idx_habit_logs_baby_id').on(table.babyId),
+    index('idx_habit_logs_baby_habit_id').on(table.babyHabitId),
+    index('idx_habit_logs_completed_at').on(table.completedAt),
+  ]
+);

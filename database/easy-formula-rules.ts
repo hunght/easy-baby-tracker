@@ -1,4 +1,4 @@
-import { and, eq, gte, isNotNull, isNull, lte, or, type SQLWrapper } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, isNull, lte, or, sql, type SQLWrapper } from 'drizzle-orm';
 
 import { db } from '@/database/db';
 import * as schema from '@/db/schema';
@@ -24,13 +24,7 @@ export async function seedPredefinedFormulas(): Promise<void> {
       maxWeeks: 6,
       labelKey: 'easySchedule.formulas.easy3.label',
       ageRangeKey: 'easySchedule.formulas.easy3.ageRange',
-      description: `<b>Độ tuổi được áp dụng:</b> Khi bé được khoảng 0-6 tuần: Mẹ có thể bắt đầu áp dụng EASY 3 sau khi bé được khoảng 2 tuần tuổi và có cân nặng trung bình từ từ 2.9 kg trở lên. Các bé sinh non dưới 28 tuần sẽ cần đạt đủ số cân nặng trung bình, và cần đưa về tuổi hiệu chỉnh (tức tuổi trên ngày dự kiến sinh) thì mới áp dụng E.A.S.Y.
-
-<b>Ăn:</b> Mỗi cử bú cách nhau khoảng 2.5-3 giờ, bé được ăn ngay sau khi ngủ dậy, bé bú một cử mất khoảng 20-40 phút.
-
-<b>Hoạt động:</b> Sau khi ăn xong bé được ợ hơi ký, được thay bỉm và mẹ quan sát tín hiệu để thực hiện trình tự ngủ cho bé. Tổng thời gian để bé hoạt động, bao gồm cả thực hiện trình tự ngủ khá ngắn chỉ khoảng 20-30 phút.
-
-<b>Ngủ:</b> Bé ngủ 4 giấc ngày bao gồm 3 giấc dài 1,5-2h và 1 giấc ngắn cuối ngày từ 30-40 phút. Bé ngủ đêm 11-13 giờ và thời gian thức trước các giấc ngủ của bé là 45-60 phút.`,
+      description: 'easySchedule.formulas.easy3.description',
       // 4 naps: E 45m, A 15m, S varies (2h, 2h, 2h, 45m)
       phases: JSON.stringify([
         { eat: 45, activity: 15, sleep: 120 },
@@ -39,9 +33,36 @@ export async function seedPredefinedFormulas(): Promise<void> {
         { eat: 45, activity: 15, sleep: 45 },
       ]),
     },
+    {
+      id: 'easy3_5',
+      isCustom: false,
+      minWeeks: 6,
+      maxWeeks: 8,
+      labelKey: 'easySchedule.formulas.easy3_5.label',
+      ageRangeKey: 'easySchedule.formulas.easy3_5.ageRange',
+      description: 'easySchedule.formulas.easy3_5.description',
+      // Cycle 1: 7:00 - 10:30 (3.5h) | E 45, A 45, S 120
+      // Cycle 2: 10:30 - 14:00 (3.5h) | E 45, A 45, S 120
+      // Cycle 3: 14:00 - 17:00 (3h) | E 45, A 45, S 90
+      // Cycle 4: 17:00 - 18:30 (1.5h) | E 30, A 30, S 30
+      phases: JSON.stringify([
+        { eat: 45, activity: 45, sleep: 120 },
+        { eat: 45, activity: 45, sleep: 120 },
+        { eat: 45, activity: 45, sleep: 90 },
+        { eat: 30, activity: 30, sleep: 30 },
+      ]),
+    },
   ];
 
-  await db.insert(schema.easyFormulaRules).values(predefinedRules).onConflictDoNothing();
+  await db
+    .insert(schema.easyFormulaRules)
+    .values(predefinedRules)
+    .onConflictDoUpdate({
+      target: schema.easyFormulaRules.id,
+      set: {
+        description: sql`excluded.description`,
+      },
+    });
 }
 
 /**

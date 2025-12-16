@@ -8,6 +8,13 @@
       "when": 1765780092207,
       "tag": "0000_narrow_harrier",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1765796046718,
+      "tag": "0001_perfect_vance_astro",
+      "breakpoints": true
     }
   ]
 }

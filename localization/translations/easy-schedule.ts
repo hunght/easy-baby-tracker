@@ -155,6 +155,14 @@ export const easySchedule = {
       easy3: {
         label: 'E.A.S.Y. 3',
         ageRange: '0–6 weeks',
+        description:
+          'Applicable age: 0-6 weeks\n\nEat: Every 2.5-3 hours, 20-40 mins duration.\n\nActivity: 20-30 mins including wind down.\n\nSleep: 4 naps (3x 1.5-2h, 1x 30-40m). Night sleep 11-13h.',
+      },
+      easy3_5: {
+        label: 'E.A.S.Y. 3.5',
+        ageRange: '6–8 weeks',
+        description:
+          'Applicable age: 6-8 weeks\n\nEat: Every 3.5 hours, 45 mins duration.\n\nActivity: Wake window ~1.5h (including feed).\n\nSleep: 3 naps (2x 2h, 1x 1.5h) + 30m catnap.',
       },
     },
 
@@ -337,6 +345,14 @@ export const easySchedule = {
       easy3: {
         label: 'E.A.S.Y. 3',
         ageRange: '0–6 tuần',
+        description:
+          'Độ tuổi áp dụng: 0-6 tuần\n\nĂn: Cách nhau 2.5-3 giờ, kéo dài 20-40 phút.\n\nHoạt động: 20-30 phút bao gồm trình tự ngủ.\n\nNgủ: 4 giấc (3 giấc 1.5-2h, 1 giấc 30-40p). Ngủ đêm 11-13h.',
+      },
+      easy3_5: {
+        label: 'E.A.S.Y. 3.5',
+        ageRange: '6–8 tuần',
+        description:
+          'Độ tuổi áp dụng: 6-8 tuần\n\nĂn: Cách nhau 3.5 giờ, kéo dài 45 phút.\n\nHoạt động: Thời gian thức ~1.5h (bao gồm ăn).\n\nNgủ: 3 giấc (2 giấc 2h, 1 giấc 1.5h) + giấc ngắn 30p.',
       },
     },
 

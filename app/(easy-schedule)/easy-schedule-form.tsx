@@ -101,15 +101,22 @@ export default function EasyScheduleFormScreen() {
     setFormulaName(formulaRule.labelText || safeTranslateForInit(formulaRule.labelKey));
     setMinWeeks(formulaRule.minWeeks.toString());
     setMaxWeeks(formulaRule.maxWeeks?.toString() || '');
-    setDescription(formulaRule.description || '');
 
-    setPhases(
-      formulaRule.phases.map((p) => ({
-        eat: p.eat.toString(),
-        activity: p.activity.toString(),
-        sleep: p.sleep.toString(),
-      }))
-    );
+    // Process phases - phases are already typed as EasyCyclePhase[] from dbToFormulaRule
+    const processedPhases = formulaRule.phases.map((p) => ({
+      eat: p.eat.toString(),
+      activity: p.activity.toString(),
+      sleep: p.sleep.toString(),
+    }));
+    setPhases(processedPhases);
+
+    // Process description - translate if it looks like a key
+    const desc = formulaRule.description || '';
+    if (desc && desc.includes('.') && desc.startsWith('easySchedule.')) {
+      setDescription(t(desc));
+    } else {
+      setDescription(desc);
+    }
   }, [formulaRule, t]);
 
   // Update mutation
