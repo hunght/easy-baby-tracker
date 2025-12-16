@@ -1,0 +1,1 @@
+ALTER TABLE `baby_habits` ADD `reminder_days` text;

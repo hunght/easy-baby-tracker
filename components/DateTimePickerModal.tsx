@@ -1,7 +1,6 @@
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import React, { useEffect, useState } from 'react';
-import { Modal, Platform, View } from 'react-native';
-import { Button } from '@/components/ui/button';
+import { Modal, Platform, Pressable, View, GestureResponderEvent } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
@@ -136,19 +135,30 @@ export function DateTimePickerModal({
     }
   }
 
-  // On iOS, show the modal with spinner
+  // On iOS, show the modal with spinner - tappable outside to close
   return (
     <Modal transparent={true} animationType="slide" visible={visible} onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/50">
-        <View className="rounded-t-[20px] bg-background pb-8">
-          <View className="flex-row justify-end border-b border-border p-2">
-            <Button variant="ghost" onPress={onClose}>
-              <Text className="font-semibold">{t('common.done')}</Text>
-            </Button>
+      <Pressable className="flex-1 justify-end bg-black/50" onPress={onClose}>
+        <Pressable
+          onPress={(e: GestureResponderEvent) => e.stopPropagation()}
+          className="rounded-t-[20px] bg-background pb-8">
+          <View className="flex-row justify-between border-b border-border px-4 py-3">
+            <Pressable
+              onPress={onClose}
+              className="h-12 items-center justify-center rounded-xl px-6 active:bg-muted">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.cancel', { defaultValue: 'Cancel' })}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={onClose}
+              className="h-12 items-center justify-center rounded-xl px-6 active:bg-accent/20">
+              <Text className="text-base font-semibold text-accent">{t('common.done')}</Text>
+            </Pressable>
           </View>
           <DateTimePicker value={value} mode={mode} display="spinner" onChange={onChange} />
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

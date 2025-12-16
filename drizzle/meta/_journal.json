@@ -15,6 +15,13 @@
       "when": 1765796046718,
       "tag": "0001_perfect_vance_astro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1765851474934,
+      "tag": "0002_orange_mathemanic",
+      "breakpoints": true
     }
   ]
 }

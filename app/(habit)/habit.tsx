@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import {
   Baby,
   BookOpen,
@@ -13,10 +14,9 @@ import {
   Flame,
 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View, Platform } from 'react-native';
 
 import { ModalHeader } from '@/components/ModalHeader';
-import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { BABY_HABITS_QUERY_KEY, HABIT_LOGS_QUERY_KEY } from '@/constants/query-keys';
 import { getActiveBabyProfileId } from '@/database/baby-profile';
@@ -117,7 +117,11 @@ export default function HabitScreen() {
     },
   });
 
-  const handleQuickLog = (habitId: number) => {
+  const handleQuickLog = async (habitId: number) => {
+    // Haptic feedback for one-handed use
+    if (Platform.OS !== 'web') {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
     logMutation.mutate(habitId);
   };
 
@@ -194,17 +198,23 @@ export default function HabitScreen() {
               };
 
               return (
-                <View
+                <Pressable
                   key={habit.id}
-                  className={`flex-row items-center rounded-xl border p-4 ${
+                  onPress={() => !habit.completedToday && handleQuickLog(habit.id)}
+                  disabled={habit.completedToday || logMutation.isPending}
+                  className={`flex-row items-center rounded-2xl border p-4 active:opacity-80 ${
                     habit.completedToday
                       ? 'border-green-500/30 bg-green-500/10'
                       : 'border-border bg-card'
                   }`}>
-                  {/* Clickable area - Icon and Info */}
+                  {/* Clickable area - Icon for details */}
                   <Pressable
-                    onPress={handleOpenDetail}
-                    className="flex-1 flex-row items-center active:opacity-70">
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleOpenDetail();
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    className="active:opacity-70">
                     {/* Icon */}
                     <View
                       className="h-12 w-12 items-center justify-center rounded-full"
@@ -228,22 +238,17 @@ export default function HabitScreen() {
                     </View>
                   </Pressable>
 
-                  {/* Quick Log Button */}
+                  {/* Quick Log Button - larger for one-handed use */}
                   {habit.completedToday ? (
-                    <View className="h-10 w-10 items-center justify-center rounded-full bg-green-500">
-                      <Check size={20} color="#FFF" />
+                    <View className="h-14 w-14 items-center justify-center rounded-full bg-green-500 shadow-md">
+                      <Check size={28} color="#FFF" />
                     </View>
                   ) : (
-                    <Pressable
-                      onPress={() => handleQuickLog(habit.id)}
-                      disabled={logMutation.isPending}
-                      className="active:opacity-70">
-                      <View className="h-10 w-10 items-center justify-center rounded-full bg-accent">
-                        <Check size={20} color="#FFF" />
-                      </View>
-                    </Pressable>
+                    <View className="h-14 w-14 items-center justify-center rounded-full bg-accent shadow-md">
+                      <Check size={28} color="#FFF" />
+                    </View>
                   )}
-                </View>
+                </Pressable>
               );
             })}
           </View>
@@ -260,18 +265,21 @@ export default function HabitScreen() {
             </Text>
           </View>
         )}
-
-        {/* Add Habit Button */}
-        <Button
-          variant="outline"
-          className="flex-row gap-2 rounded-xl"
-          onPress={navigateToAddHabit}>
-          <Plus size={18} color="#FF5C8D" />
-          <Text className="font-semibold text-accent">
-            {t('habit.addHabit', { defaultValue: 'Add Habit' })}
-          </Text>
-        </Button>
       </ScrollView>
+
+      {/* Floating Action Button for one-handed use */}
+      <Pressable
+        onPress={navigateToAddHabit}
+        className="absolute bottom-6 right-6 h-16 w-16 items-center justify-center rounded-full bg-accent shadow-lg active:opacity-80"
+        style={{
+          shadowColor: '#FF5C8D',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 8,
+        }}>
+        <Plus size={32} color="#FFF" />
+      </Pressable>
     </View>
   );
 }

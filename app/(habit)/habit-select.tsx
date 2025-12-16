@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { Check, Info } from 'lucide-react-native';
+import { Check, ChevronRight } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
@@ -29,6 +29,16 @@ const categoryColors: Record<HabitCategory, string> = {
   sleep: '#8B5CF6',
   social: '#F59E0B',
   nutrition: '#10B981',
+};
+
+// Light background colors for categories
+const categoryBgColors: Record<HabitCategory, string> = {
+  health: '#FF5C8D20',
+  learning: '#6366F120',
+  physical: '#22C55E20',
+  sleep: '#8B5CF620',
+  social: '#F59E0B20',
+  nutrition: '#10B98120',
 };
 
 export default function HabitSelectScreen() {
@@ -148,7 +158,7 @@ export default function HabitSelectScreen() {
     return (
       <View className="flex-1 bg-background">
         <ModalHeader
-          title={t('habit.selectHabits', { defaultValue: 'Select Habits' })}
+          title={t('habit.selectHabits', { defaultValue: 'Habits' })}
           closeLabel={t('common.close')}
         />
         <View className="flex-1 items-center justify-center">
@@ -163,35 +173,33 @@ export default function HabitSelectScreen() {
   return (
     <View className="flex-1 bg-background">
       <ModalHeader
-        title={t('habit.selectHabits', { defaultValue: 'Select Habits' })}
+        title={t('habit.selectHabits', { defaultValue: 'Habits' })}
         closeLabel={t('common.close')}
       />
-      <ScrollView className="flex-1" contentContainerClassName="px-4 pb-10 pt-4">
-        {/* Instructions */}
-        <View className="mb-4 rounded-lg bg-muted/50 px-3 py-2">
-          <Text className="text-center text-xs text-muted-foreground">
-            {t('habit.selectInstructions', {
-              defaultValue: 'Tap checkbox to select • Tap name to learn more',
-            })}
-          </Text>
-        </View>
-
-        {/* All habits grouped by category as tags */}
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="px-4 pb-24 pt-4"
+        showsVerticalScrollIndicator={false}>
+        {/* All habits grouped by category as list items */}
         {HABIT_CATEGORIES.map((category) => {
           const habits = habitsByCategory?.[category.id] ?? [];
           if (habits.length === 0) return null;
 
           const categoryColor = categoryColors[category.id] || '#FF5C8D';
+          const categoryBgColor = categoryBgColors[category.id] || '#FF5C8D20';
 
           return (
-            <View key={category.id} className="mb-5">
+            <View key={category.id} className="mb-6">
               {/* Category header */}
-              <Text className="mb-2 text-sm font-semibold text-muted-foreground">
-                {t(category.labelKey, { defaultValue: category.id })}
-              </Text>
+              <View className="mb-3 flex-row items-center gap-2">
+                <View className="h-3 w-3 rounded-full" style={{ backgroundColor: categoryColor }} />
+                <Text className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t(category.labelKey, { defaultValue: category.id })}
+                </Text>
+              </View>
 
-              {/* Habit tags with checkbox */}
-              <View className="flex-row flex-wrap gap-2">
+              {/* Habit list items - full width for easy one-handed tapping */}
+              <View className="gap-2">
                 {habits.map((habit) => {
                   const isSelected = selectedHabitIds.has(habit.id);
                   const isAgeMatch = isHabitAgeAppropriate(habit, babyAgeMonths);
@@ -206,52 +214,75 @@ export default function HabitSelectScreen() {
                   return (
                     <View
                       key={habit.id}
-                      className={`flex-row items-center overflow-hidden rounded-full ${
+                      className={`flex-row items-center overflow-hidden rounded-2xl border ${
                         isSelected
-                          ? 'bg-accent'
+                          ? 'border-green-500/30 bg-green-500/10'
                           : isAgeMatch
-                            ? 'border border-border bg-muted'
-                            : 'border border-border/50 bg-muted/50'
+                            ? 'border-border bg-card'
+                            : 'border-border/50 bg-muted/30'
                       }`}>
-                      {/* Checkbox area */}
+                      {/* Left side: Checkbox area - large touch target for one-handed use */}
                       <Pressable
                         onPress={() => handleToggleHabit(habit.id)}
                         disabled={isPending}
-                        className="px-2 py-1.5 active:opacity-70"
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 0 }}>
+                        hitSlop={{ top: 12, bottom: 12, left: 16, right: 0 }}
+                        className="items-center justify-center p-4 active:opacity-70">
                         <View
-                          className={`h-5 w-5 items-center justify-center rounded-sm ${
-                            isSelected ? 'bg-white/30' : 'border border-border bg-background'
+                          className={`h-7 w-7 items-center justify-center rounded-lg ${
+                            isSelected ? 'bg-green-500' : 'border-2 border-border bg-background'
                           }`}>
-                          {isSelected && <Check size={12} color="#FFF" />}
+                          {isSelected && <Check size={18} color="#FFF" strokeWidth={3} />}
                         </View>
                       </Pressable>
 
-                      {/* Label area - tap to see details */}
+                      {/* Middle: Habit info - tap to see details */}
                       <Pressable
                         onPress={() => handleOpenDetail(habit)}
-                        className="flex-row items-center py-1.5 pr-3 active:opacity-70"
-                        hitSlop={{ top: 8, bottom: 8, left: 0, right: 8 }}>
-                        <Text
-                          className={`text-sm ${
-                            isSelected
-                              ? 'font-medium text-white'
-                              : isAgeMatch
+                        className="flex-1 flex-row items-center py-4 pr-2 active:opacity-70"
+                        hitSlop={{ top: 8, bottom: 8 }}>
+                        {/* Category color indicator */}
+                        <View
+                          className="mr-3 h-10 w-10 items-center justify-center rounded-xl"
+                          style={{ backgroundColor: categoryBgColor }}>
+                          <View
+                            className="h-4 w-4 rounded-full"
+                            style={{ backgroundColor: categoryColor }}
+                          />
+                        </View>
+
+                        <View className="flex-1">
+                          <Text
+                            className={`text-base font-medium ${
+                              isSelected
                                 ? 'text-foreground'
-                                : 'text-muted-foreground'
-                          }`}>
-                          {t(habit.labelKey, { defaultValue: habit.id })}
-                        </Text>
-                        {ageRangeText && (
-                          <Text className="ml-1 text-xs text-muted-foreground">
-                            ({ageRangeText})
+                                : isAgeMatch
+                                  ? 'text-foreground'
+                                  : 'text-muted-foreground'
+                            }`}>
+                            {t(habit.labelKey, { defaultValue: habit.id })}
                           </Text>
-                        )}
-                        <Info
-                          size={12}
-                          color={isSelected ? '#FFFFFF80' : categoryColor}
-                          style={{ marginLeft: 4 }}
-                        />
+                          {ageRangeText && (
+                            <Text className="mt-0.5 text-xs text-muted-foreground">
+                              {ageRangeText}
+                            </Text>
+                          )}
+                          {isSelected && (
+                            <View className="mt-1 flex-row items-center gap-1">
+                              <View className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                              <Text className="text-xs text-green-600">
+                                {t('habit.tracking', { defaultValue: 'Tracking' })}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </Pressable>
+
+                      {/* Right side: Info button for details */}
+                      <Pressable
+                        onPress={() => handleOpenDetail(habit)}
+                        hitSlop={{ top: 12, bottom: 12, left: 0, right: 16 }}
+                        className="items-center justify-center p-4 active:opacity-70">
+                        <ChevronRight size={20} color="#9CA3AF" />
                       </Pressable>
                     </View>
                   );

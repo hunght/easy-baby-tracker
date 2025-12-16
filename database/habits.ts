@@ -518,7 +518,8 @@ export async function addBabyHabit(
   babyId: number,
   habitDefinitionId: string,
   targetFrequency?: HabitFrequency,
-  reminderTime?: string
+  reminderTime?: string,
+  reminderDays?: string
 ): Promise<number> {
   const db = getDb();
 
@@ -542,6 +543,7 @@ export async function addBabyHabit(
         isActive: true,
         targetFrequency: targetFrequency ?? null,
         reminderTime: reminderTime ?? null,
+        reminderDays: reminderDays ?? null,
       })
       .where(eq(schema.babyHabits.id, existing[0].id));
     return existing[0].id;
@@ -556,6 +558,7 @@ export async function addBabyHabit(
       isActive: true,
       targetFrequency: targetFrequency ?? null,
       reminderTime: reminderTime ?? null,
+      reminderDays: reminderDays ?? null,
     })
     .returning({ id: schema.babyHabits.id });
 
