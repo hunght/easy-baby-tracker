@@ -164,6 +164,24 @@ export const easySchedule = {
         description:
           'Applicable age: 6-8 weeks\n\nEat: Every 3.5 hours, 45 mins duration.\n\nActivity: Wake window ~1.5h (including feed).\n\nSleep: 3 naps (2x 2h, 1x 1.5h) + 30m catnap.',
       },
+      easy4: {
+        label: 'E.A.S.Y. 4',
+        ageRange: '8–19 weeks',
+        description:
+          'Applicable age: 8-19 weeks\n\nEat: Every 4 hours.\n\nActivity: Wake window 2h (including feed).\n\nSleep: 3 naps (2x 2h, 1x 30m catnap). Night sleep 11-12h.',
+      },
+      easy234: {
+        label: 'E.A.S.Y. 2-3-4',
+        ageRange: '19–46 weeks',
+        description:
+          'Applicable age: 19-46 weeks\n\nEat: Every 4-4.5 hours. Start solids at 6 months.\n\nWake windows: 2h before nap 1, 3h before nap 2, 4h before bedtime.\n\nSleep: 2 naps (1.5-2h each). Night sleep 11-12h.',
+      },
+      easy56: {
+        label: 'E.A.S.Y. 5-6',
+        ageRange: '46+ weeks',
+        description:
+          'Applicable age: 46+ weeks (toddler)\n\nSchedule: 4 meals/day + milk. Single nap routine.\n\nWake windows: 5h morning, 6h afternoon.\n\nSleep: 1 nap (1.5-2h midday). Night sleep 10-12h.',
+      },
     },
 
     settings: {
@@ -353,6 +371,24 @@ export const easySchedule = {
         ageRange: '6–8 tuần',
         description:
           'Độ tuổi áp dụng: 6-8 tuần\n\nĂn: Cách nhau 3.5 giờ, kéo dài 45 phút.\n\nHoạt động: Thời gian thức ~1.5h (bao gồm ăn).\n\nNgủ: 3 giấc (2 giấc 2h, 1 giấc 1.5h) + giấc ngắn 30p.',
+      },
+      easy4: {
+        label: 'E.A.S.Y. 4',
+        ageRange: '8–19 tuần',
+        description:
+          'Độ tuổi áp dụng: 8-19 tuần\n\nĂn: Cách nhau 4 giờ.\n\nHoạt động: Thời gian thức 2h (bao gồm ăn).\n\nNgủ: 3 giấc (2 giấc 2h, 1 giấc ngắn 30p). Ngủ đêm 11-12h.',
+      },
+      easy234: {
+        label: 'E.A.S.Y. 2-3-4',
+        ageRange: '19–46 tuần',
+        description:
+          'Độ tuổi áp dụng: 19-46 tuần\n\nĂn: Cách nhau 4-4.5 giờ. Bắt đầu ăn dặm từ 6 tháng.\n\nThời gian thức: 2h trước giấc 1, 3h trước giấc 2, 4h trước ngủ đêm.\n\nNgủ: 2 giấc (1.5-2h mỗi giấc). Ngủ đêm 11-12h.',
+      },
+      easy56: {
+        label: 'E.A.S.Y. 5-6',
+        ageRange: '46+ tuần',
+        description:
+          'Độ tuổi áp dụng: 46+ tuần (trẻ tập đi)\n\nLịch: 4 bữa/ngày + sữa. Chế độ 1 giấc ngủ.\n\nThời gian thức: 5h buổi sáng, 6h buổi chiều.\n\nNgủ: 1 giấc trưa (1.5-2h). Ngủ đêm 10-12h.',
       },
     },
 
