@@ -79,6 +79,21 @@ function AppProviders() {
                     headerShown: false,
                   }}>
                   <Stack.Screen name="index" options={{ headerShown: false }} />
+                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                  <Stack.Screen
+                    name="(habit)"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="(tracking)"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
                 </Stack>
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
                 <PortalHost />

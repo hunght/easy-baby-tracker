@@ -17,49 +17,9 @@ import {
   getActiveScheduledNotifications,
   type ScheduledNotificationRecord,
 } from '@/database/scheduled-notifications';
+import { safeParseNotificationData } from '@/lib/json-parse';
 import { useLocalization } from '@/localization/LocalizationProvider';
-
-function safeParseData(record: ScheduledNotificationRecord) {
-  if (!record.data) return null;
-  try {
-    return JSON.parse(record.data);
-  } catch {
-    return null;
-  }
-}
-
-// Convert HH:MM reminder time to today's Date
-function reminderTimeToDate(reminderTime: string, reminderDays?: string | null): Date | null {
-  const [hours, minutes] = reminderTime.split(':').map(Number);
-  const now = new Date();
-  const today = now.getDay(); // 0 = Sunday, 6 = Saturday
-
-  // Check if reminder should fire today based on reminderDays
-  let shouldFireToday = true;
-  if (reminderDays) {
-    if (reminderDays === 'daily') {
-      shouldFireToday = true;
-    } else if (reminderDays === 'weekdays') {
-      shouldFireToday = today >= 1 && today <= 5;
-    } else if (reminderDays === 'weekends') {
-      shouldFireToday = today === 0 || today === 6;
-    } else {
-      // Custom JSON array
-      try {
-        const days = JSON.parse(reminderDays);
-        shouldFireToday = Array.isArray(days) && days.includes(today);
-      } catch {
-        shouldFireToday = true;
-      }
-    }
-  }
-
-  if (!shouldFireToday) return null;
-
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-  return date;
-}
+import { reminderTimeToDate } from '@/lib/date';
 
 export default function SchedulingScreen() {
   const { t, locale } = useLocalization();
@@ -139,7 +99,7 @@ export default function SchedulingScreen() {
 
     // Add scheduled notifications
     scheduledNotifications.forEach((record) => {
-      const parsedData = safeParseData(record);
+      const parsedData = safeParseNotificationData(record.data);
       const notificationType =
         record.notificationType in typeLabels ? record.notificationType : 'default';
       const label = parsedData?.label ?? typeLabels[notificationType];
@@ -158,7 +118,10 @@ export default function SchedulingScreen() {
     // Add habit reminders (for today)
     habitReminders.forEach((habit) => {
       if (!habit.reminderTime) return;
-      const reminderDate = reminderTimeToDate(habit.reminderTime, habit.reminderDays);
+      const reminderDate = reminderTimeToDate({
+        reminderTime: habit.reminderTime,
+        reminderDays: habit.reminderDays,
+      });
       if (!reminderDate) return;
 
       unified.push({

@@ -6,6 +6,7 @@ export default function HabitLayout() {
     <SafeAreaView className="flex-1 bg-background" edges={['top', 'left', 'right']}>
       <Stack
         screenOptions={{
+          presentation: 'modal',
           headerShown: false,
           contentStyle: { backgroundColor: 'transparent' },
         }}>

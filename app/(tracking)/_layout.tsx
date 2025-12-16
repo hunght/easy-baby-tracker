@@ -8,8 +8,16 @@ export default function TrackingLayout() {
         screenOptions={{
           presentation: 'modal',
           headerShown: false,
-        }}
-      />
+          contentStyle: { backgroundColor: 'transparent' },
+        }}>
+        <Stack.Screen name="feeding" />
+        <Stack.Screen name="pumping" />
+        <Stack.Screen name="diaper" />
+        <Stack.Screen name="sleep" />
+        <Stack.Screen name="health" />
+        <Stack.Screen name="growth" />
+        <Stack.Screen name="diary" />
+      </Stack>
     </SafeAreaView>
   );
 }
