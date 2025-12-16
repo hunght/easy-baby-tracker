@@ -18,6 +18,7 @@ import {
   generateEasySchedule,
   type EasyScheduleItem,
 } from '@/lib/easy-schedule-generator';
+import { safeParseNotificationData, safeParseEasyScheduleNotificationData } from '@/lib/json-parse';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getFormulaRuleById } from '@/database/easy-formula-rules';
 
@@ -53,16 +54,15 @@ function convertFromDbRecord(record: {
   if (!record.data) {
     return null;
   }
-  try {
-    const parsed = JSON.parse(record.data);
-    return {
-      notificationId: record.notificationId,
-      scheduledTime: new Date(record.scheduledTime * 1000).toISOString(),
-      feedingType: parsed.feedingType,
-    };
-  } catch {
+  const parsed = safeParseNotificationData(record.data);
+  if (!parsed || !parsed.feedingType) {
     return null;
   }
+  return {
+    notificationId: record.notificationId,
+    scheduledTime: new Date(record.scheduledTime * 1000).toISOString(),
+    feedingType: parsed.feedingType,
+  };
 }
 
 // Schedule a feeding notification
@@ -282,15 +282,15 @@ export async function rescheduleEasyReminders(
     existingNotifications.length
   );
   for (const notification of existingNotifications) {
-    try {
-      const data = notification.data ? JSON.parse(notification.data) : null;
-      // Check if it's an EASY schedule reminder (has activityType in data)
-      if (data && data.activityType) {
+    const data = safeParseEasyScheduleNotificationData(notification.data);
+    // Check if it's an EASY schedule reminder (has activityType in data)
+    if (data && data.activityType) {
+      try {
         await cancelScheduledNotificationAsync(notification.notificationId);
         await deleteScheduledNotificationByNotificationId(notification.notificationId);
+      } catch (error) {
+        console.error('Error canceling existing notification:', error);
       }
-    } catch (error) {
-      console.error('Error canceling existing notification:', error);
     }
   }
 

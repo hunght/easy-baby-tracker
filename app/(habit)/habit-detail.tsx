@@ -28,6 +28,7 @@ import { Text } from '@/components/ui/text';
 import { useNotification } from '@/components/NotificationContext';
 import { BABY_HABITS_QUERY_KEY } from '@/constants/query-keys';
 import { getActiveBabyProfileId } from '@/database/baby-profile';
+import { safeParseReminderDays } from '@/lib/json-parse';
 import {
   getBabyHabits,
   addBabyHabit,
@@ -167,14 +168,12 @@ export default function HabitDetailScreen() {
       setReminderEnabled(true);
       // Load saved frequency
       if (existingHabit.reminderDays) {
-        try {
-          // Check if it's a JSON array (custom days)
-          const parsed = JSON.parse(existingHabit.reminderDays);
-          if (Array.isArray(parsed)) {
-            setCustomDays(parsed);
-            setReminderDays('custom');
-          }
-        } catch {
+        // Check if it's a JSON array (custom days)
+        const parsed = safeParseReminderDays(existingHabit.reminderDays);
+        if (parsed !== null) {
+          setCustomDays(parsed);
+          setReminderDays('custom');
+        } else {
           // Not JSON, it's a preset like 'daily', 'weekdays', 'weekends'
           setReminderDays(existingHabit.reminderDays);
           if (existingHabit.reminderDays === 'daily') {

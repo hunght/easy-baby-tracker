@@ -8,6 +8,7 @@ import type {
   EasyCyclePhase,
 } from '@/lib/easy-schedule-generator';
 import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
+import { safeParseEasyCyclePhases } from '@/lib/json-parse';
 
 export type FormulaRuleInsert = typeof schema.easyFormulaRules.$inferInsert;
 type FormulaRuleSelect = typeof schema.easyFormulaRules.$inferSelect;
@@ -139,7 +140,7 @@ function dbToFormulaRule(record: FormulaRuleSelect): EasyFormulaRule {
     ageRangeText: record.ageRangeText ?? null,
     description: record.description ?? null,
     // Parse phases from JSON, default to empty array if missing (old data)
-    phases: record.phases ? JSON.parse(record.phases) : [],
+    phases: safeParseEasyCyclePhases(record.phases),
     validDate: record.validDate ?? null,
   };
 }

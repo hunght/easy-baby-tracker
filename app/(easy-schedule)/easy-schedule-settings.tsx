@@ -22,6 +22,7 @@ import {
   type EasyScheduleReminderLabels,
 } from '@/lib/notification-scheduler';
 import { cancelScheduledNotificationAsync } from '@/lib/notifications-wrapper';
+import { safeParseEasyScheduleNotificationData } from '@/lib/json-parse';
 
 const EASY_REMINDER_ENABLED_KEY = 'easyScheduleReminderEnabled';
 const EASY_REMINDER_ADVANCE_MINUTES_KEY = 'easyScheduleReminderAdvanceMinutes';
@@ -231,15 +232,15 @@ export default function EasyScheduleSettingsScreen() {
           notificationType: 'sleep',
         });
         for (const notification of existingNotifications) {
-          try {
-            const data = notification.data ? JSON.parse(notification.data) : null;
-            // Check if it's an EASY schedule reminder (has activityType in data)
-            if (data && data.activityType) {
+          const data = safeParseEasyScheduleNotificationData(notification.data);
+          // Check if it's an EASY schedule reminder (has activityType in data)
+          if (data && data.activityType) {
+            try {
               await cancelScheduledNotificationAsync(notification.notificationId);
               await deleteScheduledNotificationByNotificationId(notification.notificationId);
+            } catch (error) {
+              console.error('Error canceling notification:', error);
             }
-          } catch (error) {
-            console.error('Error canceling notification:', error);
           }
         }
       }

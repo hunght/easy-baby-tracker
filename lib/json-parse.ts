@@ -46,3 +46,62 @@ export function safeParseNotificationData(
 ): NotificationData | null {
   return safeParseJson(jsonString, notificationDataSchema);
 }
+
+/**
+ * Zod schema for EASY schedule notification data structure
+ */
+const easyScheduleNotificationDataSchema = z
+  .object({
+    activityType: z.string(),
+  })
+  .catchall(z.unknown()); // Allow additional fields
+
+type EasyScheduleNotificationData = z.infer<typeof easyScheduleNotificationDataSchema>;
+
+/**
+ * Safely parse EASY schedule notification data JSON string
+ * @param jsonString - The JSON string from notification data field
+ * @returns Validated data with activityType or null
+ */
+export function safeParseEasyScheduleNotificationData(
+  jsonString: string | null | undefined
+): EasyScheduleNotificationData | null {
+  return safeParseJson(jsonString, easyScheduleNotificationDataSchema);
+}
+
+/**
+ * Zod schema for EasyCyclePhase array
+ */
+const easyCyclePhaseArraySchema = z.array(
+  z.object({
+    eat: z.number(),
+    activity: z.number(),
+    sleep: z.number(),
+  })
+);
+
+/**
+ * Safely parse EasyCyclePhase array from JSON string
+ * @param jsonString - The JSON string containing phases array
+ * @returns Validated phases array or empty array if parsing fails
+ */
+export function safeParseEasyCyclePhases(
+  jsonString: string | null | undefined
+): { eat: number; activity: number; sleep: number }[] {
+  const result = safeParseJson(jsonString, easyCyclePhaseArraySchema);
+  return result ?? [];
+}
+
+/**
+ * Zod schema for reminder days array (day indices 0-6)
+ */
+const reminderDaysArraySchema = z.array(z.number().int().min(0).max(6));
+
+/**
+ * Safely parse reminder days array from JSON string
+ * @param jsonString - The JSON string containing days array
+ * @returns Validated days array or null if parsing fails
+ */
+export function safeParseReminderDays(jsonString: string | null | undefined): number[] | null {
+  return safeParseJson(jsonString, reminderDaysArraySchema);
+}

@@ -1,3 +1,5 @@
+import { safeParseReminderDays } from '@/lib/json-parse';
+
 // Convert HH:MM reminder time to today's Date
 export function reminderTimeToDate({
   reminderTime,
@@ -21,12 +23,8 @@ export function reminderTimeToDate({
       shouldFireToday = today === 0 || today === 6;
     } else {
       // Custom JSON array
-      try {
-        const days = JSON.parse(reminderDays);
-        shouldFireToday = Array.isArray(days) && days.includes(today);
-      } catch {
-        shouldFireToday = true;
-      }
+      const days = safeParseReminderDays(reminderDays);
+      shouldFireToday = days !== null && days.includes(today);
     }
   }
 
