@@ -514,6 +514,51 @@ export async function getBabyHabits(babyId: number): Promise<BabyHabitWithDefini
   return results;
 }
 
+// Get habits with active reminders (for scheduling page)
+export async function getBabyHabitsWithReminders(
+  babyId: number
+): Promise<BabyHabitWithDefinition[]> {
+  const db = getDb();
+  const results = await db
+    .select({
+      id: schema.babyHabits.id,
+      babyId: schema.babyHabits.babyId,
+      habitDefinitionId: schema.babyHabits.habitDefinitionId,
+      isActive: schema.babyHabits.isActive,
+      targetFrequency: schema.babyHabits.targetFrequency,
+      reminderTime: schema.babyHabits.reminderTime,
+      reminderDays: schema.babyHabits.reminderDays,
+      createdAt: schema.babyHabits.createdAt,
+      habit: {
+        id: schema.habitDefinitions.id,
+        category: schema.habitDefinitions.category,
+        iconName: schema.habitDefinitions.iconName,
+        labelKey: schema.habitDefinitions.labelKey,
+        descriptionKey: schema.habitDefinitions.descriptionKey,
+        minAgeMonths: schema.habitDefinitions.minAgeMonths,
+        maxAgeMonths: schema.habitDefinitions.maxAgeMonths,
+        defaultFrequency: schema.habitDefinitions.defaultFrequency,
+        sortOrder: schema.habitDefinitions.sortOrder,
+        isActive: schema.habitDefinitions.isActive,
+      },
+    })
+    .from(schema.babyHabits)
+    .innerJoin(
+      schema.habitDefinitions,
+      eq(schema.babyHabits.habitDefinitionId, schema.habitDefinitions.id)
+    )
+    .where(
+      and(
+        eq(schema.babyHabits.babyId, babyId),
+        eq(schema.babyHabits.isActive, true),
+        // Only get habits that have a reminder time set
+        schema.babyHabits.reminderTime
+      )
+    );
+
+  return results;
+}
+
 export async function addBabyHabit(
   babyId: number,
   habitDefinitionId: string,
