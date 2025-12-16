@@ -4,12 +4,12 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from '
 import { Calendar, Sparkles } from 'lucide-react-native';
 
 import { Badge } from '@/components/ui/badge';
-import { TabPageHeader } from '@/components/TabPageHeader';
 import {
   ReminderDetailModal,
   type UnifiedReminder,
 } from '../../pages/scheduling/components/ReminderDetailModal';
 import { Text } from '@/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { BABY_HABITS_QUERY_KEY, SCHEDULED_NOTIFICATIONS_QUERY_KEY } from '@/constants/query-keys';
 import { getActiveBabyProfileId } from '@/database/baby-profile';
 import { getBabyHabitsWithReminders, type BabyHabitWithDefinition } from '@/database/habits';
@@ -377,58 +377,35 @@ export default function SchedulingScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <TabPageHeader title={t('scheduling.title')} />
-
       {/* Segment Selector - easy one-handed access */}
-      <View className="border-b border-border px-5 pb-3">
-        <View className="flex-row gap-2">
-          <Pressable
-            onPress={() => setSelectedSegment('today')}
-            className={`h-10 flex-1 flex-row items-center justify-center gap-2 rounded-xl ${
-              selectedSegment === 'today' ? 'bg-accent' : 'bg-muted'
-            }`}>
-            <Text
-              className={`text-sm font-semibold ${
-                selectedSegment === 'today' ? 'text-white' : 'text-foreground'
-              }`}>
+      <View className="border-b border-border px-5 py-3">
+        <ToggleGroup
+          value={selectedSegment}
+          onValueChange={(value) => {
+            if (value === 'today' || value === 'upcoming') {
+              setSelectedSegment(value);
+            }
+          }}
+          type="single"
+          variant="outline"
+          className="w-full">
+          <ToggleGroupItem value="today" isFirst className="flex-1">
+            <Text className="flex-row items-center justify-center gap-2">
               {t('scheduling.today', { defaultValue: 'Today' })}
+              <View className="ml-1 min-w-[20px] items-center rounded-full bg-foreground/10 px-1.5 py-0.5">
+                <Text className="text-xs font-bold">{todayCount}</Text>
+              </View>
             </Text>
-            <View
-              className={`min-w-[20px] items-center rounded-full px-1.5 py-0.5 ${
-                selectedSegment === 'today' ? 'bg-white/20' : 'bg-foreground/10'
-              }`}>
-              <Text
-                className={`text-xs font-bold ${
-                  selectedSegment === 'today' ? 'text-white' : 'text-foreground'
-                }`}>
-                {todayCount}
-              </Text>
-            </View>
-          </Pressable>
-          <Pressable
-            onPress={() => setSelectedSegment('upcoming')}
-            className={`h-10 flex-1 flex-row items-center justify-center gap-2 rounded-xl ${
-              selectedSegment === 'upcoming' ? 'bg-accent' : 'bg-muted'
-            }`}>
-            <Text
-              className={`text-sm font-semibold ${
-                selectedSegment === 'upcoming' ? 'text-white' : 'text-foreground'
-              }`}>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="upcoming" isLast className="flex-1">
+            <Text className="flex-row items-center justify-center gap-2">
               {t('scheduling.allUpcoming', { defaultValue: 'All' })}
+              <View className="ml-1 min-w-[20px] items-center rounded-full bg-foreground/10 px-1.5 py-0.5">
+                <Text className="text-xs font-bold">{allCount}</Text>
+              </View>
             </Text>
-            <View
-              className={`min-w-[20px] items-center rounded-full px-1.5 py-0.5 ${
-                selectedSegment === 'upcoming' ? 'bg-white/20' : 'bg-foreground/10'
-              }`}>
-              <Text
-                className={`text-xs font-bold ${
-                  selectedSegment === 'upcoming' ? 'text-white' : 'text-foreground'
-                }`}>
-                {allCount}
-              </Text>
-            </View>
-          </Pressable>
-        </View>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </View>
 
       <ScrollView

@@ -35,7 +35,7 @@ export function QuickActionMenu({ isOpen, onToggle }: QuickActionMenuProps) {
     });
   }, [isOpen]);
 
-  const handleAction = (id: string) => {
+  const handleAction = (id: FeatureKey) => {
     // Toggle close
     onToggle();
     // Navigation will happen immediately, animation closes menu
@@ -60,7 +60,7 @@ export function QuickActionMenu({ isOpen, onToggle }: QuickActionMenuProps) {
   };
 
   const visibleActions = React.useMemo(() => {
-    return TRACKING_TILES.filter((tile) => features[tile.id as FeatureKey]);
+    return TRACKING_TILES.filter((tile) => features[tile.id]);
   }, [features]);
 
   // Optimize radius based on item count

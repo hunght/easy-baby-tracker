@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
 import { BabyInfoBanner } from '@/components/BabyInfoBanner';
@@ -27,11 +27,7 @@ import {
   HABIT_LOGS_QUERY_KEY,
 } from '@/constants/query-keys';
 import { TRACKING_TILES } from '@/constants/tracking-tiles';
-import {
-  getActiveBabyProfile,
-  getBabyProfiles,
-  setActiveBabyProfileId,
-} from '@/database/baby-profile';
+import { getActiveBabyProfile, getBabyProfiles } from '@/database/baby-profile';
 import { getDiaperChanges } from '@/database/diaper';
 import { getFeedings } from '@/database/feeding';
 import { getGrowthRecords } from '@/database/growth';
@@ -39,6 +35,7 @@ import { getPumpings } from '@/database/pumping';
 import { getSleepSessions } from '@/database/sleep';
 import { getBabyHabits, getTodayHabitLogs } from '@/database/habits';
 import { useBrandColor } from '@/hooks/use-brand-color';
+import { useSetActiveBabyProfile } from '@/hooks/use-set-active-baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import {
   computeTodayRange,
@@ -61,15 +58,15 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function TrackingScreen() {
   const { t } = useLocalization();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { features } = useFeatureFlags();
   const brandColors = useBrandColor();
+  const setActiveBabyMutation = useSetActiveBabyProfile();
 
   // Scroll ref for carousel
   const scrollRef = useRef<ScrollView>(null);
 
   const visibleTiles = useMemo(() => {
-    return TRACKING_TILES.filter((tile) => features[tile.id as FeatureKey]);
+    return TRACKING_TILES.filter((tile) => features[tile.id]);
   }, [features]);
 
   // Selected baby computations
@@ -78,7 +75,6 @@ export default function TrackingScreen() {
     () => computeYesterdayRange(startOfToday),
     [startOfToday]
   );
-  const [switchingBabyId, setSwitchingBabyId] = useState<number | null>(null);
   const [activeBabyIndex, setActiveBabyIndex] = useState<number>(0);
   const { data: profile, isLoading } = useQuery({
     queryKey: BABY_PROFILE_QUERY_KEY,
@@ -402,17 +398,11 @@ export default function TrackingScreen() {
   };
 
   const handleSelectBaby = async (babyId: number) => {
-    if (babyId === profile.id || switchingBabyId != null) {
+    if (babyId === profile.id) {
       return;
     }
 
-    setSwitchingBabyId(babyId);
-    try {
-      await setActiveBabyProfileId(babyId);
-      await queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
-    } finally {
-      setSwitchingBabyId(null);
-    }
+    await setActiveBabyMutation.mutateAsync(babyId);
   };
 
   const handleTilePress = (tileId: string) => {
@@ -485,7 +475,7 @@ export default function TrackingScreen() {
           {visibleTiles.map((tile) => (
             <Card
               key={tile.id}
-              className={`${tile.fullWidth ? 'w-[100%]' : 'w-[47%]'} py-3 shadow-sm active:opacity-80`}
+              className={`${tile.fullWidth ? 'w-[100%]' : 'w-[47%]'} py-3 active:opacity-80`}
               onPress={() => handleTilePress(tile.id)}
               testID={`tile-${tile.id}`}
               accessibilityRole="button">

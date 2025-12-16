@@ -1,5 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import { ActivityIndicator, SectionList, View } from 'react-native';
 
@@ -7,6 +8,7 @@ import { TimelineFilters } from '@/pages/timeline/components/TimelineFilters';
 import { TimelineItem } from '@/pages/timeline/components/TimelineItem';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import {
   DIAPER_CHANGES_QUERY_KEY,
@@ -25,9 +27,10 @@ import {
   TimelineActivityType,
 } from '@/database/timeline';
 import { useLocalization } from '@/localization/LocalizationProvider';
-import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
 
 export function TimelineTabContent() {
+  const router = useRouter();
   const { t } = useLocalization();
   const { features } = useFeatureFlags();
   const queryClient = useQueryClient();
@@ -65,7 +68,7 @@ export function TimelineTabContent() {
           'pumping',
           'diary',
         ];
-        filterTypes = validTypes.filter((type) => features[type as FeatureKey]);
+        filterTypes = validTypes.filter((type) => features[type]);
       }
 
       return getTimelineActivities({
@@ -214,7 +217,10 @@ export function TimelineTabContent() {
           ListEmptyComponent={
             !isFetching ? (
               <View className="items-center p-10">
-                <Text className="text-base text-muted-foreground">No activities found</Text>
+                <Text className="mb-4 text-base text-muted-foreground">No activities found</Text>
+                <Button onPress={() => router.replace('/(tabs)/tracking')}>
+                  <Text>{t('common.addActivity', { defaultValue: 'Add Activity' })}</Text>
+                </Button>
               </View>
             ) : null
           }

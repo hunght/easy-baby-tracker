@@ -61,22 +61,22 @@ export default function TabLayout() {
           options={{
             title: t('tabs.tracking'),
             tabBarLabel: () => null, // Hide label for the FAB look
-            tabBarIcon: () => (
+            tabBarIcon: ({ focused, color }) => (
               <View
-                className="elevation-lg items-center justify-center bg-accent shadow-lg"
+                className="elevation-lg items-center justify-center shadow-lg"
                 style={{
                   width: 56,
                   height: 56,
                   borderRadius: 28,
-                  marginBottom: 0, // Raise it up
-                  backgroundColor: '#FF5C8D', // Explicit accent color
-                  shadowColor: '#FF5C8D',
+                  marginBottom: 0,
+                  backgroundColor: focused ? '#FF5C8D' : color,
+                  shadowColor: focused ? '#FF5C8D' : 'transparent',
                   shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
+                  shadowOpacity: focused ? 0.3 : 0,
                   shadowRadius: 4,
-                  elevation: 5,
+                  elevation: focused ? 5 : 0,
                 }}>
-                <Ionicons name="add" size={32} color="white" />
+                <Ionicons name="add" size={32} color={focused ? 'white' : 'white'} />
               </View>
             ),
             tabBarButton: (props) => <HapticTab {...props} testID="tab-tracking" />,

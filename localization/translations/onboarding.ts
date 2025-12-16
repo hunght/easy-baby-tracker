@@ -10,6 +10,13 @@ export const onboarding = {
       privacy: 'Privacy policy',
       terms: 'Terms of service',
       quote: '"Creating a happy and enriched environment for the children."',
+      description:
+        'Track feeding, sleep, diaper changes, growth, and more. Keep everything organized in one place.',
+      features: {
+        track: 'Track feeding, sleep, diaper changes, and daily activities',
+        monitor: 'Monitor growth using WHO growth charts and track development milestones',
+        organize: "Organize your baby's schedule and sync data across devices",
+      },
       disclaimer:
         'We do NOT use third party advertising. By tapping to continue, you agree to the Terms of Service and Privacy Policy of Easy Baby Tracker.',
     },
@@ -71,6 +78,13 @@ export const onboarding = {
       privacy: 'Chính sách quyền riêng tư',
       terms: 'Điều khoản dịch vụ',
       quote: '"Tạo ra môi trường hạnh phúc và tràn đầy cho trẻ em."',
+      description:
+        'Theo dõi bú, ngủ, thay tã, tăng trưởng và nhiều hơn nữa. Tổ chức mọi thứ ở một nơi.',
+      features: {
+        track: 'Theo dõi bú, ngủ, thay tã và các hoạt động hàng ngày',
+        monitor: 'Theo dõi tăng trưởng bằng biểu đồ WHO và các cột mốc phát triển',
+        organize: 'Tổ chức lịch trình của bé và đồng bộ dữ liệu giữa các thiết bị',
+      },
       disclaimer:
         'Chúng tôi KHÔNG sử dụng quảng cáo bên thứ ba. Tiếp tục nghĩa là bạn đồng ý với Điều khoản Dịch vụ và Chính sách Quyền riêng tư của Easy Baby Tracker.',
     },

@@ -69,16 +69,6 @@ export default function EasyScheduleScreen() {
   // Check if there's a day-specific rule (custom schedule) by checking if validDate exists
   const hasCustomSchedule = !!formulaRule?.validDate;
 
-  const formulaNotice = formulaRule
-    ? t('easySchedule.formulaTable.selectedNotice', {
-        params: {
-          label: formulaRule.labelKey
-            ? t(formulaRule.labelKey)
-            : formulaRule.labelText || formulaRule.id,
-        },
-      })
-    : t('easySchedule.formulaTable.defaultNotice');
-
   const [scheduleItems, setScheduleItems] = useState<EasyScheduleItem[]>([]);
 
   useEffect(() => {
@@ -156,13 +146,9 @@ export default function EasyScheduleScreen() {
       <ScheduleHeader formulaRule={formulaRule} />
 
       <ScrollView contentContainerClassName="p-5 pb-10 gap-3" showsVerticalScrollIndicator={false}>
-        <Text className="text-xs text-muted-foreground" numberOfLines={1} ellipsizeMode="tail">
-          {formulaNotice}
-        </Text>
-
         {hasCustomSchedule && (
           <View className="rounded-md border border-accent/30 bg-accent/5 px-3 py-2">
-            <Text className="text-xs font-medium text-accent">
+            <Text className="text-xs font-medium text-foreground">
               {t('easySchedule.customScheduleNotice', {
                 defaultValue: '✨ Custom schedule for today - resets tomorrow',
               })}

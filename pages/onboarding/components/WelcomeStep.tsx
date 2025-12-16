@@ -35,6 +35,21 @@ export function WelcomeStep({ headerText, onContinue }: WelcomeStepProps) {
         <Text className="text-center text-lg font-medium text-accent">
           {t('onboarding.welcome.quote')}
         </Text>
+        <Text className="text-center text-base leading-6 text-foreground">
+          {t('onboarding.welcome.description')}
+        </Text>
+        <View className="w-full gap-3 pt-2">
+          {[
+            'onboarding.welcome.features.track',
+            'onboarding.welcome.features.monitor',
+            'onboarding.welcome.features.organize',
+          ].map((key) => (
+            <View key={key} className="flex-row items-center gap-3">
+              <Text className="text-lg text-accent">✓</Text>
+              <Text className="flex-1 text-base text-foreground">{t(key)}</Text>
+            </View>
+          ))}
+        </View>
         <Text className="text-center text-xs leading-5 text-muted-foreground">
           {t('onboarding.welcome.disclaimer')}
         </Text>

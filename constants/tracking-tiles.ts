@@ -1,7 +1,9 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
+import type { FeatureKey } from '@/context/FeatureFlagContext';
+
 type TrackingTile = {
-  id: string;
+  id: FeatureKey;
   labelKey: string;
   sublabelKey: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
@@ -19,19 +21,20 @@ export const TRACKING_TILES: readonly TrackingTile[] = [
     colorKey: 'mint',
   },
   {
-    id: 'pumping',
-    labelKey: 'tracking.tiles.pumping.label',
-    sublabelKey: 'tracking.tiles.pumping.sublabel',
-    icon: 'bottle-tonic-outline',
-    colorKey: 'accent',
-  },
-  {
     id: 'habit',
     labelKey: 'tracking.tiles.habit.label',
     sublabelKey: 'tracking.tiles.habit.sublabel',
     icon: 'toothbrush-paste',
     colorKey: 'lavender',
   },
+  {
+    id: 'pumping',
+    labelKey: 'tracking.tiles.pumping.label',
+    sublabelKey: 'tracking.tiles.pumping.sublabel',
+    icon: 'bottle-tonic-outline',
+    colorKey: 'accent',
+  },
+
   {
     id: 'sleep',
     labelKey: 'tracking.tiles.sleep.label',

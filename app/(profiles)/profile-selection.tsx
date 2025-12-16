@@ -1,11 +1,12 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
 
-import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
-import { getBabyProfiles, setActiveBabyProfileId } from '@/database/baby-profile';
+import { BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
+import { getBabyProfiles } from '@/database/baby-profile';
+import { useSetActiveBabyProfile } from '@/hooks/use-set-active-baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 function computeMonthsOld(birthDateIso: string) {
@@ -19,15 +20,14 @@ function computeMonthsOld(birthDateIso: string) {
 export default function ProfileSelectionScreen() {
   const { t } = useLocalization();
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const setActiveBabyMutation = useSetActiveBabyProfile();
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: BABY_PROFILES_QUERY_KEY,
     queryFn: getBabyProfiles,
   });
 
   const handleSelectProfile = async (babyId: number) => {
-    await setActiveBabyProfileId(babyId);
-    await queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
+    await setActiveBabyMutation.mutateAsync(babyId);
     router.replace('/(tabs)/tracking');
   };
 

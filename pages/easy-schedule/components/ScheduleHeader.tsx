@@ -53,7 +53,7 @@ export function ScheduleHeader({ formulaRule }: ScheduleHeaderProps) {
         className="w-10 items-center justify-center p-1"
         accessibilityRole="button"
         accessibilityLabel={t('easySchedule.settings.title')}>
-        <Ionicons name="settings-outline" size={20} color={brandColors.colors.lavender} />
+        <Ionicons name="settings-outline" size={20} />
       </TouchableOpacity>
     </View>
   );
