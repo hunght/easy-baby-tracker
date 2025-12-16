@@ -4,6 +4,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Badge } from '@/components/ui/badge';
 import { Text } from '@/components/ui/text';
 import { TimelineActivityType } from '@/database/timeline';
+import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
 
 const FILTERS: { label: string; value: TimelineActivityType | 'all' }[] = [
   { label: 'All', value: 'all' },
@@ -22,13 +23,22 @@ type Props = {
 };
 
 export const TimelineFilters = ({ selectedFilter, onSelectFilter }: Props) => {
+  const { features } = useFeatureFlags();
+
+  const visibleFilters = React.useMemo(() => {
+    return FILTERS.filter((f) => {
+      if (f.value === 'all') return true;
+      return features[f.value as FeatureKey];
+    });
+  }, [features]);
+
   return (
     <View className="bg-background py-3">
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerClassName="px-4 gap-2">
-        {FILTERS.map((filter) => {
+        {visibleFilters.map((filter) => {
           const isSelected = selectedFilter === filter.value;
           return (
             <Badge

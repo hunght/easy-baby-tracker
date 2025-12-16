@@ -2,20 +2,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { useTheme } from '@/lib/ThemeContext';
 import { NAV_THEME } from '@/lib/theme';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import { QuickActionMenu } from '@/components/QuickActionMenu';
+import { useFeatureFlags } from '@/context/FeatureFlagContext';
 
 export default function TabLayout() {
   const { colorScheme } = useTheme();
   const { t } = useLocalization();
   const insets = useSafeAreaInsets();
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const { features } = useFeatureFlags();
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       <Tabs
+        initialRouteName="tracking"
         screenOptions={{
           tabBarActiveTintColor: NAV_THEME[colorScheme].colors.text,
           headerShown: false,
@@ -54,20 +60,51 @@ export default function TabLayout() {
           name="tracking"
           options={{
             title: t('tabs.tracking'),
-            tabBarIcon: ({ color, focused }) => (
-              <Ionicons name="medkit" size={30} color={focused ? '#FF5C8D' : color} />
+            tabBarLabel: () => null, // Hide label for the FAB look
+            tabBarIcon: () => (
+              <View
+                className="elevation-lg items-center justify-center bg-accent shadow-lg"
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  marginBottom: 0, // Raise it up
+                  backgroundColor: '#FF5C8D', // Explicit accent color
+                  shadowColor: '#FF5C8D',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 4,
+                  elevation: 5,
+                }}>
+                <Ionicons name="add" size={32} color="white" />
+              </View>
             ),
             tabBarButton: (props) => <HapticTab {...props} testID="tab-tracking" />,
           }}
+          listeners={({ navigation }) => ({
+            tabPress: (e) => {
+              if (navigation.isFocused()) {
+                e.preventDefault();
+                setIsMenuOpen((prev) => !prev);
+              } else {
+                // If navigating to tab, ensure menu is closed or open?
+                // Default behavior is fine, but maybe close menu if it was somehow open?
+                if (isMenuOpen) setIsMenuOpen(false);
+              }
+            },
+          })}
         />
         <Tabs.Screen
           name="scheduling"
           options={{
             title: t('tabs.schedules'),
+            href: features.habit ? undefined : null,
             tabBarIcon: ({ color, focused }) => (
               <Ionicons name="calendar-outline" size={26} color={focused ? '#FF5C8D' : color} />
             ),
-            tabBarButton: (props) => <HapticTab {...props} testID="tab-scheduling" />,
+            tabBarButton: features.habit
+              ? (props) => <HapticTab {...props} testID="tab-scheduling" />
+              : undefined,
           }}
         />
 
@@ -82,6 +119,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
+      <QuickActionMenu isOpen={isMenuOpen} onToggle={() => setIsMenuOpen(!isMenuOpen)} />
     </SafeAreaView>
   );
 }

@@ -3,6 +3,7 @@ import { ScrollView, View, Pressable } from 'react-native';
 
 import { Text } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
+import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { DiaperCharts } from '@/pages/charts/components/DiaperCharts';
 import { FeedingCharts } from '@/pages/charts/components/FeedingCharts';
@@ -13,14 +14,17 @@ type ChartCategory = 'feeding' | 'sleep' | 'growth' | 'diaper';
 
 export function ChartsTabContent() {
   const { t } = useLocalization();
+  const { features } = useFeatureFlags();
   const [selectedCategory, setSelectedCategory] = useState<ChartCategory>('feeding');
 
-  const categories: { id: ChartCategory; label: string }[] = [
+  const allCategories: { id: ChartCategory; label: string }[] = [
     { id: 'feeding', label: t('tracking.tiles.feeding.label') },
     { id: 'sleep', label: t('tracking.tiles.sleep.label') },
     { id: 'growth', label: t('tracking.tiles.growth.label') },
     { id: 'diaper', label: t('tracking.tiles.diaper.label') },
   ];
+
+  const categories = allCategories.filter((cat) => features[cat.id as FeatureKey]);
 
   const renderContent = () => {
     switch (selectedCategory) {

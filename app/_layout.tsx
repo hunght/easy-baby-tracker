@@ -14,6 +14,7 @@ import 'react-native-reanimated';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
 import { NotificationProvider } from '@/components/NotificationContext';
+import { FeatureFlagProvider } from '@/context/FeatureFlagContext';
 import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { LocalizationProvider } from '@/localization/LocalizationProvider';
 import { DatabaseInitializer } from '@/pages/root-layout/DatabaseInitializer';
@@ -27,7 +28,9 @@ export default function RootLayout() {
   return (
     <LocalizationProvider>
       <ThemeProvider>
-        <AppProviders />
+        <FeatureFlagProvider>
+          <AppProviders />
+        </FeatureFlagProvider>
       </ThemeProvider>
     </LocalizationProvider>
   );

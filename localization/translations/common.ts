@@ -82,6 +82,7 @@ export const common = {
     cancel: 'Cancel',
     reset: 'Reset',
     delete: 'Delete',
+    add: 'Add',
   },
   vi: {
     close: 'Đóng',
@@ -167,5 +168,6 @@ export const common = {
     cancel: 'Hủy',
     reset: 'Đặt lại',
     delete: 'Xóa',
+    add: 'Thêm',
   },
 } as const;

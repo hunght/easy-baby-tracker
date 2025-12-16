@@ -2,20 +2,19 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Dimensions,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  View,
+} from 'react-native';
 
-import { TabPageHeader } from '@/components/TabPageHeader';
+import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { BabyInfoBanner } from '@/components/BabyInfoBanner';
 import {
   BABY_PROFILE_QUERY_KEY,
   BABY_PROFILES_QUERY_KEY,
@@ -27,6 +26,7 @@ import {
   BABY_HABITS_QUERY_KEY,
   HABIT_LOGS_QUERY_KEY,
 } from '@/constants/query-keys';
+import { TRACKING_TILES } from '@/constants/tracking-tiles';
 import {
   getActiveBabyProfile,
   getBabyProfiles,
@@ -34,89 +34,52 @@ import {
 } from '@/database/baby-profile';
 import { getDiaperChanges } from '@/database/diaper';
 import { getFeedings } from '@/database/feeding';
-import { getGrowthRecords, type GrowthRecord } from '@/database/growth';
+import { getGrowthRecords } from '@/database/growth';
 import { getPumpings } from '@/database/pumping';
 import { getSleepSessions } from '@/database/sleep';
 import { getBabyHabits, getTodayHabitLogs } from '@/database/habits';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import {
+  computeTodayRange,
+  computeYesterdayRange,
+  sum,
+  roundMinutes,
+  maxTimestamp,
+  formatTimeAgo,
+  formatDuration,
+  formatDelta,
+  formatFeedDelta,
+  formatSleepTotal,
+  formatSleepDelta,
+  latestGrowth,
+} from '@/lib/tracking-utils'; // Corrected import path
 
-const trackingTiles: readonly {
-  id: string;
-  labelKey: string;
-  sublabelKey: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  colorKey: 'accent' | 'info' | 'lavender' | 'mint' | 'secondary' | 'primary';
-}[] = [
-  {
-    id: 'feeding',
-    labelKey: 'tracking.tiles.feeding.label',
-    sublabelKey: 'tracking.tiles.feeding.sublabel',
-    icon: 'baby-bottle-outline',
-    colorKey: 'accent',
-  },
-  {
-    id: 'pumping',
-    labelKey: 'tracking.tiles.pumping.label',
-    sublabelKey: 'tracking.tiles.pumping.sublabel',
-    icon: 'bottle-tonic-outline',
-    colorKey: 'accent',
-  },
-  {
-    id: 'diaper',
-    labelKey: 'tracking.tiles.diaper.label',
-    sublabelKey: 'tracking.tiles.diaper.sublabel',
-    icon: 'baby-face-outline',
-    colorKey: 'info',
-  },
-  {
-    id: 'sleep',
-    labelKey: 'tracking.tiles.sleep.label',
-    sublabelKey: 'tracking.tiles.sleep.sublabel',
-    icon: 'sleep',
-    colorKey: 'lavender',
-  },
-  {
-    id: 'habit',
-    labelKey: 'tracking.tiles.habit.label',
-    sublabelKey: 'tracking.tiles.habit.sublabel',
-    icon: 'toothbrush-paste',
-    colorKey: 'lavender',
-  },
-  {
-    id: 'health',
-    labelKey: 'tracking.tiles.health.label',
-    sublabelKey: 'tracking.tiles.health.sublabel',
-    icon: 'stethoscope',
-    colorKey: 'mint',
-  },
-  {
-    id: 'growth',
-    labelKey: 'tracking.tiles.growth.label',
-    sublabelKey: 'tracking.tiles.growth.sublabel',
-    icon: 'human-male-height',
-    colorKey: 'secondary',
-  },
-  {
-    id: 'diary',
-    labelKey: 'tracking.tiles.diary.label',
-    sublabelKey: 'tracking.tiles.diary.sublabel',
-    icon: 'notebook',
-    colorKey: 'secondary',
-  },
-];
+// Get screen width for carousel
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function TrackingScreen() {
   const { t } = useLocalization();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { features } = useFeatureFlags();
   const brandColors = useBrandColor();
+
+  // Scroll ref for carousel
+  const scrollRef = useRef<ScrollView>(null);
+
+  const visibleTiles = useMemo(() => {
+    return TRACKING_TILES.filter((tile) => features[tile.id as FeatureKey]);
+  }, [features]);
+
+  // Selected baby computations
   const { startOfToday, endOfToday } = useMemo(() => computeTodayRange(), []);
   const { startOfYesterday, endOfYesterday } = useMemo(
     () => computeYesterdayRange(startOfToday),
     [startOfToday]
   );
   const [switchingBabyId, setSwitchingBabyId] = useState<number | null>(null);
+  const [activeBabyIndex, setActiveBabyIndex] = useState<number>(0);
   const { data: profile, isLoading } = useQuery({
     queryKey: BABY_PROFILE_QUERY_KEY,
     queryFn: getActiveBabyProfile,
@@ -245,6 +208,22 @@ export default function TrackingScreen() {
     }
   }, [profile, isLoading, profilesLoading, babyProfiles.length, router]);
 
+  const displayBabies = useMemo(() => {
+    return babyProfiles.length > 0 ? babyProfiles : profile ? [profile] : [];
+  }, [babyProfiles, profile]);
+
+  // Sync active index with profile
+  useEffect(() => {
+    if (profile && displayBabies.length > 0) {
+      const index = displayBabies.findIndex((b) => b.id === profile.id);
+      if (index !== -1 && index !== activeBabyIndex) {
+        setActiveBabyIndex(index);
+        // Scroll to active baby without animation on mount/sync
+        scrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: false });
+      }
+    }
+  }, [profile?.id, displayBabies]); // depend on displayBabies array reference
+
   // Compute tile sublabels - must be before early return to satisfy React Hooks rules
   const tileSublabels = useMemo(() => {
     const nowSeconds = Math.floor(Date.now() / 1000);
@@ -296,48 +275,16 @@ export default function TrackingScreen() {
       wetCountYesterday + dirtyCountYesterday + mixedCountYesterday > 0
         ? `y: W ${wetCountYesterday}/D ${dirtyCountYesterday}/M ${mixedCountYesterday}`
         : null;
+
     const diaperDeltaTotal =
       wetCount +
       dirtyCount +
       mixedCount -
       (wetCountYesterday + dirtyCountYesterday + mixedCountYesterday);
-    const latestGrowthToday = latestGrowth(growthToday);
-    const latestGrowthYesterday = latestGrowth(growthYesterday);
-    const growthParts: string[] = [];
-    if (latestGrowthToday?.weightKg != null) {
-      const delta =
-        latestGrowthYesterday?.weightKg != null
-          ? formatDeltaNumber(latestGrowthToday.weightKg - latestGrowthYesterday.weightKg, 'kg', 2)
-          : null;
-      growthParts.push(
-        `Wt ${formatNumber(latestGrowthToday.weightKg, 2)}kg${delta && delta !== '0' ? ` (${delta})` : ''}`
-      );
-    }
-    if (latestGrowthToday?.heightCm != null) {
-      const delta =
-        latestGrowthYesterday?.heightCm != null
-          ? formatDeltaNumber(latestGrowthToday.heightCm - latestGrowthYesterday.heightCm, 'cm', 1)
-          : null;
-      growthParts.push(
-        `Ht ${formatNumber(latestGrowthToday.heightCm, 1)}cm${delta && delta !== '0' ? ` (${delta})` : ''}`
-      );
-    }
-    if (latestGrowthToday?.headCircumferenceCm != null) {
-      const delta =
-        latestGrowthYesterday?.headCircumferenceCm != null
-          ? formatDeltaNumber(
-              latestGrowthToday.headCircumferenceCm - latestGrowthYesterday.headCircumferenceCm,
-              'cm',
-              1
-            )
-          : null;
-      growthParts.push(
-        `HC ${formatNumber(latestGrowthToday.headCircumferenceCm, 1)}cm${
-          delta && delta !== '0' ? ` (${delta})` : ''
-        }`
-      );
-    }
-    const growthLabel = growthParts.length > 0 ? growthParts.join(' · ') : null;
+    // Growth records are available but not currently displayed in sublabels
+    // const latestGrowthToday = latestGrowth(growthToday);
+    // const latestGrowthYesterday = latestGrowth(growthYesterday);
+    // Removed growthParts logic as it's now handled in BabyInfoBanner
 
     // Habit sublabel
     const habitCount = babyHabits.length;
@@ -392,7 +339,6 @@ export default function TrackingScreen() {
                 : ''
             }${longestSleepText ? ` · longest ${longestSleepText}` : ''}`
           : t('tracking.tiles.sleep.sublabel'),
-      growth: growthLabel ?? t('tracking.tiles.growth.sublabel'),
       habit: habitLabel ?? t('tracking.tiles.habit.sublabel'),
     };
   }, [
@@ -418,7 +364,9 @@ export default function TrackingScreen() {
       key === 'pumping' ||
       key === 'diaper' ||
       key === 'sleep' ||
-      key === 'growth' ||
+      key === 'pumping' ||
+      key === 'diaper' ||
+      key === 'sleep' ||
       key === 'habit'
     );
   }
@@ -439,7 +387,19 @@ export default function TrackingScreen() {
     );
   }
 
-  const displayBabies = babyProfiles.length > 0 ? babyProfiles : [profile];
+  // Handle scroll end to switch baby
+  const onMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const x = event.nativeEvent.contentOffset.x;
+    const index = Math.round(x / SCREEN_WIDTH);
+    if (index >= 0 && index < displayBabies.length) {
+      setActiveBabyIndex(index);
+      const baby = displayBabies[index];
+      if (baby && baby.id !== profile?.id) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        handleSelectBaby(baby.id);
+      }
+    }
+  };
 
   const handleSelectBaby = async (babyId: number) => {
     if (babyId === profile.id || switchingBabyId != null) {
@@ -475,75 +435,71 @@ export default function TrackingScreen() {
     }
   };
 
-  const currentMonths = computeMonthsOld(profile.birthDate);
-  const BabySelector = (
-    <Select
-      value={{ value: profile.id.toString(), label: profile.nickname }}
-      onValueChange={(option) => {
-        if (option?.value) {
-          const babyId = parseInt(option.value, 10);
-          if (!isNaN(babyId) && babyId !== profile.id) {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            handleSelectBaby(babyId);
-          }
-        }
-      }}>
-      <SelectTrigger className="w-32 py-2">
-        <SelectValue
-          className="text-sm font-semibold text-foreground"
-          placeholder={t('tracking.selectBaby', { defaultValue: 'Select baby' })}>
-          {profile.nickname} ({currentMonths}
-          {t('common.monthsAbbrev', { defaultValue: 'mo' })})
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent className="w-48">
-        <SelectGroup>
-          {displayBabies.map((baby) => {
-            const months = computeMonthsOld(baby.birthDate);
-            return (
-              <SelectItem
-                key={baby.id}
-                value={baby.id.toString()}
-                label={`${baby.nickname} (${months}${t('common.monthsAbbrev', { defaultValue: 'mo' })})`}>
-                <Text className="text-sm">
-                  {baby.nickname} ({months}
-                  {t('common.monthsAbbrev', { defaultValue: 'mo' })})
-                </Text>
-              </SelectItem>
-            );
-          })}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-  );
-
   return (
     <View className="flex-1 bg-background">
-      <TabPageHeader title={t('tabs.tracking')} accessory={BabySelector} />
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-6 pt-2 pb-20 gap-6"
+        contentContainerClassName="pb-32"
         showsVerticalScrollIndicator={false}>
-        <View className="flex-row flex-wrap justify-between gap-y-4">
-          {trackingTiles.map((tile) => (
+        {/* Swipeable Baby Profiles */}
+        <View>
+          <ScrollView
+            ref={scrollRef}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={onMomentumScrollEnd}
+            decelerationRate="fast"
+            className="mb-2">
+            {displayBabies.map((baby) => (
+              <View key={baby.id} style={{ width: SCREEN_WIDTH }}>
+                <View className="px-6 pt-4">
+                  <BabyInfoBanner
+                    profile={baby}
+                    latestGrowthRecord={
+                      baby.id === profile?.id ? latestGrowth(growthToday) : undefined
+                    }
+                    previousGrowthRecord={
+                      baby.id === profile?.id ? latestGrowth(growthYesterday) : undefined
+                    }
+                  />
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* Pagination Dots */}
+          {displayBabies.length > 1 && (
+            <View className="mb-6 flex-row justify-center gap-2">
+              {displayBabies.map((_, index) => (
+                <View
+                  key={index}
+                  className={`h-2 w-2 rounded-full ${index === activeBabyIndex ? 'bg-primary' : 'bg-muted'}`}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View className="flex-row flex-wrap justify-between gap-y-4 px-6">
+          {visibleTiles.map((tile) => (
             <Card
               key={tile.id}
-              className="w-[47%] py-2 shadow-sm"
+              className={`${tile.fullWidth ? 'w-[100%]' : 'w-[47%]'} py-3 shadow-sm active:opacity-80`}
               onPress={() => handleTilePress(tile.id)}
               testID={`tile-${tile.id}`}
-              accessibilityLabel={t('tracking.accessibility.openTile', {
-                defaultValue: 'Open %{label}',
-                params: { label: t(tile.labelKey) },
-              })}
               accessibilityRole="button">
-              <CardContent className="gap-2.5 p-2">
-                <View className="flex-row items-center gap-2">
+              <CardContent className="gap-2.5 p-3">
+                <View className="flex-row items-center gap-3">
                   <MaterialCommunityIcons
                     name={tile.icon}
-                    size={34}
+                    size={tile.fullWidth ? 42 : 36}
                     color={brandColors.get(tile.colorKey)}
                   />
-                  <Text className="text-lg font-bold text-foreground">{t(tile.labelKey)}</Text>
+                  <Text
+                    className={`${tile.fullWidth ? 'text-xl' : 'text-lg'} font-bold text-foreground`}>
+                    {t(tile.labelKey)}
+                  </Text>
                 </View>
                 <Text className="text-sm text-muted-foreground">
                   {getTileSublabel(tile.id, tile.sublabelKey)}
@@ -555,135 +511,4 @@ export default function TrackingScreen() {
       </ScrollView>
     </View>
   );
-}
-
-function computeMonthsOld(birthDateIso: string): number {
-  const birth = new Date(birthDateIso);
-  const now = new Date();
-  const months =
-    (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-  return Math.max(months, 0);
-}
-
-function computeTodayRange() {
-  const now = new Date();
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(now);
-  end.setHours(23, 59, 59, 999);
-  return {
-    startOfToday: Math.floor(start.getTime() / 1000),
-    endOfToday: Math.floor(end.getTime() / 1000),
-  };
-}
-
-function computeYesterdayRange(startOfToday: number) {
-  const endOfYesterday = startOfToday - 1;
-  const startOfYesterday = startOfToday - 24 * 60 * 60;
-  return { startOfYesterday, endOfYesterday };
-}
-
-function sum(values: (number | null | undefined)[]): number {
-  return values.reduce<number>((acc, value) => acc + (value ?? 0), 0);
-}
-
-function roundMinutes(seconds: number) {
-  return Math.round(seconds / 60);
-}
-
-function maxTimestamp(values: (number | null | undefined)[]) {
-  return values.reduce<number | null>((max, value) => {
-    if (value != null && (max == null || value > max)) {
-      return value;
-    }
-    return max;
-  }, null);
-}
-
-function formatDuration(seconds: number) {
-  const mins = Math.round(seconds / 60);
-  if (mins === 0 && seconds > 0) {
-    return '1m';
-  }
-  const hours = Math.floor(mins / 60);
-  const remainingMins = mins % 60;
-  if (hours > 0) {
-    return `${hours}h ${remainingMins}m`;
-  }
-  return `${mins}m`;
-}
-
-function formatSleepTotal(totalSeconds: number) {
-  if (totalSeconds < 3600) {
-    const mins = Math.max(1, Math.round(totalSeconds / 60));
-    return `${mins}m today`;
-  }
-  const hours = Math.round((totalSeconds / 3600) * 10) / 10;
-  return `${hours}h today`;
-}
-
-function formatTimeAgo(diffSeconds: number) {
-  if (diffSeconds < 60) {
-    return 'just now';
-  }
-  const mins = Math.floor(diffSeconds / 60);
-  if (mins < 60) {
-    return `${mins}m`;
-  }
-  const hours = Math.floor(mins / 60);
-  const remMins = mins % 60;
-  if (hours < 24) {
-    return `${hours}h ${remMins}m`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days}d`;
-}
-
-function formatDelta(value: number, unit: string) {
-  const rounded = Math.round(value);
-  if (rounded === 0) {
-    return '0';
-  }
-  return `${rounded > 0 ? '+' : ''}${rounded}${unit ? ` ${unit}` : ''}`;
-}
-
-function formatFeedDelta(deltaBottle: number, deltaNursingMinutes: number) {
-  const parts: string[] = [];
-  if (deltaBottle !== 0) {
-    parts.push(`Δb ${formatDelta(deltaBottle, 'ml')}`);
-  }
-  if (deltaNursingMinutes !== 0) {
-    parts.push(`Δn ${formatDelta(deltaNursingMinutes, 'm')}`);
-  }
-  return parts.length > 0 ? parts.join(' / ') : null;
-}
-
-function formatSleepDelta(deltaSeconds: number) {
-  const mins = Math.round(deltaSeconds / 60);
-  if (Math.abs(mins) < 60) {
-    return formatDelta(mins, 'm');
-  }
-  const hours = Math.round((deltaSeconds / 3600) * 10) / 10;
-  return formatDelta(hours, 'h');
-}
-
-function latestGrowth(records: GrowthRecord[]): GrowthRecord | null {
-  return records.reduce<GrowthRecord | null>((latest, record) => {
-    if (record.time != null && (latest?.time == null || record.time > latest.time)) {
-      return record;
-    }
-    return latest;
-  }, null);
-}
-
-function formatNumber(value: number, digits: number) {
-  return value.toFixed(digits);
-}
-
-function formatDeltaNumber(value: number, unit: string, digits: number) {
-  const rounded = Number(value.toFixed(digits));
-  if (rounded === 0) {
-    return '0';
-  }
-  return `${rounded > 0 ? '+' : ''}${rounded}${unit ? ` ${unit}` : ''}`;
 }

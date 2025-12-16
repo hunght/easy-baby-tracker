@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Switch, View } from 'react-native';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
 import { getBabyProfiles } from '@/database/baby-profile';
 import type { Locale } from '@/localization/translations';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
 
 // Theme mode options
 const themeModes: readonly ('system' | 'light' | 'dark')[] = ['system', 'light', 'dark'];
@@ -50,6 +51,7 @@ export default function SettingsScreen() {
     queryKey: BABY_PROFILES_QUERY_KEY,
     queryFn: getBabyProfiles,
   });
+  const { features, toggleFeature } = useFeatureFlags();
 
   if (isLoading) {
     return (
@@ -104,6 +106,38 @@ export default function SettingsScreen() {
               {t('common.addNewBaby')}
             </Text>
           </Button>
+        </View>
+
+        {/* Feature Visibility Section */}
+        <View className="gap-3 rounded-lg bg-card p-5 shadow-sm">
+          <Text className="text-lg font-extrabold text-foreground">
+            {t('settings.featuresTitle', { defaultValue: 'Feature Visibility' })}
+          </Text>
+          <Text className="text-sm text-muted-foreground">
+            {t('settings.featuresSubtitle', { defaultValue: 'Toggle features to show/hide them' })}
+          </Text>
+          <View className="gap-4">
+            {Object.keys(features)
+              .filter((k): k is FeatureKey => k in features)
+              .map((key) => (
+                <View
+                  key={key}
+                  className="flex-row items-center justify-between border-b border-border pb-2 last:border-0 last:pb-0">
+                  <Text className="text-base font-medium capitalize text-foreground">
+                    {t(`tracking.tiles.${key}.label`, { defaultValue: key })}
+                  </Text>
+                  <Switch
+                    value={features[key]}
+                    onValueChange={() => {
+                      Haptics.selectionAsync();
+                      toggleFeature(key);
+                    }}
+                    trackColor={{ false: '#767577', true: '#FF5C8D' }}
+                    thumbColor={'#f4f3f4'}
+                  />
+                </View>
+              ))}
+          </View>
         </View>
 
         <View className="gap-3 rounded-lg bg-card p-5 shadow-sm">

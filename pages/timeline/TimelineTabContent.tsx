@@ -25,9 +25,11 @@ import {
   TimelineActivityType,
 } from '@/database/timeline';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
 
 export function TimelineTabContent() {
   const { t } = useLocalization();
+  const { features } = useFeatureFlags();
   const queryClient = useQueryClient();
   const { showNotification } = useNotification();
   const brandColors = useBrandColor();
@@ -47,10 +49,29 @@ export function TimelineTabContent() {
     queryKey: [...TIMELINE_ACTIVITIES_QUERY_KEY, filter],
     queryFn: async ({ pageParam }: { pageParam: number | undefined }) => {
       const beforeTime = pageParam ?? Math.floor(Date.now() / 1000) + 86400; // Future buffer
+
+      let filterTypes: TimelineActivityType[] | undefined;
+
+      if (filter !== 'all') {
+        filterTypes = [filter];
+      } else {
+        // If 'all', only include enabled features
+        const validTypes: TimelineActivityType[] = [
+          'feeding',
+          'sleep',
+          'diaper',
+          'health',
+          'growth',
+          'pumping',
+          'diary',
+        ];
+        filterTypes = validTypes.filter((type) => features[type as FeatureKey]);
+      }
+
       return getTimelineActivities({
         beforeTime,
         limit: 20,
-        filterTypes: filter === 'all' ? undefined : [filter],
+        filterTypes,
       });
     },
     getNextPageParam: (lastPage) => {
