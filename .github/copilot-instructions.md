@@ -1,8 +1,8 @@
-# BabyEase NativeWind - AI Coding Agent Instructions
+# BabyEase (EasyBaby+) - AI Coding Agent Instructions
 
 ## Project Overview
 
-BabyEase NativeWind is a **React Native baby tracking app** built with:
+**BabyEase** (marketed as "EasyBaby+") is a **React Native baby tracking app** built with:
 
 - **Expo 54+** (New Architecture) with iOS, Android, and **full web support**
 - **Expo Router** (file-based routing)
@@ -11,6 +11,12 @@ BabyEase NativeWind is a **React Native baby tracking app** built with:
 - **SQLite + Drizzle ORM** (local database with WASM-based web support)
 - **React Native Reusables** (shadcn/ui-inspired components)
 - **React Query** (data fetching and caching)
+
+**App Identity**:
+
+- App name: "EasyBaby+"
+- Slug: "BabyEase" (used in URLs, bundle IDs: `com.hunght.BabyEase`)
+- Scheme: `easybabytracker://`
 
 **Critical**: NativeWind 4/Tailwind classes ONLY - `StyleSheet.create()` is **banned by ESLint**. All components follow shadcn/ui patterns via React Native Reusables.
 
@@ -102,7 +108,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 - **SQLite + Drizzle ORM**: Schema in `db/schema.ts`, migrations in `drizzle/`
 - **Web support**: WASM-based SQLite initialization via `DatabaseInitializer` in `app/_layout.tsx`
   - Uses `openDatabaseAsync()` on web (async), `openDatabaseSync()` on native
-  - Metro config adds WASM support + SharedArrayBuffer headers (`Cross-Origin-Embedder-Policy`, `Cross-Origin-Opener-Policy`)
+  - Metro config (`metro.config.js`) critical for web:
+    - Adds `.wasm` to `assetExts` for WASM file support
+    - Adds `.sql` to `sourceExts` for Drizzle migrations
+    - Injects HTTP headers via `enhanceMiddleware`: `Cross-Origin-Embedder-Policy: credentialless`, `Cross-Origin-Opener-Policy: same-origin` (required for SharedArrayBuffer)
   - Native: `database/db.ts`, Web: `database/db.web.ts` with Proxy pattern for lazy initialization
 - **Timestamps**: ALWAYS Unix seconds (`Math.floor(Date.now() / 1000)`), NEVER milliseconds
 - **Database modules** (`database/*.ts`): `save{Activity}()`, `get{Activities}()` auto-inject `babyId` via `requireActiveBabyProfileId()`

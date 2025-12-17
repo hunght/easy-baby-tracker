@@ -2,7 +2,7 @@
   "expo": {
     "name": "EasyBaby+",
     "slug": "BabyEase",
-    "version": "1.0.6",
+    "version": "1.0.7",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "easybabytracker",
@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hunght.BabyEase",
-      "buildNumber": "8",
+      "buildNumber": "9",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -30,7 +30,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.hunght.BabyEase",
-      "versionCode": 8
+      "versionCode": 10
     },
     "web": {
       "bundler": "metro",
@@ -48,7 +48,8 @@
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to add baby pictures.",
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take baby photos."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true
