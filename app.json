@@ -2,7 +2,7 @@
   "expo": {
     "name": "EasyBaby+",
     "slug": "BabyEase",
-    "version": "1.0.7",
+    "version": "1.0.11",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
     "scheme": "easybabytracker",
@@ -18,7 +18,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.hunght.BabyEase",
-      "buildNumber": "9",
+      "buildNumber": "11",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -30,7 +30,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.hunght.BabyEase",
-      "versionCode": 10
+      "versionCode": 14
     },
     "web": {
       "bundler": "metro",

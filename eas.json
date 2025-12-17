@@ -45,7 +45,8 @@
     "production": {
       "ios": {
         "appleId": "hth321@gmail.com",
-        "appleTeamId": "ZMEPTM7597"
+        "appleTeamId": "ZMEPTM7597",
+        "ascAppId": "6755802501"
       },
       "android": {
         "serviceAccountKeyPath": "./google-play-key.json",
