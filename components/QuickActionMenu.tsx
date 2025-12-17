@@ -55,7 +55,7 @@ export function QuickActionMenu({ isOpen, onToggle }: QuickActionMenuProps) {
     } else if (id === 'pumping') {
       router.push('/(tracking)/pumping');
     } else if (id === 'diary') {
-      router.push('/(tracking)/diary');
+      router.push('/(tracking)/diary-list');
     }
   };
 

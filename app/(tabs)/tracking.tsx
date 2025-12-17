@@ -249,32 +249,35 @@ export default function TrackingScreen() {
       feeding:
         totalBottleMl > 0 || totalNursingMinutes > 0
           ? [
-            totalBottleMl > 0 ? `${Math.round(totalBottleMl)} ml bottle` : null,
-            totalNursingMinutes > 0 ? `${totalNursingMinutes}m nursing` : null,
-            formatFeedDelta(
-              totalBottleMl - totalBottleMlYesterday,
-              totalNursingMinutes - totalNursingMinutesYesterday
-            ),
-          ]
-            .filter(Boolean)
-            .join(' · ')
+              totalBottleMl > 0 ? `${Math.round(totalBottleMl)} ml bottle` : null,
+              totalNursingMinutes > 0 ? `${totalNursingMinutes}m nursing` : null,
+              formatFeedDelta(
+                totalBottleMl - totalBottleMlYesterday,
+                totalNursingMinutes - totalNursingMinutesYesterday
+              ),
+            ]
+              .filter(Boolean)
+              .join(' · ')
           : t('tracking.tiles.feeding.sublabel'),
       pumping:
         totalPumpedMl > 0
-          ? `${Math.round(totalPumpedMl)} ml · Δ ${formatDelta(totalPumpedMl - totalPumpedMlYesterday, 'ml')}${lastPumpingAgo ? ` · ${lastPumpingAgo} ago` : ''
-          }`
+          ? `${Math.round(totalPumpedMl)} ml · Δ ${formatDelta(totalPumpedMl - totalPumpedMlYesterday, 'ml')}${
+              lastPumpingAgo ? ` · ${lastPumpingAgo} ago` : ''
+            }`
           : t('tracking.tiles.pumping.sublabel'),
       diaper:
         diaperCounts != null
-          ? `${diaperCounts}${lastDiaperAgo ? ` · ${lastDiaperAgo} ago` : ''}${diaperYesterdayCounts ? ` · ${diaperYesterdayCounts}` : ''
-          }${diaperDeltaTotal !== 0 ? ` · Δ ${formatDelta(diaperDeltaTotal, '')}` : ''}`
+          ? `${diaperCounts}${lastDiaperAgo ? ` · ${lastDiaperAgo} ago` : ''}${
+              diaperYesterdayCounts ? ` · ${diaperYesterdayCounts}` : ''
+            }${diaperDeltaTotal !== 0 ? ` · Δ ${formatDelta(diaperDeltaTotal, '')}` : ''}`
           : t('tracking.tiles.diaper.sublabel'),
       sleep:
         totalSleepSeconds > 0
-          ? `${formatSleepTotal(totalSleepSeconds)}${totalSleepSecondsYesterday > 0
-            ? ` · Δ ${formatSleepDelta(totalSleepSeconds - totalSleepSecondsYesterday)}`
-            : ''
-          }${longestSleepText ? ` · longest ${longestSleepText}` : ''}`
+          ? `${formatSleepTotal(totalSleepSeconds)}${
+              totalSleepSecondsYesterday > 0
+                ? ` · Δ ${formatSleepDelta(totalSleepSeconds - totalSleepSecondsYesterday)}`
+                : ''
+            }${longestSleepText ? ` · longest ${longestSleepText}` : ''}`
           : t('tracking.tiles.sleep.sublabel'),
       habit: habitLabel ?? t('tracking.tiles.habit.sublabel'),
     };
@@ -335,7 +338,7 @@ export default function TrackingScreen() {
     } else if (tileId === 'habit') {
       router.push('/(habit)/habit');
     } else if (tileId === 'diary') {
-      router.push('/(tracking)/diary');
+      router.push('/(tracking)/diary-list');
     }
   };
 

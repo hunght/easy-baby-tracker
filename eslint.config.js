@@ -37,10 +37,10 @@ module.exports = defineConfig([
           message: 'Classes are not allowed. Please use functional programming patterns instead.',
         },
         {
-          // Match TSAsExpression that is NOT "as const" (TSLiteralType) and NOT "as unknown" (TSUnknownKeyword)
+          // Match TSAsExpression that is NOT "as const" (TSTypeReference with typeName.name="const") and NOT "as unknown" (TSUnknownKeyword)
           // This catches all other type assertions like "as SomeType" or "as string"
           selector:
-            'TSAsExpression:not([typeAnnotation.type="TSLiteralType"]):not([typeAnnotation.type="TSUnknownKeyword"])',
+            'TSAsExpression:not([typeAnnotation.typeName.name="const"]):not([typeAnnotation.type="TSUnknownKeyword"])',
           message:
             'Type assertions using "as" are not allowed (except "as const" and "as unknown"). Use type guards or proper type narrowing instead.',
         },

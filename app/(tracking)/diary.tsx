@@ -1,25 +1,20 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { useEffect, useState } from 'react';
+import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 
 import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
 import { DIARY_ENTRIES_QUERY_KEY } from '@/constants/query-keys';
-import type { DiaryEntryPayload, DiaryEntryRecord } from '@/database/diary';
-import {
-  getDiaryEntries,
-  getDiaryEntryById,
-  saveDiaryEntry,
-  updateDiaryEntry,
-} from '@/database/diary';
-import { useBrandColor } from '@/hooks/use-brand-color';
+import type { DiaryEntryPayload } from '@/database/diary';
+import { getDiaryEntryById, saveDiaryEntry, updateDiaryEntry } from '@/database/diary';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 const DIARY_PHOTO_DIR =
@@ -56,7 +51,6 @@ export default function DiaryScreen() {
   const queryClient = useQueryClient();
   const { t } = useLocalization();
   const { showNotification } = useNotification();
-  const brandColors = useBrandColor();
   const params = useLocalSearchParams<{ id: string }>();
   const id = params.id ? Number(params.id) : undefined;
   const isEditing = !!id;
@@ -65,9 +59,11 @@ export default function DiaryScreen() {
   const [content, setContent] = useState('');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [photoProcessing, setPhotoProcessing] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch existing data if editing
-  const { data: existingData, isLoading: _isLoadingData } = useQuery({
+  const { data: existingData, isLoading } = useQuery({
     queryKey: [DIARY_ENTRIES_QUERY_KEY, id],
     queryFn: () => (id ? getDiaryEntryById(id) : null),
     enabled: isEditing,
@@ -82,19 +78,12 @@ export default function DiaryScreen() {
     }
   }, [existingData]);
 
-  const { data: entries = [] } = useQuery<DiaryEntryRecord[]>({
-    queryKey: DIARY_ENTRIES_QUERY_KEY,
-    queryFn: () => getDiaryEntries(),
-  });
-
   const mutation = useMutation({
     mutationFn: saveDiaryEntry,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: DIARY_ENTRIES_QUERY_KEY });
       showNotification(t('common.saveSuccess'), 'success');
-      setTitle('');
-      setContent('');
-      setPhotoUri(null);
+      router.back();
     },
     onError: (error) => {
       console.error('Failed to save diary entry:', error);
@@ -103,14 +92,6 @@ export default function DiaryScreen() {
   });
 
   const hasContent = title.trim().length > 0 || content.trim().length > 0 || photoUri != null;
-  const isSaving = mutation.isPending;
-
-  const formattedEntries = useMemo(() => {
-    return entries.map((entry) => ({
-      ...entry,
-      date: new Date(entry.createdAt * 1000),
-    }));
-  }, [entries]);
 
   const requestPermission = async (type: 'camera' | 'library') => {
     const permission =
@@ -138,17 +119,13 @@ export default function DiaryScreen() {
       if (!storedUri) {
         throw new Error('Unable to store image');
       }
-      // Verify the file exists before setting the URI
       const fileInfo = await FileSystem.getInfoAsync(storedUri);
       if (!fileInfo.exists) {
         throw new Error('Stored file does not exist');
       }
-      // Ensure URI format is correct for expo-image (remove file:// prefix if present)
-      // expo-image handles local file paths directly without the file:// prefix
       const imageUri = storedUri.startsWith('file://')
         ? storedUri.replace(/^file:\/\//, '')
         : storedUri;
-      console.log('Photo stored at:', imageUri);
       setPhotoUri(imageUri);
     } catch (error) {
       console.error('Error replacing photo:', error);
@@ -159,6 +136,7 @@ export default function DiaryScreen() {
   };
 
   const handleTakePhoto = async () => {
+    setShowPhotoModal(false);
     const allowed = await requestPermission('camera');
     if (!allowed) return;
 
@@ -173,6 +151,7 @@ export default function DiaryScreen() {
   };
 
   const handleChoosePhoto = async () => {
+    setShowPhotoModal(false);
     const allowed = await requestPermission('library');
     if (!allowed) return;
 
@@ -189,7 +168,9 @@ export default function DiaryScreen() {
   };
 
   const handleRemovePhoto = async () => {
+    setShowPhotoModal(false);
     if (!photoUri) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await FileSystem.deleteAsync(photoUri, { idempotent: true });
     } catch (error) {
@@ -203,6 +184,9 @@ export default function DiaryScreen() {
       return;
     }
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsSaving(true);
+
     const payload: DiaryEntryPayload = {
       title: title.trim() || undefined,
       content: content.trim() || undefined,
@@ -212,159 +196,178 @@ export default function DiaryScreen() {
     try {
       if (isEditing && id) {
         await updateDiaryEntry(id, payload);
-      } else {
-        await mutation.mutateAsync(payload);
-      }
-      // Manually trigger success for update case since we bypassed mutation
-      if (isEditing) {
         queryClient.invalidateQueries({ queryKey: DIARY_ENTRIES_QUERY_KEY });
         showNotification(t('common.saveSuccess'), 'success');
-        setTimeout(() => router.back(), 500);
+        router.back();
+      } else {
+        await mutation.mutateAsync(payload);
       }
     } catch (error) {
       console.error(error);
       showNotification(t('common.diarySaveError'), 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
+
+  if (isLoading && isEditing) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-muted-foreground">{t('common.loading')}</Text>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('diary.editTitle') : t('diary.title')}
-        onSave={handleSave}
-        isSaving={!hasContent || isSaving}
         closeLabel={t('common.close')}
-        saveLabel={isSaving ? t('common.saving') : t('common.save')}
       />
 
-      <ScrollView contentContainerClassName="p-5 pb-15 gap-5" showsVerticalScrollIndicator={false}>
-        <Input
-          className="mb-3"
-          value={title}
-          onChangeText={setTitle}
-          placeholder={t('diary.titlePlaceholder')}
-        />
+      <ScrollView
+        contentContainerClassName="p-5 pb-28 gap-4"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
+        {/* Title Input */}
+        <View>
+          <Input
+            value={title}
+            onChangeText={setTitle}
+            placeholder={t('diary.titlePlaceholder')}
+            className="h-12 text-base"
+          />
+        </View>
 
-        <Input
-          className="min-h-[140px]"
-          value={content}
-          onChangeText={setContent}
-          placeholder={t('diary.contentPlaceholder')}
-          multiline
-          textAlignVertical="top"
-        />
+        {/* Content Input */}
+        <View>
+          <Input
+            className="min-h-[140px] text-base"
+            value={content}
+            onChangeText={setContent}
+            placeholder={t('diary.contentPlaceholder')}
+            multiline
+            textAlignVertical="top"
+          />
+        </View>
 
-        <View className="relative h-[220px] overflow-hidden rounded-lg border border-border bg-card">
+        {/* Photo Section - Tappable Card */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowPhotoModal(true);
+          }}
+          disabled={photoProcessing}
+          className="overflow-hidden rounded-2xl border border-border bg-card">
           {photoUri ? (
-            <Image
-              key={photoUri}
-              source={{ uri: photoUri }}
-              style={{ width: '100%', height: '100%' }}
-              contentFit="cover"
-              transition={200}
-              onError={(error) => {
-                console.error('Image load error:', error);
-                console.error('Image URI:', photoUri);
-              }}
-            />
-          ) : (
-            <View className="absolute inset-0 items-center justify-center gap-2.5">
-              <MaterialCommunityIcons
-                name="image-plus"
-                color={brandColors.colors.lavender}
-                size={32}
+            <View className="relative">
+              <Image
+                key={photoUri}
+                source={{ uri: photoUri }}
+                style={{ width: '100%', height: 200 }}
+                contentFit="cover"
+                transition={200}
               />
-              <Text className="font-semibold text-lavender">{t('diary.addPhoto')}</Text>
+              {/* Photo overlay badge */}
+              <View className="absolute bottom-3 right-3 flex-row items-center gap-1.5 rounded-full bg-black/50 px-3 py-1.5">
+                <MaterialCommunityIcons name="pencil" size={14} color="#FFF" />
+                <Text className="text-xs font-semibold text-white">{t('common.change')}</Text>
+              </View>
+            </View>
+          ) : (
+            <View className="h-[160px] items-center justify-center gap-3">
+              <View className="h-14 w-14 items-center justify-center rounded-full bg-accent/10">
+                <MaterialCommunityIcons name="image-plus" size={28} color="#7C3AED" />
+              </View>
+              <Text className="text-base font-semibold text-accent">{t('diary.addPhoto')}</Text>
+              <Text className="text-sm text-muted-foreground">{t('diary.photoHint')}</Text>
             </View>
           )}
-        </View>
-
-        <View className="flex-row gap-3">
-          <Pressable
-            className={`flex-1 flex-row items-center justify-center gap-2 rounded-lg bg-lavender py-3 ${
-              photoProcessing ? 'opacity-60' : ''
-            }`}
-            onPress={handleTakePhoto}
-            disabled={photoProcessing}>
-            <MaterialCommunityIcons name="camera" color={brandColors.colors.white} size={18} />
-            <Text className="text-lavender-foreground font-semibold">{t('diary.takePhoto')}</Text>
-          </Pressable>
-          <Pressable
-            className={`flex-1 flex-row items-center justify-center gap-2 rounded-lg border border-lavender py-3 ${
-              photoProcessing ? 'opacity-60' : ''
-            }`}
-            onPress={handleChoosePhoto}
-            disabled={photoProcessing}>
-            <MaterialCommunityIcons name="image" color={brandColors.colors.lavender} size={18} />
-            <Text className="font-semibold text-lavender">{t('diary.choosePhoto')}</Text>
-          </Pressable>
-        </View>
-
-        {photoUri && (
-          <Pressable
-            className="flex-row items-center gap-1.5 self-start"
-            onPress={handleRemovePhoto}>
-            <MaterialCommunityIcons
-              name="trash-can-outline"
-              color={brandColors.colors.destructive}
-              size={18}
-            />
-            <Text className="font-semibold text-destructive">{t('diary.removePhoto')}</Text>
-          </Pressable>
-        )}
-
-        <View className="flex-row items-center justify-between">
-          <Text className="text-lg font-bold text-foreground">{t('diary.entriesHeading')}</Text>
-          <Text className="font-semibold text-foreground">
-            {t('common.entriesCount', { params: { count: formattedEntries.length } })}
-          </Text>
-        </View>
-
-        {formattedEntries.length === 0 ? (
-          <View className="items-center gap-3 rounded-lg border border-border bg-card p-6">
-            <MaterialCommunityIcons
-              name="star-outline"
-              size={36}
-              color={brandColors.colors.lavender}
-            />
-            <Text className="text-center text-muted-foreground">{t('diary.emptyState')}</Text>
-          </View>
-        ) : (
-          formattedEntries.map((entry) => (
-            <View key={entry.id} className="mt-3 gap-3 rounded-lg border border-border bg-card p-4">
-              <View className="flex-row items-center justify-between gap-3">
-                <Text className="flex-1 text-base font-semibold text-foreground">
-                  {entry.title ?? t('diary.title')}
-                </Text>
-                <Text className="text-sm text-muted-foreground">
-                  {entry.date.toLocaleString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}
-                </Text>
-              </View>
-              {entry.photoUri ? (
-                <Image
-                  key={entry.photoUri}
-                  source={{ uri: entry.photoUri }}
-                  style={{ width: '100%', height: '100%' }}
-                  contentFit="cover"
-                  transition={200}
-                  onError={(error) => {
-                    console.error('Image load error:', error);
-                    console.error('Image URI:', entry.photoUri);
-                  }}
-                />
-              ) : null}
-              {entry.content ? (
-                <Text className="text-base text-foreground">{entry.content}</Text>
-              ) : null}
-            </View>
-          ))
-        )}
+        </Pressable>
       </ScrollView>
+
+      {/* Photo Selection Modal - Bottom Sheet Style */}
+      <Modal
+        visible={showPhotoModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPhotoModal(false)}>
+        <Pressable
+          className="flex-1 justify-end bg-black/50"
+          onPress={() => setShowPhotoModal(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="rounded-t-3xl bg-card px-5 pb-10 pt-6">
+              <Text className="mb-4 text-center text-lg font-bold text-foreground">
+                {t('diary.addPhoto')}
+              </Text>
+
+              <Pressable
+                onPress={handleTakePhoto}
+                className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-accent">
+                <MaterialCommunityIcons name="camera" size={22} color="#FFF" />
+                <Text className="text-base font-semibold text-white">{t('diary.takePhoto')}</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleChoosePhoto}
+                className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-muted">
+                <MaterialCommunityIcons name="image-multiple" size={22} color="#666" />
+                <Text className="text-base font-semibold text-foreground">
+                  {t('diary.choosePhoto')}
+                </Text>
+              </Pressable>
+
+              {photoUri && (
+                <Pressable
+                  onPress={handleRemovePhoto}
+                  className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-red-500/10">
+                  <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
+                  <Text className="text-base font-semibold text-red-500">
+                    {t('diary.removePhoto')}
+                  </Text>
+                </Pressable>
+              )}
+
+              <Pressable
+                onPress={() => setShowPhotoModal(false)}
+                className="h-14 items-center justify-center rounded-xl">
+                <Text className="text-base font-semibold text-muted-foreground">
+                  {t('common.cancel')}
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Sticky Bottom Save Bar */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-8 pt-4">
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving || !hasContent}
+          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${
+            isSaving || !hasContent ? 'bg-muted' : 'bg-accent'
+          }`}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+          <MaterialCommunityIcons
+            name="content-save"
+            size={22}
+            color={isSaving || !hasContent ? '#999' : '#FFF'}
+          />
+          <Text
+            className={`text-lg font-bold ${
+              isSaving || !hasContent ? 'text-muted-foreground' : 'text-white'
+            }`}>
+            {isSaving ? t('common.saving') : t('common.save')}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

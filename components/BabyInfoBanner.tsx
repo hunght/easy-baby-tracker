@@ -48,7 +48,7 @@ export function BabyInfoBanner({
   };
 
   const handlePressDiary = () => {
-    router.push('/(tracking)/diary');
+    router.push('/(tracking)/diary-list');
   };
 
   return (

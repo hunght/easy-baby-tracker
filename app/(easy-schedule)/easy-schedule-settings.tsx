@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Alert, ScrollView, Switch, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { useState, useEffect, useMemo } from 'react';
 
 import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
+import { ModalHeader } from '@/components/ModalHeader';
+import { DateTimePickerModal } from '@/components/DateTimePickerModal';
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 import { getActiveBabyProfile, updateBabyFirstWakeTime } from '@/database/baby-profile';
 import { getAppState, setAppState } from '@/database/app-state';
@@ -27,6 +30,8 @@ import { safeParseEasyScheduleNotificationData } from '@/lib/json-parse';
 const EASY_REMINDER_ENABLED_KEY = 'easyScheduleReminderEnabled';
 const EASY_REMINDER_ADVANCE_MINUTES_KEY = 'easyScheduleReminderAdvanceMinutes';
 
+const ADVANCE_OPTIONS = [5, 10, 15, 30];
+
 export default function EasyScheduleSettingsScreen() {
   const { t } = useLocalization();
   const router = useRouter();
@@ -37,6 +42,7 @@ export default function EasyScheduleSettingsScreen() {
   const [tempTime, setTempTime] = useState(new Date());
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderAdvanceMinutes, setReminderAdvanceMinutes] = useState(5);
+  const [isSaving, setIsSaving] = useState(false);
 
   const { data: babyProfile } = useQuery({
     queryKey: BABY_PROFILE_QUERY_KEY,
@@ -98,7 +104,6 @@ export default function EasyScheduleSettingsScreen() {
       }
     },
     onSuccess: () => {
-      // Invalidate queries to refresh UI
       queryClient.invalidateQueries({
         queryKey: ['formulaRule', 'date', babyProfile?.id, today],
       });
@@ -114,6 +119,7 @@ export default function EasyScheduleSettingsScreen() {
   });
 
   const handleResetCustomRule = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       t('easySchedule.settings.resetCustomRuleTitle'),
       t('easySchedule.settings.resetCustomRuleMessage'),
@@ -138,7 +144,6 @@ export default function EasyScheduleSettingsScreen() {
         setFirstWakeTime(babyProfile.firstWakeTime);
       }
 
-      // Load reminder settings from app state
       const reminderEnabledValue = await getAppState(EASY_REMINDER_ENABLED_KEY);
       if (reminderEnabledValue === 'true') {
         setReminderEnabled(true);
@@ -157,6 +162,7 @@ export default function EasyScheduleSettingsScreen() {
   }, [babyProfile]);
 
   const openTimePicker = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const [hours, minutes] = firstWakeTime.split(':').map(Number);
     const date = new Date();
     date.setHours(hours, minutes, 0, 0);
@@ -165,16 +171,32 @@ export default function EasyScheduleSettingsScreen() {
   };
 
   const handleTimeChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-    setShowTimePicker(false);
     if (selectedDate) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       const hours = selectedDate.getHours().toString().padStart(2, '0');
       const minutes = selectedDate.getMinutes().toString().padStart(2, '0');
       const newTime = `${hours}:${minutes}`;
       setFirstWakeTime(newTime);
+      setTempTime(selectedDate);
     }
   };
 
+  const handleReminderToggle = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setReminderEnabled(!reminderEnabled);
+  };
+
+  const handleAdvanceChange = (minutes: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setReminderAdvanceMinutes(minutes);
+  };
+
   const handleSave = async () => {
+    if (isSaving) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsSaving(true);
+
     try {
       // Save wake time
       if (babyProfile?.id && firstWakeTime !== babyProfile.firstWakeTime) {
@@ -196,12 +218,13 @@ export default function EasyScheduleSettingsScreen() {
             t('easySchedule.reminder.permissionDeniedTitle'),
             t('easySchedule.reminder.permissionDeniedBody')
           );
+          setIsSaving(false);
           return;
         }
 
-        // Schedule reminders for upcoming EASY events
         if (!babyProfile) {
           console.error('Cannot schedule reminders: no baby profile');
+          setIsSaving(false);
           return;
         }
 
@@ -233,7 +256,6 @@ export default function EasyScheduleSettingsScreen() {
         });
         for (const notification of existingNotifications) {
           const data = safeParseEasyScheduleNotificationData(notification.data);
-          // Check if it's an EASY schedule reminder (has activityType in data)
           if (data && data.activityType) {
             try {
               await cancelScheduledNotificationAsync(notification.notificationId);
@@ -250,131 +272,182 @@ export default function EasyScheduleSettingsScreen() {
     } catch (error) {
       console.error('Failed to save settings:', error);
       showNotification(t('common.saveError'), 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
     <View className="flex-1 bg-background">
-      <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-2">
-        <Button variant="link" size="sm" className="-ml-2 px-2" onPress={() => router.back()}>
-          <Text className="text-base font-semibold text-foreground">{t('common.close')}</Text>
-        </Button>
-        <Text className="text-lg font-bold text-foreground">
-          {t('easySchedule.settings.title')}
-        </Text>
-        <View className="w-12" />
-      </View>
+      <ModalHeader title={t('easySchedule.settings.title')} closeLabel={t('common.close')} />
 
-      <ScrollView contentContainerClassName="p-5 gap-6" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerClassName="px-5 pb-28 pt-4"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
         {/* Wake Time Section */}
-        <View className="gap-3">
-          <Text className="text-base font-semibold text-foreground">
+        <View className="mb-6">
+          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {t('easySchedule.settings.wakeTime')}
           </Text>
-          <View className="flex-row items-center justify-between rounded-lg border border-border bg-card p-4">
-            <View className="flex-1">
-              <Text className="text-sm text-muted-foreground">
-                {t('easySchedule.firstWakeTimeTitle')}
-              </Text>
-              <Text className="mt-1 text-lg font-semibold text-foreground">{firstWakeTime}</Text>
+          <Pressable
+            onPress={openTimePicker}
+            className="flex-row items-center justify-between rounded-2xl border border-border bg-card p-4">
+            <View className="flex-row items-center gap-3">
+              <View className="h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10">
+                <MaterialCommunityIcons name="weather-sunset-up" size={24} color="#F97316" />
+              </View>
+              <View>
+                <Text className="text-sm text-muted-foreground">
+                  {t('easySchedule.firstWakeTimeTitle')}
+                </Text>
+                <Text className="text-xl font-bold text-foreground">{firstWakeTime}</Text>
+              </View>
             </View>
-            <Button variant="outline" size="sm" onPress={openTimePicker}>
-              <Text>{t('easySchedule.changeTime')}</Text>
-            </Button>
-          </View>
-
-          {showTimePicker && (
-            <View className="rounded-lg border border-border bg-card p-4">
-              <Text className="mb-2 text-center text-sm font-semibold text-foreground">
-                {t('easySchedule.firstWakeTimeTitle')}
-              </Text>
-              <DateTimePicker
-                value={tempTime}
-                mode="time"
-                is24Hour={true}
-                display="spinner"
-                onChange={handleTimeChange}
-              />
-            </View>
-          )}
+            <MaterialCommunityIcons name="chevron-right" size={24} color="#999" />
+          </Pressable>
         </View>
 
         {/* Custom Rule Reset Section */}
         {hasCustomRuleToday && (
-          <View className="gap-3">
-            <Text className="text-base font-semibold text-foreground">
+          <View className="mb-6">
+            <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               {t('easySchedule.settings.customSchedule')}
             </Text>
-            <View className="rounded-lg border border-border bg-card p-4">
-              <View className="mb-3">
-                <Text className="text-sm font-medium text-foreground">
-                  {t('easySchedule.settings.customRuleActive')}
-                </Text>
-                <Text className="mt-1 text-xs text-muted-foreground">
-                  {t('easySchedule.settings.customRuleDescription')}
-                </Text>
+            <View className="rounded-2xl border border-orange-500/30 bg-orange-500/5 p-4">
+              <View className="mb-3 flex-row items-start gap-3">
+                <View className="h-10 w-10 items-center justify-center rounded-xl bg-orange-500/20">
+                  <MaterialCommunityIcons name="calendar-edit" size={22} color="#F97316" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-base font-semibold text-foreground">
+                    {t('easySchedule.settings.customRuleActive')}
+                  </Text>
+                  <Text className="mt-1 text-sm text-muted-foreground">
+                    {t('easySchedule.settings.customRuleDescription')}
+                  </Text>
+                </View>
               </View>
-              <Button
-                variant="outline"
-                size="sm"
+              <Pressable
                 onPress={handleResetCustomRule}
-                disabled={resetCustomRuleMutation.isPending}>
-                <Text>{t('easySchedule.settings.resetToOriginal')}</Text>
-              </Button>
+                disabled={resetCustomRuleMutation.isPending}
+                className="h-12 items-center justify-center rounded-xl border border-orange-500/50 bg-orange-500/10">
+                <Text className="text-base font-semibold text-orange-600">
+                  {t('easySchedule.settings.resetToOriginal')}
+                </Text>
+              </Pressable>
             </View>
           </View>
         )}
 
         {/* Reminder Settings Section */}
-        <View className="gap-3">
-          <Text className="text-base font-semibold text-foreground">
+        <View className="mb-6">
+          <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {t('easySchedule.settings.reminders')}
           </Text>
-          <View className="rounded-lg border border-border bg-card p-4">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-1">
-                <Text className="text-sm font-medium text-foreground">
-                  {t('easySchedule.settings.enableReminders')}
-                </Text>
-                <Text className="mt-1 text-xs text-muted-foreground">
-                  {t('easySchedule.settings.enableRemindersDescription')}
-                </Text>
+          <View className="rounded-2xl border border-border bg-card">
+            {/* Enable Toggle */}
+            <Pressable
+              onPress={handleReminderToggle}
+              className="flex-row items-center justify-between p-4">
+              <View className="flex-row items-center gap-3">
+                <View
+                  className={`h-12 w-12 items-center justify-center rounded-xl ${
+                    reminderEnabled ? 'bg-accent/20' : 'bg-muted/50'
+                  }`}>
+                  <MaterialCommunityIcons
+                    name="bell-ring-outline"
+                    size={24}
+                    color={reminderEnabled ? '#7C3AED' : '#999'}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-base font-semibold text-foreground">
+                    {t('easySchedule.settings.enableReminders')}
+                  </Text>
+                  <Text className="text-sm text-muted-foreground">
+                    {t('easySchedule.settings.enableRemindersDescription')}
+                  </Text>
+                </View>
               </View>
-              <Switch
-                value={reminderEnabled}
-                onValueChange={setReminderEnabled}
-                trackColor={{ false: '#767577', true: '#C7B9FF' }}
-                thumbColor={reminderEnabled ? '#5B7FFF' : '#f4f3f4'}
-              />
-            </View>
+              <View
+                className={`h-8 w-14 items-center justify-center rounded-full ${
+                  reminderEnabled ? 'bg-accent' : 'bg-muted'
+                }`}>
+                <View
+                  className={`h-6 w-6 rounded-full bg-white ${
+                    reminderEnabled ? 'translate-x-3' : '-translate-x-3'
+                  }`}
+                />
+              </View>
+            </Pressable>
 
+            {/* Advance Time Options */}
             {reminderEnabled && (
-              <View className="mt-4 gap-2">
-                <Text className="text-sm font-medium text-foreground">
+              <View className="border-t border-border p-4">
+                <Text className="mb-3 text-sm font-semibold text-foreground">
                   {t('easySchedule.settings.reminderAdvance')}
                 </Text>
                 <View className="flex-row gap-2">
-                  {[5, 10, 15, 30].map((minutes) => (
-                    <Button
+                  {ADVANCE_OPTIONS.map((minutes) => (
+                    <Pressable
                       key={minutes}
-                      variant={reminderAdvanceMinutes === minutes ? 'default' : 'outline'}
-                      size="sm"
-                      className="flex-1"
-                      onPress={() => setReminderAdvanceMinutes(minutes)}>
-                      <Text>{minutes}m</Text>
-                    </Button>
+                      onPress={() => handleAdvanceChange(minutes)}
+                      className={`h-12 flex-1 items-center justify-center rounded-xl ${
+                        reminderAdvanceMinutes === minutes
+                          ? 'bg-accent'
+                          : 'border border-border bg-muted/30'
+                      }`}>
+                      <Text
+                        className={`text-base font-semibold ${
+                          reminderAdvanceMinutes === minutes ? 'text-white' : 'text-foreground'
+                        }`}>
+                        {minutes}m
+                      </Text>
+                    </Pressable>
                   ))}
                 </View>
               </View>
             )}
           </View>
         </View>
-
-        {/* Save Button */}
-        <Button onPress={handleSave} className="mt-4">
-          <Text>{t('common.save')}</Text>
-        </Button>
       </ScrollView>
+
+      {/* Sticky Bottom Save Bar */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-8 pt-4">
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving}
+          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${
+            isSaving ? 'bg-muted' : 'bg-accent'
+          }`}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+          <MaterialCommunityIcons
+            name="content-save"
+            size={22}
+            color={isSaving ? '#999' : '#FFF'}
+          />
+          <Text
+            className={`text-lg font-bold ${isSaving ? 'text-muted-foreground' : 'text-white'}`}>
+            {isSaving ? t('common.saving') : t('common.save')}
+          </Text>
+        </Pressable>
+      </View>
+
+      {/* Time Picker Modal */}
+      <DateTimePickerModal
+        visible={showTimePicker}
+        value={tempTime}
+        mode="time"
+        onClose={() => setShowTimePicker(false)}
+        onChange={handleTimeChange}
+      />
     </View>
   );
 }

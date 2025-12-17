@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -18,6 +18,7 @@ export default function AppScreen() {
   const { t } = useLocalization();
   const router = useRouter();
   const brandColors = useBrandColor();
+  const { testOnboarding } = useLocalSearchParams<{ testOnboarding?: string }>();
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: BABY_PROFILE_QUERY_KEY,
@@ -32,6 +33,11 @@ export default function AppScreen() {
 
   // Handle routing based on profile state
   useEffect(() => {
+    // Skip routing if testing onboarding
+    if (testOnboarding === 'true') {
+      return;
+    }
+
     if (!profileLoading && !profilesLoading) {
       if (profile) {
         // User has an active profile, go to main app
@@ -42,7 +48,7 @@ export default function AppScreen() {
       }
       // If no profiles exist, stay on this screen to show onboarding
     }
-  }, [profile, profileLoading, profiles, profilesLoading, router]);
+  }, [profile, profileLoading, profiles, profilesLoading, router, testOnboarding]);
 
   // Show loading state while checking profile status
   if (profileLoading || profilesLoading) {
@@ -56,7 +62,7 @@ export default function AppScreen() {
 
   // If user has profile or profiles, we're redirecting (handled by useEffect)
   // Show loading during redirect
-  if (profile || profiles.length > 0) {
+  if ((profile || profiles.length > 0) && testOnboarding !== 'true') {
     return (
       <View className="flex-1 items-center justify-center gap-3 bg-background">
         <ActivityIndicator size="large" color={brandColors.colors.accent} />
@@ -67,7 +73,7 @@ export default function AppScreen() {
     );
   }
 
-  // No profiles exist, show onboarding
+  // No profiles exist or testing onboarding, show onboarding
   return (
     <OnboardingScreen
       onComplete={() => {

@@ -210,14 +210,16 @@ Profile editing screens require special attention since parents frequently updat
 5. **Haptic Feedback**: On gender change and save
 
 ```tsx
-{/* Sticky Save Bar */}
+{
+  /* Sticky Save Bar */
+}
 <View className="absolute bottom-0 left-0 right-0 px-5 pb-8 pt-4">
   <Pressable
     onPress={handleSave}
     className="h-14 items-center justify-center rounded-2xl bg-accent">
     <Text className="text-lg font-bold text-white">Save Changes</Text>
   </Pressable>
-</View>
+</View>;
 ```
 
 ## Implementation Checklist
@@ -249,3 +251,5 @@ When creating a new screen, verify:
 | `sleep.tsx`               | Large timer button, time cards            |
 | `health.tsx`              | Temperature presets, status display       |
 | `growth.tsx`              | +/- quick adjust buttons                  |
+| `diary.tsx`               | Sticky save bar, photo bottom sheet       |
+| `diary-list.tsx`          | Date-grouped cards, FAB, photo cards      |

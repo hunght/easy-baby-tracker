@@ -1,12 +1,11 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { ScrollView, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'expo-router';
 
 import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY, formulaRuleByIdKey } from '@/constants/query-keys';
-import { getActiveBabyProfile } from '@/database/baby-profile';
-import { getFormulaRuleById } from '@/database/easy-formula-rules';
+import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
+import { getFormulaRuleById, getFormulaRuleByAge } from '@/database/easy-formula-rules';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
 import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
@@ -19,9 +18,16 @@ function timeStringToMinutes(time: string): number {
   return hours * 60 + minutes;
 }
 
+function calculateAgeInWeeks(birthDate: string): number {
+  const birth = new Date(birthDate);
+  const now = new Date();
+  const diffMs = now.getTime() - birth.getTime();
+  const diffWeeks = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000));
+  return Math.max(0, diffWeeks);
+}
+
 export default function EasyScheduleScreen() {
   const { t, locale } = useLocalization();
-  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { data: babyProfile } = useQuery({
@@ -51,6 +57,16 @@ export default function EasyScheduleScreen() {
     [t]
   );
 
+  // Auto-select mutation
+  const autoSelectMutation = useMutation({
+    mutationFn: async ({ babyId, formulaId }: { babyId: number; formulaId: string }) => {
+      await updateSelectedEasyFormula(babyId, formulaId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
+    },
+  });
+
   // Get active formula by selected ID
   const { data: formulaRule, isLoading: isLoadingFormula } = useQuery({
     queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
@@ -59,12 +75,30 @@ export default function EasyScheduleScreen() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Redirect to selection page if no formula is selected
+  // Auto-select formula based on baby's age if none selected
   useEffect(() => {
-    if (babyProfile && !isLoadingFormula && !babyProfile.selectedEasyFormulaId) {
-      router.replace('/(easy-schedule)/easy-schedule-select');
-    }
-  }, [babyProfile, isLoadingFormula, router]);
+    const autoSelectFormula = async () => {
+      if (!babyProfile || babyProfile.selectedEasyFormulaId || autoSelectMutation.isPending) {
+        return;
+      }
+
+      // Calculate baby's age in weeks
+      const ageWeeks = calculateAgeInWeeks(babyProfile.birthDate);
+
+      // Find matching formula for this age
+      const matchingFormula = await getFormulaRuleByAge(ageWeeks, babyProfile.id);
+
+      if (matchingFormula) {
+        // Auto-select this formula
+        autoSelectMutation.mutate({
+          babyId: babyProfile.id,
+          formulaId: matchingFormula.id,
+        });
+      }
+    };
+
+    autoSelectFormula();
+  }, [babyProfile, autoSelectMutation]);
 
   // Check if there's a day-specific rule (custom schedule) by checking if validDate exists
   const hasCustomSchedule = !!formulaRule?.validDate;
