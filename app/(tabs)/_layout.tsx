@@ -9,14 +9,12 @@ import { useTheme } from '@/lib/ThemeContext';
 import { NAV_THEME } from '@/lib/theme';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { QuickActionMenu } from '@/components/QuickActionMenu';
-import { useFeatureFlags } from '@/context/FeatureFlagContext';
 
 export default function TabLayout() {
   const { colorScheme } = useTheme();
   const { t } = useLocalization();
   const insets = useSafeAreaInsets();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const { features } = useFeatureFlags();
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
@@ -98,13 +96,10 @@ export default function TabLayout() {
           name="scheduling"
           options={{
             title: t('tabs.schedules'),
-            href: features.habit ? undefined : null,
             tabBarIcon: ({ color, focused }) => (
               <Ionicons name="calendar-outline" size={26} color={focused ? '#FF5C8D' : color} />
             ),
-            tabBarButton: features.habit
-              ? (props) => <HapticTab {...props} testID="tab-scheduling" />
-              : undefined,
+            tabBarButton: (props) => <HapticTab {...props} testID="tab-scheduling" />,
           }}
         />
 

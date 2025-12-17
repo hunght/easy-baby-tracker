@@ -2,6 +2,8 @@ export const features = {
   en: {
     diaper: {
       title: "Diaper",
+      editTitle: "Edit Diaper",
+      selectType: "Select type",
       types: {
         wet: "Wet",
         soiled: "Soiled",
@@ -46,6 +48,7 @@ export const features = {
         permissionDenied: "Notification permission is required for reminders",
         scheduledFor: "Scheduled for",
       },
+      timerTip: "Tap to start/pause. Only one timer runs at a time.",
       avgVolume: "Avg Volume",
       total: "Total Feedings",
       volume: "Daily Volume (ml)",
@@ -53,11 +56,13 @@ export const features = {
     },
     pumping: {
       title: "Pumping",
+      editTitle: "Edit Pumping",
       left: "Left:",
       right: "Right:",
     },
     sleep: {
       title: "Sleep",
+      editTitle: "Edit Sleep",
       kinds: {
         nap: "Nap",
         night: "Night sleep",
@@ -87,6 +92,7 @@ export const features = {
     },
     health: {
       title: "Health",
+      editTitle: "Edit Health",
       tabs: {
         temperature: "Temperature",
         medicine: "Medicine",
@@ -98,9 +104,14 @@ export const features = {
       },
       medicationPlaceholder: "Enter medication name",
       symptomsPlaceholder: "Describe symptoms",
+      tempLow: "Low",
+      tempNormal: "Normal",
+      tempMild: "Mild fever",
+      tempHigh: "High fever",
     },
     growth: {
       title: "Growth",
+      editTitle: "Edit Growth",
       placeholder: "0,00",
       weight: "Weight",
       height: "Height",
@@ -144,6 +155,8 @@ export const features = {
   vi: {
     diaper: {
       title: "Thay tã",
+      editTitle: "Chỉnh sửa tã",
+      selectType: "Chọn loại",
       types: {
         wet: "Ướt",
         soiled: "Bẩn",
@@ -188,6 +201,7 @@ export const features = {
         permissionDenied: "Cần quyền thông báo để đặt nhắc nhở",
         scheduledFor: "Đã lên lịch cho",
       },
+      timerTip: "Chạm để bắt đầu/tạm dừng. Chỉ một hẹn giờ chạy tại một thời điểm.",
       avgVolume: "Lượng TB",
       total: "Tổng bữa ăn",
       volume: "Lượng hàng ngày (ml)",
@@ -195,11 +209,13 @@ export const features = {
     },
     pumping: {
       title: "Hút sữa",
+      editTitle: "Chỉnh sửa hút sữa",
       left: "Trái:",
       right: "Phải:",
     },
     sleep: {
       title: "Giấc ngủ",
+      editTitle: "Chỉnh sửa giấc ngủ",
       kinds: {
         nap: "Ngủ trưa",
         night: "Ngủ đêm",
@@ -229,6 +245,7 @@ export const features = {
     },
     health: {
       title: "Sức khỏe",
+      editTitle: "Chỉnh sửa sức khỏe",
       tabs: {
         temperature: "Nhiệt độ",
         medicine: "Thuốc",
@@ -240,9 +257,14 @@ export const features = {
       },
       medicationPlaceholder: "Nhập tên thuốc",
       symptomsPlaceholder: "Mô tả triệu chứng",
+      tempLow: "Thấp",
+      tempNormal: "Bình thường",
+      tempMild: "Sốt nhẹ",
+      tempHigh: "Sốt cao",
     },
     growth: {
       title: "Phát triển",
+      editTitle: "Chỉnh sửa phát triển",
       placeholder: "0,00",
       weight: "Cân nặng",
       height: "Chiều cao",

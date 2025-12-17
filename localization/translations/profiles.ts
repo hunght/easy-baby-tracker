@@ -9,6 +9,8 @@ export const profiles = {
       createTitle: "Baby",
       editTitle: "Edit Baby Profile",
       info: "Gender, birthdate and due date are used for calculation of age, growth and development chart.",
+      changePhoto: "Change Photo",
+      photoOptions: "Profile Photo",
     },
   },
   vi: {
@@ -21,6 +23,9 @@ export const profiles = {
       createTitle: "Em bé",
       editTitle: "Chỉnh sửa hồ sơ bé",
       info: "Giới tính, ngày sinh và ngày dự sinh giúp tính tuổi, tăng trưởng và biểu đồ phát triển.",
+      changePhoto: "Đổi ảnh",
+      photoOptions: "Ảnh đại diện",
     },
   },
 } as const;
+

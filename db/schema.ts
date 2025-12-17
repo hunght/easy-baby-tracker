@@ -118,6 +118,7 @@ export const babyProfiles = sqliteTable('baby_profiles', {
   gender: text('gender').notNull().$type<'unknown' | 'boy' | 'girl'>(),
   birthDate: text('birth_date').notNull(),
   dueDate: text('due_date').notNull(),
+  avatarUri: text('avatar_uri'), // Local file path for baby profile photo
   firstWakeTime: text('first_wake_time').default('07:00').notNull(),
   selectedEasyFormulaId: text('selected_easy_formula_id'),
   createdAt: integer('created_at', { mode: 'number' })

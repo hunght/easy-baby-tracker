@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
@@ -6,13 +6,15 @@ import { ActivityIndicator, Pressable, ScrollView, Switch, View } from 'react-na
 import { z } from 'zod';
 
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TabPageHeader } from '@/components/TabPageHeader';
+import { useNotification } from '@/components/NotificationContext';
 import { useTheme } from '@/lib/ThemeContext';
 
-import { BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
-import { getBabyProfiles } from '@/database/baby-profile';
+import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
+import { getBabyProfiles, getActiveBabyProfile, setActiveBabyProfileId } from '@/database/baby-profile';
 import type { Locale } from '@/localization/translations';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
@@ -48,11 +50,37 @@ export default function SettingsScreen() {
   const { t, locale, setLocale, availableLocales } = useLocalization();
   const { themeMode, setThemeMode } = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { showNotification } = useNotification();
+
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: BABY_PROFILES_QUERY_KEY,
     queryFn: getBabyProfiles,
   });
+
+  const { data: currentProfile } = useQuery({
+    queryKey: BABY_PROFILE_QUERY_KEY,
+    queryFn: getActiveBabyProfile,
+  });
+
   const { features, toggleFeature } = useFeatureFlags();
+
+  const setActiveBabyMutation = useMutation({
+    mutationFn: async (babyId: number) => {
+      await setActiveBabyProfileId(babyId);
+    },
+    onSuccess: (_, babyId) => {
+      queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: BABY_PROFILES_QUERY_KEY });
+      const profile = profiles.find((p) => p.id === babyId);
+      showNotification(
+        profile
+          ? `${profile.nickname} is now active`
+          : t('settings.profileUpdated', { defaultValue: 'Profile updated' }),
+        'success'
+      );
+    },
+  });
 
   const [activeTab, setActiveTab] = useState<'baby' | 'features' | 'system'>('baby');
 
@@ -102,38 +130,57 @@ export default function SettingsScreen() {
             <View className="gap-4">
               {profiles.map((profile) => {
                 const monthsOld = computeMonthsOld(profile.birthDate);
+                const isActive = currentProfile?.id === profile.id;
                 return (
-                  <Pressable
+                  <View
                     key={profile.id}
-                    className="flex-row items-center justify-between rounded-2xl bg-card p-5 active:opacity-90"
+                    className="rounded-2xl bg-card p-5"
                     style={{
                       shadowColor: 'rgba(0, 0, 0, 0.05)',
                       shadowOffset: { width: 0, height: 1 },
                       shadowOpacity: 1,
                       shadowRadius: 2,
                       elevation: 1,
-                    }}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/profile-edit',
-                        params: { babyId: profile.id.toString() },
-                      })
-                    }>
-                    <View className="flex-1 gap-1">
-                      <Text className="text-xl font-extrabold text-foreground">
-                        {profile.nickname}
+                    }}>
+                    <Pressable
+                      className="flex-row items-center justify-between active:opacity-90"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/profile-edit',
+                          params: { babyId: profile.id.toString() },
+                        })
+                      }>
+                      <View className="flex-1 gap-1">
+                        <Text className="text-xl font-extrabold text-foreground">
+                          {profile.nickname}
+                        </Text>
+                        <Text className="text-base text-muted-foreground">
+                          {t('common.monthsOld', { params: { count: monthsOld } })}
+                        </Text>
+                      </View>
+                      <View className="h-10 w-10 items-center justify-center rounded-full bg-secondary/10">
+                        <Text className="text-xl text-primary">
+                          {/* Chevron right character or icon */}
+                          {`\u203A`}
+                        </Text>
+                      </View>
+                    </Pressable>
+                    <Button
+                      variant={isActive ? 'default' : 'outline'}
+                      size="sm"
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setActiveBabyMutation.mutate(profile.id);
+                      }}
+                      disabled={isActive || setActiveBabyMutation.isPending}
+                      className="mt-3">
+                      <Text className={isActive ? 'text-primary-foreground' : 'text-foreground'}>
+                        {isActive
+                          ? t('settings.activeProfile', { defaultValue: 'Active' })
+                          : t('settings.setAsActive', { defaultValue: 'Set as Active' })}
                       </Text>
-                      <Text className="text-base text-muted-foreground">
-                        {t('common.monthsOld', { params: { count: monthsOld } })}
-                      </Text>
-                    </View>
-                    <View className="h-10 w-10 items-center justify-center rounded-full bg-secondary/10">
-                      <Text className="text-xl text-primary">
-                        {/* Chevron right character or icon */}
-                        {`\u203A`}
-                      </Text>
-                    </View>
-                  </Pressable>
+                    </Button>
+                  </View>
                 );
               })}
 

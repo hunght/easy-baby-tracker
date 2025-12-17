@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { z } from 'zod';
@@ -104,8 +105,25 @@ export default function DiaperScreen() {
     },
   });
 
+  const handleDiaperKindChange = (kind: DiaperKind) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setDiaperKind(kind);
+  };
+
+  const handleWetnessChange = (level: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setWetness(wetness === level ? undefined : level);
+  };
+
+  const handleColorChange = (colorKey: PoopColor) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setColor(color === colorKey ? undefined : colorKey);
+  };
+
   const handleSave = async () => {
     if (isSaving) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     setIsSaving(true);
     try {
@@ -135,33 +153,40 @@ export default function DiaperScreen() {
     <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('diaper.editTitle') : t('diaper.title')}
-        onSave={handleSave}
-        isSaving={isSaving}
         closeLabel={t('common.close')}
-        saveLabel={t('common.save')}
       />
 
-      <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
-        {/* Diaper Type Selection */}
-        <View className="mb-6 flex-row overflow-hidden rounded-xl border border-border bg-card">
-          {diaperTypes.map((type, index) => (
-            <Pressable
-              key={type.key}
-              onPress={() => setDiaperKind(type.key)}
-              className={`flex-1 flex-row items-center justify-center gap-1.5 py-3 ${
-                diaperKind === type.key ? 'bg-accent' : ''
-              } ${index > 0 ? 'border-l border-border' : ''}`}>
-              <MaterialCommunityIcons
-                name={type.icon}
-                size={20}
-                color={diaperKind === type.key ? '#FFF' : '#666'}
-              />
-              <Text
-                className={`text-sm font-semibold ${diaperKind === type.key ? 'text-white' : 'text-muted-foreground'}`}>
-                {t(type.labelKey)}
-              </Text>
-            </Pressable>
-          ))}
+      <ScrollView
+        contentContainerClassName="p-5 pb-28"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
+        {/* Diaper Type Selection - Large touch targets */}
+        <View className="mb-6 gap-3">
+          <Text className="text-base font-medium text-muted-foreground">
+            {t('diaper.selectType')}
+          </Text>
+          <View className="flex-row flex-wrap gap-3">
+            {diaperTypes.map((type) => (
+              <Pressable
+                key={type.key}
+                onPress={() => handleDiaperKindChange(type.key)}
+                className={`h-14 w-[47%] flex-row items-center justify-center gap-2 rounded-xl border-2 ${diaperKind === type.key
+                    ? 'border-accent bg-accent'
+                    : 'border-border bg-muted/30'
+                  }`}>
+                <MaterialCommunityIcons
+                  name={type.icon}
+                  size={22}
+                  color={diaperKind === type.key ? '#FFF' : '#666'}
+                />
+                <Text
+                  className={`text-base font-semibold ${diaperKind === type.key ? 'text-white' : 'text-foreground'
+                    }`}>
+                  {t(type.labelKey)}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         {/* Time */}
@@ -174,19 +199,25 @@ export default function DiaperScreen() {
               <Text className="text-base font-medium text-muted-foreground">
                 {t('common.wetness')}
               </Text>
-              <Text className="mt-0.5 text-sm text-gray-400">{t('common.optional')}</Text>
+              <Text className="text-sm text-muted-foreground">{t('common.optional')}</Text>
             </View>
-            <View className="mt-3 flex-row gap-4">
+            <View className="flex-row gap-4">
               {[1, 2, 3].map((level) => (
                 <Pressable
                   key={level}
-                  onPress={() => setWetness(wetness === level ? undefined : level)}
-                  className="p-2">
-                  <MaterialCommunityIcons
-                    name="water"
-                    size={24}
-                    color={wetness && wetness >= level ? '#FF5C8D' : '#E0E0E0'}
-                  />
+                  onPress={() => handleWetnessChange(level)}
+                  className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-xl border-2 ${wetness && wetness >= level
+                      ? 'border-accent bg-accent/20'
+                      : 'border-border bg-muted/30'
+                    }`}>
+                  {Array.from({ length: level }).map((_, i) => (
+                    <MaterialCommunityIcons
+                      key={i}
+                      name="water"
+                      size={22}
+                      color={wetness && wetness >= level ? '#FF5C8D' : '#CCCCCC'}
+                    />
+                  ))}
                 </Pressable>
               ))}
             </View>
@@ -196,23 +227,24 @@ export default function DiaperScreen() {
         {/* Color of Poop (Optional) */}
         {(diaperKind === 'soiled' || diaperKind === 'mixed') && (
           <View className="mb-6">
-            <Text className="text-base font-medium text-muted-foreground">
-              {t('common.colorOfPoop')}
-            </Text>
-            <Text className="mt-0.5 text-sm text-gray-400">{t('common.optional')}</Text>
-            <View className="mt-3 flex-row flex-wrap gap-3">
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.colorOfPoop')}
+              </Text>
+              <Text className="text-sm text-muted-foreground">{t('common.optional')}</Text>
+            </View>
+            <View className="flex-row flex-wrap gap-4">
               {poopColors.map((colorOption) => (
                 <Pressable
                   key={colorOption.key}
-                  onPress={() => setColor(color === colorOption.key ? undefined : colorOption.key)}
-                  className={`h-11 w-11 items-center justify-center rounded-full ${
-                    color === colorOption.key
+                  onPress={() => handleColorChange(colorOption.key)}
+                  className={`h-14 w-14 items-center justify-center rounded-full ${color === colorOption.key
                       ? 'border-[3px] border-accent'
                       : 'border-2 border-border'
-                  }`}
+                    }`}
                   style={{ backgroundColor: colorOption.color }}>
                   {color === colorOption.key && (
-                    <MaterialCommunityIcons name="check" size={16} color="#FFF" />
+                    <MaterialCommunityIcons name="check" size={20} color="#FFF" />
                   )}
                 </Pressable>
               ))}
@@ -222,7 +254,7 @@ export default function DiaperScreen() {
 
         {/* Notes */}
         <Input
-          className="mt-3 min-h-20"
+          className="min-h-20"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
@@ -230,6 +262,31 @@ export default function DiaperScreen() {
           textAlignVertical="top"
         />
       </ScrollView>
+
+      {/* Sticky Bottom Save Bar */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-8 pt-4">
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving}
+          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${isSaving ? 'bg-muted' : 'bg-accent'
+            }`}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+          <MaterialCommunityIcons
+            name="content-save"
+            size={22}
+            color={isSaving ? '#999' : '#FFF'}
+          />
+          <Text className={`text-lg font-bold ${isSaving ? 'text-muted-foreground' : 'text-white'}`}>
+            {isSaving ? t('common.saving') : t('common.save')}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

@@ -3,6 +3,7 @@ import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import Slider from '@react-native-community/slider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
 
@@ -19,6 +20,7 @@ import {
   savePumping,
   updatePumping,
 } from '@/database/pumping';
+import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 function formatTime(seconds: number): string {
@@ -33,6 +35,7 @@ export default function PumpingScreen() {
   const queryClient = useQueryClient();
   const { t } = useLocalization();
   const { showNotification } = useNotification();
+  const brandColors = useBrandColor();
   const params = useLocalSearchParams<{ id: string }>();
   const id = params.id ? Number(params.id) : undefined;
   const isEditing = !!id;
@@ -101,6 +104,8 @@ export default function PumpingScreen() {
   };
 
   const toggleLeftTimer = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     if (leftTimerActive) {
       if (leftTimerRef.current) {
         clearInterval(leftTimerRef.current);
@@ -108,6 +113,14 @@ export default function PumpingScreen() {
       }
       setLeftTimerActive(false);
     } else {
+      // Stop right timer if active
+      if (rightTimerActive) {
+        if (rightTimerRef.current) {
+          clearInterval(rightTimerRef.current);
+          rightTimerRef.current = null;
+        }
+        setRightTimerActive(false);
+      }
       setLeftTimerActive(true);
       leftTimerRef.current = setInterval(() => {
         setLeftDuration((prev) => prev + 1);
@@ -116,6 +129,8 @@ export default function PumpingScreen() {
   };
 
   const toggleRightTimer = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     if (rightTimerActive) {
       if (rightTimerRef.current) {
         clearInterval(rightTimerRef.current);
@@ -123,6 +138,14 @@ export default function PumpingScreen() {
       }
       setRightTimerActive(false);
     } else {
+      // Stop left timer if active
+      if (leftTimerActive) {
+        if (leftTimerRef.current) {
+          clearInterval(leftTimerRef.current);
+          leftTimerRef.current = null;
+        }
+        setLeftTimerActive(false);
+      }
       setRightTimerActive(true);
       rightTimerRef.current = setInterval(() => {
         setRightDuration((prev) => prev + 1);
@@ -156,6 +179,8 @@ export default function PumpingScreen() {
   const handleSave = async () => {
     if (isSaving || totalAmount === 0) return;
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     setIsSaving(true);
     try {
       const payload = {
@@ -175,32 +200,40 @@ export default function PumpingScreen() {
     }
   };
 
+  // Quick amount presets
+  const amountPresets = [30, 60, 90, 120, 150, 180];
+
   return (
     <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('pumping.editTitle') : t('pumping.title')}
-        onSave={handleSave}
-        isSaving={isSaving || totalAmount === 0}
         closeLabel={t('common.close')}
-        saveLabel={t('common.save')}
       />
 
-      <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerClassName="p-5 pb-28"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
         {/* Inventory */}
-        <View className="mb-6 flex-row items-center gap-2 rounded-xl bg-gray-100 p-4">
+        <View className="mb-6 flex-row items-center gap-2 rounded-xl bg-muted/30 p-4">
           <MaterialCommunityIcons name="package-variant" size={20} color="#666" />
           <Text className="flex-1 text-base font-medium text-muted-foreground">
             {t('common.inventory')}
           </Text>
-          <Text className="text-base font-semibold text-accent">
-            {inventory.toFixed(1)} {t('common.unitMl')}
+          <Text className="text-lg font-bold text-accent">
+            {inventory.toFixed(0)} {t('common.unitMl')}
           </Text>
         </View>
 
         {/* Starts */}
         <View className="mb-3 flex-row items-center justify-between">
           <Text className="text-base font-medium text-muted-foreground">{t('common.starts')}</Text>
-          <Pressable onPress={() => setShowTimePicker(true)}>
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowTimePicker(true);
+            }}
+            className="rounded-lg bg-muted/30 px-4 py-2">
             <Text className="text-base font-semibold text-accent">{t('common.setTime')}</Text>
           </Pressable>
         </View>
@@ -213,35 +246,56 @@ export default function PumpingScreen() {
         />
 
         {/* Amount */}
-        <View className="mb-3 flex-row items-center justify-between">
+        <View className="mb-4 flex-row items-center justify-between">
           <Text className="text-base font-medium text-muted-foreground">{t('common.amount')}</Text>
-          <Text className="text-base font-semibold text-accent">
-            {totalAmount.toFixed(1)} {t('common.unitMl')}
+          <Text className="text-lg font-bold text-accent">
+            {totalAmount.toFixed(0)} {t('common.unitMl')}
           </Text>
         </View>
 
         {/* Left Amount */}
         <View className="mb-6">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-base font-medium text-muted-foreground">{t('pumping.left')}</Text>
+            <Text className="text-base font-medium text-foreground">{t('pumping.left')}</Text>
             <Text className="text-base font-semibold text-accent">
-              {leftAmountMl.toFixed(2)} {t('common.unitMl')}
+              {leftAmountMl.toFixed(0)} {t('common.unitMl')}
             </Text>
           </View>
+
+          {/* Quick presets for left */}
+          <View className="mb-3 flex-row flex-wrap justify-between gap-2">
+            {amountPresets.map((preset) => (
+              <Pressable
+                key={`left-${preset}`}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setLeftAmountMl(preset);
+                }}
+                className={`h-10 w-[30%] items-center justify-center rounded-xl border ${leftAmountMl === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
+                  }`}>
+                <Text
+                  className={`text-sm font-semibold ${leftAmountMl === preset ? 'text-white' : 'text-foreground'
+                    }`}>
+                  {preset}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
           <Slider
-            style={{ width: '100%', height: 40 }}
+            style={{ width: '100%', height: 48 }}
             minimumValue={0}
             maximumValue={350}
             step={5}
             value={leftAmountMl}
             onValueChange={setLeftAmountMl}
-            minimumTrackTintColor="#FF5C8D"
+            minimumTrackTintColor={brandColors.colors.accent}
             maximumTrackTintColor="#E0E0E0"
-            thumbTintColor="#FFF"
+            thumbTintColor={brandColors.colors.white}
           />
           <View className="flex-row justify-between px-1">
-            {[0, 50, 100, 150, 200, 250, 300, 350].map((value) => (
-              <Text key={value} className="text-xs text-gray-400">
+            {[0, 100, 200, 300].map((value) => (
+              <Text key={value} className="text-xs text-muted-foreground">
                 {value}
               </Text>
             ))}
@@ -251,27 +305,46 @@ export default function PumpingScreen() {
         {/* Right Amount */}
         <View className="mb-6">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-base font-medium text-muted-foreground">
-              {t('pumping.right')}
-            </Text>
+            <Text className="text-base font-medium text-foreground">{t('pumping.right')}</Text>
             <Text className="text-base font-semibold text-accent">
-              {rightAmountMl.toFixed(2)} {t('common.unitMl')}
+              {rightAmountMl.toFixed(0)} {t('common.unitMl')}
             </Text>
           </View>
+
+          {/* Quick presets for right */}
+          <View className="mb-3 flex-row flex-wrap justify-between gap-2">
+            {amountPresets.map((preset) => (
+              <Pressable
+                key={`right-${preset}`}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setRightAmountMl(preset);
+                }}
+                className={`h-10 w-[30%] items-center justify-center rounded-xl border ${rightAmountMl === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
+                  }`}>
+                <Text
+                  className={`text-sm font-semibold ${rightAmountMl === preset ? 'text-white' : 'text-foreground'
+                    }`}>
+                  {preset}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
           <Slider
-            style={{ width: '100%', height: 40 }}
+            style={{ width: '100%', height: 48 }}
             minimumValue={0}
             maximumValue={350}
             step={5}
             value={rightAmountMl}
             onValueChange={setRightAmountMl}
-            minimumTrackTintColor="#FF5C8D"
+            minimumTrackTintColor={brandColors.colors.accent}
             maximumTrackTintColor="#E0E0E0"
-            thumbTintColor="#FFF"
+            thumbTintColor={brandColors.colors.white}
           />
           <View className="flex-row justify-between px-1">
-            {[0, 50, 100, 150, 200, 250, 300, 350].map((value) => (
-              <Text key={value} className="text-xs text-gray-400">
+            {[0, 100, 200, 300].map((value) => (
+              <Text key={value} className="text-xs text-muted-foreground">
                 {value}
               </Text>
             ))}
@@ -281,14 +354,14 @@ export default function PumpingScreen() {
         {/* Duration */}
         {isEditing ? (
           // Edit Mode: Manual Inputs
-          <View className="mb-6 gap-3">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-base font-medium text-muted-foreground">
+          <View className="mb-6 gap-4">
+            <View className="flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-3">
+              <Text className="text-base font-medium text-foreground">
                 {t('common.leftShort')}
               </Text>
               <View className="flex-row items-center gap-2">
                 <Input
-                  className="w-[60px] text-center"
+                  className="h-11 w-20 text-center text-lg"
                   value={Math.floor(leftDuration / 60).toString()}
                   onChangeText={(text) => {
                     const mins = parseInt(text) || 0;
@@ -300,13 +373,13 @@ export default function PumpingScreen() {
                 <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
               </View>
             </View>
-            <View className="flex-row items-center justify-between">
-              <Text className="text-base font-medium text-muted-foreground">
+            <View className="flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-3">
+              <Text className="text-base font-medium text-foreground">
                 {t('common.rightShort')}
               </Text>
               <View className="flex-row items-center gap-2">
                 <Input
-                  className="w-[60px] text-center"
+                  className="h-11 w-20 text-center text-lg"
                   value={Math.floor(rightDuration / 60).toString()}
                   onChangeText={(text) => {
                     const mins = parseInt(text) || 0;
@@ -318,58 +391,80 @@ export default function PumpingScreen() {
                 <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
               </View>
             </View>
-            <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center justify-between px-1">
               <Text className="text-base font-medium text-muted-foreground">
                 {t('common.totalDuration')}
               </Text>
-              <Text className="text-base text-foreground">{formatTime(totalDuration)}</Text>
+              <Text className="text-lg font-semibold text-accent">{formatTime(totalDuration)}</Text>
             </View>
           </View>
         ) : (
-          // Create Mode: Timers
+          // Create Mode: Large Timer Buttons
           <>
-            <View className="mb-3 flex-row items-center justify-between">
+            <View className="mb-4 flex-row items-center justify-between">
               <View>
                 <Text className="text-base font-medium text-muted-foreground">
                   {t('common.duration')}
                 </Text>
-                <Text className="mt-0.5 text-sm text-gray-400">{t('common.optional')}</Text>
+                <Text className="mt-0.5 text-sm text-muted-foreground">{t('common.optional')}</Text>
               </View>
-              <Text className="text-base text-foreground">
-                {t('common.seconds', { params: { value: totalDuration } })}
-              </Text>
+              <Text className="text-lg font-semibold text-accent">{formatTime(totalDuration)}</Text>
             </View>
 
-            {/* Timers */}
-            <View className="my-6 flex-row justify-around">
-              <View className="items-center gap-3">
+            {/* Large Timer Buttons */}
+            <View className="mb-6 flex-row justify-around py-4">
+              <View className="items-center gap-4">
                 <Pressable
-                  className="w-17.5 h-17.5 items-center justify-center rounded-full bg-accent"
-                  onPress={toggleLeftTimer}>
+                  className={`h-[88px] w-[88px] items-center justify-center rounded-full ${leftTimerActive ? 'bg-red-500' : 'bg-accent'}`}
+                  onPress={toggleLeftTimer}
+                  style={{
+                    shadowColor: leftTimerActive ? '#EF4444' : brandColors.colors.accent,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 6,
+                  }}>
                   <MaterialCommunityIcons
                     name={leftTimerActive ? 'pause' : 'play'}
-                    size={24}
+                    size={36}
                     color="#FFF"
                   />
                 </Pressable>
-                <Text className="text-base font-medium text-foreground">
-                  {t('common.leftShort')}: {formatTime(leftDuration)}
-                </Text>
+                <View className="items-center">
+                  <Text className="text-sm font-medium text-muted-foreground">
+                    {t('common.leftShort')}
+                  </Text>
+                  <Text className="text-xl font-bold text-foreground">
+                    {formatTime(leftDuration)}
+                  </Text>
+                </View>
               </View>
 
-              <View className="items-center gap-3">
+              <View className="items-center gap-4">
                 <Pressable
-                  className="w-17.5 h-17.5 items-center justify-center rounded-full bg-accent"
-                  onPress={toggleRightTimer}>
+                  className={`h-[88px] w-[88px] items-center justify-center rounded-full ${rightTimerActive ? 'bg-red-500' : 'bg-accent'}`}
+                  onPress={toggleRightTimer}
+                  style={{
+                    shadowColor: rightTimerActive ? '#EF4444' : brandColors.colors.accent,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 6,
+                  }}>
                   <MaterialCommunityIcons
                     name={rightTimerActive ? 'pause' : 'play'}
-                    size={24}
+                    size={36}
                     color="#FFF"
                   />
                 </Pressable>
-                <Text className="text-base font-medium text-foreground">
-                  {t('common.rightShort')}: {formatTime(rightDuration)}
-                </Text>
+                <View className="items-center">
+                  <Text className="text-sm font-medium text-muted-foreground">
+                    {t('common.rightShort')}
+                  </Text>
+                  <Text className="text-xl font-bold text-foreground">
+                    {formatTime(rightDuration)}
+                  </Text>
+                </View>
               </View>
             </View>
           </>
@@ -377,7 +472,7 @@ export default function PumpingScreen() {
 
         {/* Notes */}
         <Input
-          className="mt-3 min-h-20"
+          className="min-h-20"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
@@ -385,6 +480,33 @@ export default function PumpingScreen() {
           textAlignVertical="top"
         />
       </ScrollView>
+
+      {/* Sticky Bottom Save Bar */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-8 pt-4">
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving || totalAmount === 0}
+          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${isSaving || totalAmount === 0 ? 'bg-muted' : 'bg-accent'
+            }`}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+          <MaterialCommunityIcons
+            name="content-save"
+            size={22}
+            color={isSaving || totalAmount === 0 ? '#999' : '#FFF'}
+          />
+          <Text
+            className={`text-lg font-bold ${isSaving || totalAmount === 0 ? 'text-muted-foreground' : 'text-white'
+              }`}>
+            {isSaving ? t('common.saving') : t('common.save')}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

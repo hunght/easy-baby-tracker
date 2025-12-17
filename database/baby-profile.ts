@@ -10,14 +10,16 @@ type BabyProfileInsert = typeof schema.babyProfiles.$inferInsert;
 // Re-export specific types from schema
 export type Gender = BabyProfileSelect['gender'];
 
-// Payload for creating/updating baby profiles (includes concerns)
+// Payload for creating/updating baby profiles (includes concerns and avatarUri)
 export type BabyProfilePayload = Omit<BabyProfileInsert, 'id' | 'createdAt'> & {
   concerns: string[];
+  avatarUri?: string | null;
 };
 
-// Return type for baby profile records (includes concerns)
+// Return type for baby profile records (includes concerns and avatarUri)
 export type BabyProfileRecord = BabyProfileSelect & {
   concerns: string[];
+  avatarUri?: string | null;
 };
 
 const ACTIVE_PROFILE_KEY = 'activeProfileId';
@@ -43,6 +45,7 @@ export async function saveBabyProfile(
           gender: payload.gender,
           birthDate: payload.birthDate,
           dueDate: payload.dueDate,
+          avatarUri: payload.avatarUri,
         })
         .where(eq(schema.babyProfiles.id, babyId));
 
@@ -53,6 +56,7 @@ export async function saveBabyProfile(
         gender: payload.gender,
         birthDate: payload.birthDate,
         dueDate: payload.dueDate,
+        avatarUri: payload.avatarUri,
       });
       // Query for the row we just inserted to get the ID
       const inserted = await tx
@@ -85,6 +89,7 @@ export async function getBabyProfiles(): Promise<BabyProfileRecord[]> {
       gender: schema.babyProfiles.gender,
       birthDate: schema.babyProfiles.birthDate,
       dueDate: schema.babyProfiles.dueDate,
+      avatarUri: schema.babyProfiles.avatarUri,
       firstWakeTime: schema.babyProfiles.firstWakeTime,
       selectedEasyFormulaId: schema.babyProfiles.selectedEasyFormulaId,
       createdAt: schema.babyProfiles.createdAt,
@@ -103,6 +108,7 @@ export async function getBabyProfiles(): Promise<BabyProfileRecord[]> {
     gender: profile.gender,
     birthDate: profile.birthDate,
     dueDate: profile.dueDate,
+    avatarUri: profile.avatarUri ?? null,
     firstWakeTime: profile.firstWakeTime ?? '07:00',
     selectedEasyFormulaId: profile.selectedEasyFormulaId ?? null,
     createdAt: profile.createdAt,
@@ -118,6 +124,7 @@ export async function getBabyProfileById(babyId: number): Promise<BabyProfileRec
       gender: schema.babyProfiles.gender,
       birthDate: schema.babyProfiles.birthDate,
       dueDate: schema.babyProfiles.dueDate,
+      avatarUri: schema.babyProfiles.avatarUri,
       firstWakeTime: schema.babyProfiles.firstWakeTime,
       selectedEasyFormulaId: schema.babyProfiles.selectedEasyFormulaId,
       createdAt: schema.babyProfiles.createdAt,
@@ -142,6 +149,7 @@ export async function getBabyProfileById(babyId: number): Promise<BabyProfileRec
     gender: profile.gender,
     birthDate: profile.birthDate,
     dueDate: profile.dueDate,
+    avatarUri: profile.avatarUri ?? null,
     firstWakeTime: profile.firstWakeTime ?? '07:00',
     selectedEasyFormulaId: profile.selectedEasyFormulaId ?? null,
     createdAt: profile.createdAt,
@@ -209,6 +217,7 @@ export async function getBabyProfile(): Promise<BabyProfileRecord | null> {
     gender: profile[0].gender,
     birthDate: profile[0].birthDate,
     dueDate: profile[0].dueDate,
+    avatarUri: profile[0].avatarUri ?? null,
     firstWakeTime: profile[0].firstWakeTime ?? '07:00',
     selectedEasyFormulaId: profile[0].selectedEasyFormulaId,
     createdAt: profile[0].createdAt,

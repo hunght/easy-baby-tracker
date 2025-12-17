@@ -161,6 +161,65 @@ Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 }
 ```
 
+### 9. Baby Profile Forms
+
+Profile editing screens require special attention since parents frequently update baby information.
+
+#### Layout Structure
+
+```
+┌──────────────────────────────┐
+│  Close     Edit Profile      │  ← Header (minimal)
+├──────────────────────────────┤
+│                              │
+│         [Add Photo]          │  ← Photo at top (optional)
+│                              │
+│  Nickname ─────────────────  │
+│  ┌─────────────────────────┐ │
+│  │ Baby                    │ │  ← Input: 48px height
+│  └─────────────────────────┘ │
+│                              │
+│  Gender ───────────────────  │
+│  ┌───────┬───────┬───────┐  │
+│  │Unknown│  Boy  │  Girl │  │  ← Segment: 48px height
+│  └───────┴───────┴───────┘  │
+│                              │
+│  Birthdate ────────────────  │  ← Full-row tappable
+│  ┌─────────────────────────┐ │
+│  │ Dec 15, 2025            │ │
+│  └─────────────────────────┘ │
+│                              │
+│  Due Date ─────────────────  │
+│  ┌─────────────────────────┐ │
+│  │ Dec 15, 2025            │ │
+│  └─────────────────────────┘ │
+│                              │
+├──────────────────────────────┤
+│  ┌─────────────────────────┐ │
+│  │      Save Changes       │ │  ← Sticky bottom: 56px
+│  └─────────────────────────┘ │
+└──────────────────────────────┘
+```
+
+#### Key Patterns
+
+1. **Sticky Save Bar**: Always at bottom (56px height, rounded-2xl)
+2. **Gender Selector**: 3-segment toggle with 48px height, full-width
+3. **Date Pickers**: Full-row tappable, slides up from bottom
+4. **Photo Action**: Centered at top, uses bottom sheet for options
+5. **Haptic Feedback**: On gender change and save
+
+```tsx
+{/* Sticky Save Bar */}
+<View className="absolute bottom-0 left-0 right-0 px-5 pb-8 pt-4">
+  <Pressable
+    onPress={handleSave}
+    className="h-14 items-center justify-center rounded-2xl bg-accent">
+    <Text className="text-lg font-bold text-white">Save Changes</Text>
+  </Pressable>
+</View>
+```
+
 ## Implementation Checklist
 
 When creating a new screen, verify:
@@ -183,3 +242,10 @@ When creating a new screen, verify:
 | `habit-select.tsx`        | Full-width list items, large checkboxes   |
 | `scheduling.tsx`          | Segment selector, timeline cards          |
 | `DateTimePickerModal.tsx` | Bottom sheet, Cancel/Done buttons         |
+| `profile-edit.tsx`        | Sticky save bar, gender selector, dates   |
+| `feeding.tsx`             | Tabs, sticky save, timer buttons (88px)   |
+| `pumping.tsx`             | Dual timers, quick amount presets         |
+| `diaper.tsx`              | 2x2 type grid, color picker               |
+| `sleep.tsx`               | Large timer button, time cards            |
+| `health.tsx`              | Temperature presets, status display       |
+| `growth.tsx`              | +/- quick adjust buttons                  |

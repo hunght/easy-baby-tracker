@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -56,6 +57,8 @@ export function SolidsFeedingForm({
   }, [ingredient, amountGrams, solidsDuration, onDataChange]);
 
   const toggleSolidsTimer = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     if (solidsTimerActive) {
       if (solidsTimerRef.current) {
         clearInterval(solidsTimerRef.current);
@@ -70,18 +73,18 @@ export function SolidsFeedingForm({
     }
   };
 
+  // Quick amount presets for one-handed use
+  const amountPresets = [30, 50, 75, 100, 125, 150];
+
   return (
     <>
       <View className="mb-3 flex-row items-center justify-between">
         <Text className="text-base font-medium text-muted-foreground">
           {t('common.ingredient')}
         </Text>
-        <Text className="text-base font-semibold text-accent">
-          {ingredient || t('common.undefined')}
-        </Text>
       </View>
       <Input
-        className="mb-6"
+        className="mb-6 h-12"
         value={ingredient}
         onChangeText={setIngredient}
         placeholder={t('feeding.ingredientPlaceholder')}
@@ -89,12 +92,34 @@ export function SolidsFeedingForm({
 
       <View className="mb-3 flex-row items-center justify-between">
         <Text className="text-base font-medium text-muted-foreground">{t('common.amount')}</Text>
-        <Text className="text-base font-semibold text-accent">
-          {amountGrams.toFixed(1)} {t('common.unitG')}
+        <Text className="text-lg font-bold text-accent">
+          {amountGrams.toFixed(0)} {t('common.unitG')}
         </Text>
       </View>
+
+      {/* Quick Amount Presets - One-handed friendly */}
+      <View className="mb-4 flex-row flex-wrap justify-between gap-2">
+        {amountPresets.map((preset) => (
+          <Pressable
+            key={preset}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setAmountGrams(preset);
+            }}
+            className={`h-11 w-[30%] items-center justify-center rounded-xl border ${amountGrams === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
+              }`}>
+            <Text
+              className={`text-sm font-semibold ${amountGrams === preset ? 'text-white' : 'text-foreground'
+                }`}>
+              {preset} g
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* Slider for fine-tuning */}
       <Slider
-        className="mb-2 h-10 w-full"
+        className="mb-2 h-12 w-full"
         minimumValue={0}
         maximumValue={350}
         step={5}
@@ -105,7 +130,7 @@ export function SolidsFeedingForm({
         thumbTintColor={brandColors.colors.white}
       />
       <View className="mb-6 flex-row justify-between px-1">
-        {[0, 50, 100, 150, 200, 250, 300, 350].map((value) => (
+        {[0, 100, 200, 300].map((value) => (
           <Text key={value} className="text-xs text-muted-foreground">
             {value}
           </Text>
@@ -117,7 +142,7 @@ export function SolidsFeedingForm({
         {isEditing || isPast ? (
           <View className="flex-row items-center gap-2">
             <Input
-              className="w-[60px] text-center"
+              className="h-11 w-20 text-center text-lg"
               value={Math.floor(solidsDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -129,24 +154,31 @@ export function SolidsFeedingForm({
             <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
           </View>
         ) : (
-          <Text className="text-base text-foreground">
-            {t('common.seconds', { params: { value: solidsDuration } })}
-          </Text>
+          <Text className="text-lg font-semibold text-accent">{formatTime(solidsDuration)}</Text>
         )}
       </View>
+
+      {/* Timer Button - Large for one-handed use */}
       {!isEditing && !isPast && (
-        <View className="items-center gap-3">
+        <View className="items-center gap-4 py-4">
           <Pressable
-            className="h-[70px] w-[70px] items-center justify-center rounded-full bg-accent"
-            onPress={toggleSolidsTimer}>
+            className={`h-[88px] w-[88px] items-center justify-center rounded-full ${solidsTimerActive ? 'bg-red-500' : 'bg-accent'}`}
+            onPress={toggleSolidsTimer}
+            style={{
+              shadowColor: solidsTimerActive ? '#EF4444' : brandColors.colors.accent,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 6,
+            }}>
             <MaterialCommunityIcons
               name={solidsTimerActive ? 'pause' : 'play'}
-              size={24}
-              color={brandColors.colors.white}
+              size={36}
+              color="#FFF"
             />
           </Pressable>
-          <Text className="text-base font-medium text-foreground">
-            {formatTime(solidsDuration)}
+          <Text className="text-sm text-muted-foreground">
+            {solidsTimerActive ? t('common.tapToPause') : t('common.tapToStart')}
           </Text>
         </View>
       )}

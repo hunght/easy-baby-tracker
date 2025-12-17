@@ -1,7 +1,9 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -94,6 +96,8 @@ export default function GrowthScreen() {
       return; // Don't save if no measurements provided
     }
 
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     setIsSaving(true);
     try {
       const payload = {
@@ -118,85 +122,144 @@ export default function GrowthScreen() {
   };
 
   const displayValue = (value: string): string => {
-    if (!value) return '0,00';
+    if (!value) return '—';
     const num = parseNumericValue(value);
-    return num !== undefined ? num.toFixed(2).replace('.', ',') : '0,00';
+    return num !== undefined ? num.toFixed(2).replace('.', ',') : '—';
+  };
+
+  // Quick increment/decrement handlers
+  const adjustValue = (
+    setter: React.Dispatch<React.SetStateAction<string>>,
+    currentValue: string,
+    delta: number,
+    decimals: number = 2
+  ) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const current = parseNumericValue(currentValue) ?? 0;
+    const newValue = Math.max(0, current + delta);
+    setter(newValue.toFixed(decimals).replace('.', ','));
   };
 
   return (
     <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('growth.editTitle') : t('growth.title')}
-        onSave={handleSave}
-        isSaving={isSaving || !canSave()}
         closeLabel={t('common.close')}
-        saveLabel={t('common.save')}
       />
 
-      <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerClassName="p-5 pb-28"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
         {/* Time */}
         <TimePickerField value={time} onChange={setTime} isEditing={isEditing} />
 
-        <View className="my-4 h-px bg-border" />
-
-        {/* Weight */}
-        <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-base font-medium text-muted-foreground">{t('common.weight')}</Text>
-          <View className="flex-row items-baseline gap-1">
-            <Text className="text-base font-semibold text-accent">{displayValue(weightKg)}</Text>
-            <Text className="text-base text-foreground">{t('common.unitKg')}</Text>
+        {/* Weight Card */}
+        <View className="mb-4 rounded-2xl border border-border bg-card p-4">
+          <View className="mb-3 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <MaterialCommunityIcons name="scale-bathroom" size={22} color="#666" />
+              <Text className="text-base font-medium text-foreground">{t('common.weight')}</Text>
+            </View>
+            <View className="flex-row items-baseline gap-1">
+              <Text className="text-xl font-bold text-accent">{displayValue(weightKg)}</Text>
+              <Text className="text-base text-muted-foreground">{t('common.unitKg')}</Text>
+            </View>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => adjustValue(setWeightKg, weightKg, -0.1)}
+              className="h-12 w-12 items-center justify-center rounded-xl bg-muted/50">
+              <MaterialCommunityIcons name="minus" size={24} color="#666" />
+            </Pressable>
+            <Input
+              className="h-12 flex-1 text-center text-lg"
+              value={weightKg}
+              onChangeText={(text) => setWeightKg(formatNumericValue(text))}
+              placeholder={t('growth.placeholder')}
+              keyboardType="decimal-pad"
+            />
+            <Pressable
+              onPress={() => adjustValue(setWeightKg, weightKg, 0.1)}
+              className="h-12 w-12 items-center justify-center rounded-xl bg-muted/50">
+              <MaterialCommunityIcons name="plus" size={24} color="#666" />
+            </Pressable>
           </View>
         </View>
-        <Input
-          value={weightKg}
-          onChangeText={(text) => setWeightKg(formatNumericValue(text))}
-          placeholder={t('growth.placeholder')}
-          keyboardType="decimal-pad"
-        />
 
-        <View className="my-4 h-px bg-border" />
-
-        {/* Height */}
-        <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-base font-medium text-muted-foreground">{t('common.height')}</Text>
-          <View className="flex-row items-baseline gap-1">
-            <Text className="text-base font-semibold text-accent">{displayValue(heightCm)}</Text>
-            <Text className="text-base text-foreground">{t('common.unitCm')}</Text>
+        {/* Height Card */}
+        <View className="mb-4 rounded-2xl border border-border bg-card p-4">
+          <View className="mb-3 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <MaterialCommunityIcons name="human-male-height" size={22} color="#666" />
+              <Text className="text-base font-medium text-foreground">{t('common.height')}</Text>
+            </View>
+            <View className="flex-row items-baseline gap-1">
+              <Text className="text-xl font-bold text-accent">{displayValue(heightCm)}</Text>
+              <Text className="text-base text-muted-foreground">{t('common.unitCm')}</Text>
+            </View>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => adjustValue(setHeightCm, heightCm, -0.5)}
+              className="h-12 w-12 items-center justify-center rounded-xl bg-muted/50">
+              <MaterialCommunityIcons name="minus" size={24} color="#666" />
+            </Pressable>
+            <Input
+              className="h-12 flex-1 text-center text-lg"
+              value={heightCm}
+              onChangeText={(text) => setHeightCm(formatNumericValue(text))}
+              placeholder={t('growth.placeholder')}
+              keyboardType="decimal-pad"
+            />
+            <Pressable
+              onPress={() => adjustValue(setHeightCm, heightCm, 0.5)}
+              className="h-12 w-12 items-center justify-center rounded-xl bg-muted/50">
+              <MaterialCommunityIcons name="plus" size={24} color="#666" />
+            </Pressable>
           </View>
         </View>
-        <Input
-          value={heightCm}
-          onChangeText={(text) => setHeightCm(formatNumericValue(text))}
-          placeholder={t('growth.placeholder')}
-          keyboardType="decimal-pad"
-        />
 
-        <View className="my-4 h-px bg-border" />
-
-        {/* Head Circumference */}
-        <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-base font-medium text-muted-foreground">
-            {t('common.headCircumference')}
-          </Text>
-          <View className="flex-row items-baseline gap-1">
-            <Text className="text-base font-semibold text-accent">
-              {displayValue(headCircumferenceCm)}
-            </Text>
-            <Text className="text-base text-foreground">{t('common.unitCm')}</Text>
+        {/* Head Circumference Card */}
+        <View className="mb-4 rounded-2xl border border-border bg-card p-4">
+          <View className="mb-3 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <MaterialCommunityIcons name="head" size={22} color="#666" />
+              <Text className="text-base font-medium text-foreground">
+                {t('common.headCircumference')}
+              </Text>
+            </View>
+            <View className="flex-row items-baseline gap-1">
+              <Text className="text-xl font-bold text-accent">
+                {displayValue(headCircumferenceCm)}
+              </Text>
+              <Text className="text-base text-muted-foreground">{t('common.unitCm')}</Text>
+            </View>
+          </View>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => adjustValue(setHeadCircumferenceCm, headCircumferenceCm, -0.5)}
+              className="h-12 w-12 items-center justify-center rounded-xl bg-muted/50">
+              <MaterialCommunityIcons name="minus" size={24} color="#666" />
+            </Pressable>
+            <Input
+              className="h-12 flex-1 text-center text-lg"
+              value={headCircumferenceCm}
+              onChangeText={(text) => setHeadCircumferenceCm(formatNumericValue(text))}
+              placeholder={t('growth.placeholder')}
+              keyboardType="decimal-pad"
+            />
+            <Pressable
+              onPress={() => adjustValue(setHeadCircumferenceCm, headCircumferenceCm, 0.5)}
+              className="h-12 w-12 items-center justify-center rounded-xl bg-muted/50">
+              <MaterialCommunityIcons name="plus" size={24} color="#666" />
+            </Pressable>
           </View>
         </View>
-        <Input
-          value={headCircumferenceCm}
-          onChangeText={(text) => setHeadCircumferenceCm(formatNumericValue(text))}
-          placeholder={t('growth.placeholder')}
-          keyboardType="decimal-pad"
-        />
-
-        <View className="my-4 h-px bg-border" />
 
         {/* Notes */}
         <Input
-          className="mt-3 min-h-20"
+          className="min-h-20"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
@@ -204,6 +267,33 @@ export default function GrowthScreen() {
           textAlignVertical="top"
         />
       </ScrollView>
+
+      {/* Sticky Bottom Save Bar */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-8 pt-4">
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving || !canSave()}
+          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${isSaving || !canSave() ? 'bg-muted' : 'bg-accent'
+            }`}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+          <MaterialCommunityIcons
+            name="content-save"
+            size={22}
+            color={isSaving || !canSave() ? '#999' : '#FFF'}
+          />
+          <Text
+            className={`text-lg font-bold ${isSaving || !canSave() ? 'text-muted-foreground' : 'text-white'
+              }`}>
+            {isSaving ? t('common.saving') : t('common.save')}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

@@ -1,17 +1,20 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
 import { z } from 'zod';
 
-import { Button } from '@/components/ui/button';
 import { DatePickerField } from '@/components/DatePickerField';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useNotification } from '@/components/NotificationContext';
 import {
   BABY_PROFILES_QUERY_KEY,
   BABY_PROFILE_QUERY_KEY,
@@ -40,10 +43,41 @@ function isGender(value: unknown): value is Gender {
   return genderSchema.safeParse(value).success;
 }
 
+// Directory for storing baby profile photos
+const PROFILE_PHOTO_DIR =
+  (FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? '') + 'profile-photos/';
+
+async function ensureProfilePhotoDir() {
+  if (!PROFILE_PHOTO_DIR) {
+    throw new Error('FileSystem directory unavailable');
+  }
+  const info = await FileSystem.getInfoAsync(PROFILE_PHOTO_DIR);
+  if (!info.exists) {
+    await FileSystem.makeDirectoryAsync(PROFILE_PHOTO_DIR, { intermediates: true });
+  }
+  return PROFILE_PHOTO_DIR;
+}
+
+async function persistAsset(asset: ImagePicker.ImagePickerAsset) {
+  if (!asset.uri) {
+    return null;
+  }
+
+  const directory = await ensureProfilePhotoDir();
+  const extensionFromName =
+    asset.fileName?.split('.').pop()?.toLowerCase() ?? asset.uri.split('.').pop()?.split('?')[0];
+  const ext = extensionFromName && extensionFromName.length <= 5 ? extensionFromName : 'jpg';
+  const dest = `${directory}${Date.now()}-${Math.round(Math.random() * 1_000_000)}.${ext}`;
+
+  await FileSystem.copyAsync({ from: asset.uri, to: dest });
+  return dest;
+}
+
 export default function ProfileEditScreen() {
   const { t } = useLocalization();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { showNotification } = useNotification();
   const { babyId } = useLocalSearchParams<{ babyId?: string }>();
   const numericBabyId = babyId ? Number(babyId) : null;
 
@@ -57,6 +91,9 @@ export default function ProfileEditScreen() {
   const [gender, setGender] = useState<Gender>('unknown');
   const [birthDate, setBirthDate] = useState(new Date());
   const [dueDate, setDueDate] = useState(new Date());
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [photoProcessing, setPhotoProcessing] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -65,11 +102,115 @@ export default function ProfileEditScreen() {
       setGender(existingProfile.gender);
       setBirthDate(new Date(existingProfile.birthDate));
       setDueDate(new Date(existingProfile.dueDate));
+      setAvatarUri(existingProfile.avatarUri ?? null);
     }
   }, [existingProfile]);
 
+  const requestPermission = async (type: 'camera' | 'library') => {
+    const permission =
+      type === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permission.status !== 'granted') {
+      Alert.alert(
+        t('common.permissionDenied') ?? 'Permission needed',
+        t('common.permissionDeniedDescription') ?? 'Please grant access in Settings to continue.'
+      );
+      return false;
+    }
+    return true;
+  };
+
+  const replacePhoto = async (asset: ImagePicker.ImagePickerAsset) => {
+    setPhotoProcessing(true);
+    try {
+      // Delete old photo if exists
+      if (avatarUri) {
+        await FileSystem.deleteAsync(avatarUri, { idempotent: true });
+      }
+      const storedUri = await persistAsset(asset);
+      if (!storedUri) {
+        throw new Error('Unable to store image');
+      }
+      // Verify the file exists
+      const fileInfo = await FileSystem.getInfoAsync(storedUri);
+      if (!fileInfo.exists) {
+        throw new Error('Stored file does not exist');
+      }
+      setAvatarUri(storedUri);
+    } catch (error) {
+      console.error('Error replacing photo:', error);
+      showNotification(t('common.photoSaveError'), 'error');
+    } finally {
+      setPhotoProcessing(false);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    setShowPhotoModal(false);
+    const allowed = await requestPermission('camera');
+    if (!allowed) return;
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (result.canceled || !result.assets || result.assets.length === 0) {
+      return;
+    }
+    await replacePhoto(result.assets[0]);
+  };
+
+  const handleChoosePhoto = async () => {
+    setShowPhotoModal(false);
+    const allowed = await requestPermission('library');
+    if (!allowed) return;
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: false,
+        quality: 0.8,
+        selectionLimit: 1,
+        mediaTypes: ['images'],
+      });
+
+      console.log('Image picker result:', JSON.stringify(result, null, 2));
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        console.log('Image picker was canceled or returned no assets');
+        return;
+      }
+      await replacePhoto(result.assets[0]);
+    } catch (error) {
+      console.error('Error launching image picker:', error);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setShowPhotoModal(false);
+    if (!avatarUri) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await FileSystem.deleteAsync(avatarUri, { idempotent: true });
+    } catch (error) {
+      console.warn('Failed to delete photo', error);
+    }
+    setAvatarUri(null);
+  };
+
+  const handleGenderChange = (value: string | undefined) => {
+    if (value && isGender(value)) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setGender(value);
+    }
+  };
+
   const handleSave = async () => {
     if (isSaving) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       setIsSaving(true);
@@ -78,6 +219,7 @@ export default function ProfileEditScreen() {
         gender,
         birthDate: birthDate.toISOString(),
         dueDate: dueDate.toISOString(),
+        avatarUri: avatarUri ?? undefined,
         concerns: existingProfile?.concerns ?? [],
       };
 
@@ -103,73 +245,181 @@ export default function ProfileEditScreen() {
 
   return (
     <View className="flex-1 bg-background">
+      <ModalHeader
+        title={numericBabyId ? t('profileEdit.editTitle') : t('profileEdit.createTitle')}
+        closeLabel={t('common.close')}
+      />
+
       <ScrollView
-        contentContainerClassName="pt-15 pb-10 px-6 gap-3"
-        showsVerticalScrollIndicator={false}>
-        <ModalHeader
-          title={numericBabyId ? t('profileEdit.editTitle') : t('profileEdit.createTitle')}
-        />
-        <View className="mb-3 items-center">
-          <Image source={require('@/assets/images/icon.png')} className="w-30 h-30" />
-          <Text className="mt-2 text-accent">{t('common.addPhoto')}</Text>
+        contentContainerClassName="px-5 pb-28 pt-4"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
+        {/* Photo Section */}
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowPhotoModal(true);
+          }}
+          disabled={photoProcessing}
+          className="mb-6 items-center">
+          <View className="relative">
+            <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-muted/30">
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} className="h-24 w-24" contentFit="cover" />
+              ) : (
+                <Image source={require('@/assets/images/icon.png')} className="h-20 w-20" />
+              )}
+            </View>
+            {/* Camera badge */}
+            <View className="absolute -bottom-1 -right-1 h-8 w-8 items-center justify-center rounded-full bg-accent">
+              <MaterialCommunityIcons name="camera" size={16} color="#FFF" />
+            </View>
+          </View>
+          <Text className="mt-3 text-base font-semibold text-accent">
+            {avatarUri ? t('profileEdit.changePhoto') : t('common.addPhoto')}
+          </Text>
+        </Pressable>
+
+        {/* Nickname */}
+        <View className="mb-5">
+          <Label className="mb-2 text-base font-semibold text-muted-foreground">
+            {t('common.nickname')}
+          </Label>
+          <Input
+            value={nickname}
+            onChangeText={setNickname}
+            placeholder={t('common.nicknamePlaceholder')}
+            className="h-12 text-base"
+          />
         </View>
 
-        <Label className="mt-2 font-semibold text-muted-foreground">{t('common.nickname')}</Label>
-        <Input
-          value={nickname}
-          onChangeText={setNickname}
-          placeholder={t('common.nicknamePlaceholder')}
-          className="mt-1"
-        />
+        {/* Gender - Full width 3-segment toggle */}
+        <View className="mb-5">
+          <Label className="mb-2 text-base font-semibold text-muted-foreground">
+            {t('common.gender')}
+          </Label>
+          <ToggleGroup
+            type="single"
+            value={gender}
+            onValueChange={handleGenderChange}
+            variant="outline"
+            className="w-full">
+            {genderSegments.map((segment, index) => (
+              <ToggleGroupItem
+                key={segment.key}
+                value={segment.key}
+                isFirst={index === 0}
+                isLast={index === genderSegments.length - 1}
+                className="flex-1"
+                aria-label={t(segment.labelKey)}>
+                <Text className="text-base font-semibold">{t(segment.labelKey)}</Text>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </View>
 
-        <Label className="mt-2 font-semibold text-muted-foreground">{t('common.gender')}</Label>
-        <ToggleGroup
-          type="single"
-          value={gender}
-          onValueChange={(value) => {
-            if (value && isGender(value)) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setGender(value);
-            }
-          }}
-          variant="outline"
-          className="mt-1 w-full">
-          {genderSegments.map((segment, index) => (
-            <ToggleGroupItem
-              key={segment.key}
-              value={segment.key}
-              isFirst={index === 0}
-              isLast={index === genderSegments.length - 1}
-              className="flex-1"
-              aria-label={t(segment.labelKey)}>
-              <Text className="font-semibold">{t(segment.labelKey)}</Text>
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        {/* Birthdate - Full row tappable */}
+        <View className="mb-5">
+          <DatePickerField
+            label={t('common.birthdate')}
+            value={birthDate}
+            onChange={setBirthDate}
+          />
+        </View>
 
-        <DatePickerField label={t('common.birthdate')} value={birthDate} onChange={setBirthDate} />
+        {/* Due Date - Full row tappable */}
+        <View className="mb-5">
+          <DatePickerField
+            label={t('common.dueDate')}
+            value={dueDate}
+            onChange={setDueDate}
+          />
+        </View>
 
-        <DatePickerField label={t('common.dueDate')} value={dueDate} onChange={setDueDate} />
-
-        <Text className="mt-2 text-sm leading-tight text-muted-foreground">
+        {/* Info Text */}
+        <Text className="text-sm leading-relaxed text-muted-foreground">
           {t('profileEdit.info')}
         </Text>
+      </ScrollView>
 
-        <Button
-          variant="default"
-          size="lg"
+      {/* Photo Selection Modal - Bottom Sheet Style */}
+      <Modal
+        visible={showPhotoModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPhotoModal(false)}>
+        <Pressable
+          className="flex-1 justify-end bg-black/50"
+          onPress={() => setShowPhotoModal(false)}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View className="rounded-t-3xl bg-card px-5 pb-10 pt-6">
+              <Text className="mb-4 text-center text-lg font-bold text-foreground">
+                {t('profileEdit.photoOptions')}
+              </Text>
+
+              <Pressable
+                onPress={handleTakePhoto}
+                className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-accent">
+                <MaterialCommunityIcons name="camera" size={22} color="#FFF" />
+                <Text className="text-base font-semibold text-white">{t('diary.takePhoto')}</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={handleChoosePhoto}
+                className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-muted">
+                <MaterialCommunityIcons name="image-multiple" size={22} color="#666" />
+                <Text className="text-base font-semibold text-foreground">{t('diary.choosePhoto')}</Text>
+              </Pressable>
+
+              {avatarUri && (
+                <Pressable
+                  onPress={handleRemovePhoto}
+                  className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-red-500/10">
+                  <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
+                  <Text className="text-base font-semibold text-red-500">{t('diary.removePhoto')}</Text>
+                </Pressable>
+              )}
+
+              <Pressable
+                onPress={() => setShowPhotoModal(false)}
+                className="h-14 items-center justify-center rounded-xl">
+                <Text className="text-base font-semibold text-muted-foreground">{t('common.cancel')}</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* Sticky Bottom Save Bar - One-handed UX */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-8 pt-4">
+        <Pressable
           onPress={handleSave}
-          disabled={isSaving}
-          className="mt-4 rounded-pill">
-          <Text className="text-lg font-bold text-primary-foreground">
+          disabled={isSaving || !nickname.trim()}
+          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${isSaving || !nickname.trim() ? 'bg-muted' : 'bg-accent'
+            }`}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+          <MaterialCommunityIcons
+            name="content-save"
+            size={22}
+            color={isSaving || !nickname.trim() ? '#999' : '#FFF'}
+          />
+          <Text
+            className={`text-lg font-bold ${isSaving || !nickname.trim() ? 'text-muted-foreground' : 'text-white'
+              }`}>
             {isSaving
               ? t('common.saving')
               : numericBabyId
                 ? t('common.saveChanges')
                 : t('common.continue')}
           </Text>
-        </Button>
-      </ScrollView>
+        </Pressable>
+      </View>
     </View>
   );
 }

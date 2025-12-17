@@ -1,26 +1,18 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Dimensions,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  ScrollView,
-  View,
-} from 'react-native';
+import { useEffect, useMemo } from 'react';
+import { ScrollView, View } from 'react-native';
 
 import { useFeatureFlags } from '@/context/FeatureFlagContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
-import { BabyInfoBanner } from '@/components/BabyInfoBanner';
+import { SwipeableBabyProfiles } from '@/pages/tabs/tracking/SwipeableBabyProfiles';
 import {
   BABY_PROFILE_QUERY_KEY,
   BABY_PROFILES_QUERY_KEY,
   DIAPER_CHANGES_QUERY_KEY,
   FEEDINGS_QUERY_KEY,
-  GROWTH_RECORDS_QUERY_KEY,
   PUMPINGS_QUERY_KEY,
   SLEEP_SESSIONS_QUERY_KEY,
   BABY_HABITS_QUERY_KEY,
@@ -30,12 +22,10 @@ import { TRACKING_TILES } from '@/constants/tracking-tiles';
 import { getActiveBabyProfile, getBabyProfiles } from '@/database/baby-profile';
 import { getDiaperChanges } from '@/database/diaper';
 import { getFeedings } from '@/database/feeding';
-import { getGrowthRecords } from '@/database/growth';
 import { getPumpings } from '@/database/pumping';
 import { getSleepSessions } from '@/database/sleep';
 import { getBabyHabits, getTodayHabitLogs } from '@/database/habits';
 import { useBrandColor } from '@/hooks/use-brand-color';
-import { useSetActiveBabyProfile } from '@/hooks/use-set-active-baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import {
   computeTodayRange,
@@ -49,21 +39,13 @@ import {
   formatFeedDelta,
   formatSleepTotal,
   formatSleepDelta,
-  latestGrowth,
-} from '@/lib/tracking-utils'; // Corrected import path
-
-// Get screen width for carousel
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+} from '@/lib/tracking-utils';
 
 export default function TrackingScreen() {
   const { t } = useLocalization();
   const router = useRouter();
   const { features } = useFeatureFlags();
   const brandColors = useBrandColor();
-  const setActiveBabyMutation = useSetActiveBabyProfile();
-
-  // Scroll ref for carousel
-  const scrollRef = useRef<ScrollView>(null);
 
   const visibleTiles = useMemo(() => {
     return TRACKING_TILES.filter((tile) => features[tile.id]);
@@ -75,7 +57,7 @@ export default function TrackingScreen() {
     () => computeYesterdayRange(startOfToday),
     [startOfToday]
   );
-  const [activeBabyIndex, setActiveBabyIndex] = useState<number>(0);
+
   const { data: profile, isLoading } = useQuery({
     queryKey: BABY_PROFILE_QUERY_KEY,
     queryFn: getActiveBabyProfile,
@@ -158,24 +140,6 @@ export default function TrackingScreen() {
       }),
     staleTime: 30 * 1000,
   });
-  const { data: growthToday = [] } = useQuery({
-    queryKey: [...GROWTH_RECORDS_QUERY_KEY, 'today', startOfToday, endOfToday],
-    queryFn: () =>
-      getGrowthRecords({
-        startDate: startOfToday,
-        endDate: endOfToday,
-      }),
-    staleTime: 30 * 1000,
-  });
-  const { data: growthYesterday = [] } = useQuery({
-    queryKey: [...GROWTH_RECORDS_QUERY_KEY, 'yesterday', startOfYesterday, endOfYesterday],
-    queryFn: () =>
-      getGrowthRecords({
-        startDate: startOfYesterday,
-        endDate: endOfYesterday,
-      }),
-    staleTime: 30 * 1000,
-  });
 
   // Habits queries
   const { data: babyHabits = [] } = useQuery({
@@ -203,22 +167,6 @@ export default function TrackingScreen() {
       }
     }
   }, [profile, isLoading, profilesLoading, babyProfiles.length, router]);
-
-  const displayBabies = useMemo(() => {
-    return babyProfiles.length > 0 ? babyProfiles : profile ? [profile] : [];
-  }, [babyProfiles, profile]);
-
-  // Sync active index with profile
-  useEffect(() => {
-    if (profile && displayBabies.length > 0) {
-      const index = displayBabies.findIndex((b) => b.id === profile.id);
-      if (index !== -1 && index !== activeBabyIndex) {
-        setActiveBabyIndex(index);
-        // Scroll to active baby without animation on mount/sync
-        scrollRef.current?.scrollTo({ x: index * SCREEN_WIDTH, animated: false });
-      }
-    }
-  }, [profile?.id, displayBabies]); // depend on displayBabies array reference
 
   // Compute tile sublabels - must be before early return to satisfy React Hooks rules
   const tileSublabels = useMemo(() => {
@@ -277,10 +225,6 @@ export default function TrackingScreen() {
       dirtyCount +
       mixedCount -
       (wetCountYesterday + dirtyCountYesterday + mixedCountYesterday);
-    // Growth records are available but not currently displayed in sublabels
-    // const latestGrowthToday = latestGrowth(growthToday);
-    // const latestGrowthYesterday = latestGrowth(growthYesterday);
-    // Removed growthParts logic as it's now handled in BabyInfoBanner
 
     // Habit sublabel
     const habitCount = babyHabits.length;
@@ -305,35 +249,32 @@ export default function TrackingScreen() {
       feeding:
         totalBottleMl > 0 || totalNursingMinutes > 0
           ? [
-              totalBottleMl > 0 ? `${Math.round(totalBottleMl)} ml bottle` : null,
-              totalNursingMinutes > 0 ? `${totalNursingMinutes}m nursing` : null,
-              formatFeedDelta(
-                totalBottleMl - totalBottleMlYesterday,
-                totalNursingMinutes - totalNursingMinutesYesterday
-              ),
-            ]
-              .filter(Boolean)
-              .join(' · ')
+            totalBottleMl > 0 ? `${Math.round(totalBottleMl)} ml bottle` : null,
+            totalNursingMinutes > 0 ? `${totalNursingMinutes}m nursing` : null,
+            formatFeedDelta(
+              totalBottleMl - totalBottleMlYesterday,
+              totalNursingMinutes - totalNursingMinutesYesterday
+            ),
+          ]
+            .filter(Boolean)
+            .join(' · ')
           : t('tracking.tiles.feeding.sublabel'),
       pumping:
         totalPumpedMl > 0
-          ? `${Math.round(totalPumpedMl)} ml · Δ ${formatDelta(totalPumpedMl - totalPumpedMlYesterday, 'ml')}${
-              lastPumpingAgo ? ` · ${lastPumpingAgo} ago` : ''
-            }`
+          ? `${Math.round(totalPumpedMl)} ml · Δ ${formatDelta(totalPumpedMl - totalPumpedMlYesterday, 'ml')}${lastPumpingAgo ? ` · ${lastPumpingAgo} ago` : ''
+          }`
           : t('tracking.tiles.pumping.sublabel'),
       diaper:
         diaperCounts != null
-          ? `${diaperCounts}${lastDiaperAgo ? ` · ${lastDiaperAgo} ago` : ''}${
-              diaperYesterdayCounts ? ` · ${diaperYesterdayCounts}` : ''
-            }${diaperDeltaTotal !== 0 ? ` · Δ ${formatDelta(diaperDeltaTotal, '')}` : ''}`
+          ? `${diaperCounts}${lastDiaperAgo ? ` · ${lastDiaperAgo} ago` : ''}${diaperYesterdayCounts ? ` · ${diaperYesterdayCounts}` : ''
+          }${diaperDeltaTotal !== 0 ? ` · Δ ${formatDelta(diaperDeltaTotal, '')}` : ''}`
           : t('tracking.tiles.diaper.sublabel'),
       sleep:
         totalSleepSeconds > 0
-          ? `${formatSleepTotal(totalSleepSeconds)}${
-              totalSleepSecondsYesterday > 0
-                ? ` · Δ ${formatSleepDelta(totalSleepSeconds - totalSleepSecondsYesterday)}`
-                : ''
-            }${longestSleepText ? ` · longest ${longestSleepText}` : ''}`
+          ? `${formatSleepTotal(totalSleepSeconds)}${totalSleepSecondsYesterday > 0
+            ? ` · Δ ${formatSleepDelta(totalSleepSeconds - totalSleepSecondsYesterday)}`
+            : ''
+          }${longestSleepText ? ` · longest ${longestSleepText}` : ''}`
           : t('tracking.tiles.sleep.sublabel'),
       habit: habitLabel ?? t('tracking.tiles.habit.sublabel'),
     };
@@ -346,8 +287,6 @@ export default function TrackingScreen() {
     pumpingsYesterday,
     sleepSessionsToday,
     sleepSessionsYesterday,
-    growthToday,
-    growthYesterday,
     babyHabits,
     todayHabitLogs,
     t,
@@ -357,9 +296,6 @@ export default function TrackingScreen() {
   function isTileSublabelKey(key: string): key is keyof typeof tileSublabels {
     return (
       key === 'feeding' ||
-      key === 'pumping' ||
-      key === 'diaper' ||
-      key === 'sleep' ||
       key === 'pumping' ||
       key === 'diaper' ||
       key === 'sleep' ||
@@ -382,28 +318,6 @@ export default function TrackingScreen() {
       </View>
     );
   }
-
-  // Handle scroll end to switch baby
-  const onMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = event.nativeEvent.contentOffset.x;
-    const index = Math.round(x / SCREEN_WIDTH);
-    if (index >= 0 && index < displayBabies.length) {
-      setActiveBabyIndex(index);
-      const baby = displayBabies[index];
-      if (baby && baby.id !== profile?.id) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        handleSelectBaby(baby.id);
-      }
-    }
-  };
-
-  const handleSelectBaby = async (babyId: number) => {
-    if (babyId === profile.id) {
-      return;
-    }
-
-    await setActiveBabyMutation.mutateAsync(babyId);
-  };
 
   const handleTilePress = (tileId: string) => {
     if (tileId === 'feeding') {
@@ -432,44 +346,7 @@ export default function TrackingScreen() {
         contentContainerClassName="pb-32"
         showsVerticalScrollIndicator={false}>
         {/* Swipeable Baby Profiles */}
-        <View>
-          <ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={onMomentumScrollEnd}
-            decelerationRate="fast"
-            className="mb-2">
-            {displayBabies.map((baby) => (
-              <View key={baby.id} style={{ width: SCREEN_WIDTH }}>
-                <View className="px-6 pt-4">
-                  <BabyInfoBanner
-                    profile={baby}
-                    latestGrowthRecord={
-                      baby.id === profile?.id ? latestGrowth(growthToday) : undefined
-                    }
-                    previousGrowthRecord={
-                      baby.id === profile?.id ? latestGrowth(growthYesterday) : undefined
-                    }
-                  />
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-
-          {/* Pagination Dots */}
-          {displayBabies.length > 1 && (
-            <View className="mb-6 flex-row justify-center gap-2">
-              {displayBabies.map((_, index) => (
-                <View
-                  key={index}
-                  className={`h-2 w-2 rounded-full ${index === activeBabyIndex ? 'bg-primary' : 'bg-muted'}`}
-                />
-              ))}
-            </View>
-          )}
-        </View>
+        <SwipeableBabyProfiles />
 
         <View className="flex-row flex-wrap justify-between gap-y-4 px-6">
           {visibleTiles.map((tile) => (

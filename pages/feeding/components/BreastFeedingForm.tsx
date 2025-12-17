@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -56,6 +57,9 @@ export function BreastFeedingForm({
   }, [leftDuration, rightDuration, onDataChange]);
 
   const toggleLeftTimer = () => {
+    // Haptic feedback on timer toggle
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     if (leftTimerActive) {
       if (leftTimerRef.current) {
         clearInterval(leftTimerRef.current);
@@ -63,6 +67,14 @@ export function BreastFeedingForm({
       }
       setLeftTimerActive(false);
     } else {
+      // Stop right timer if active (only one side at a time)
+      if (rightTimerActive) {
+        if (rightTimerRef.current) {
+          clearInterval(rightTimerRef.current);
+          rightTimerRef.current = null;
+        }
+        setRightTimerActive(false);
+      }
       setLeftTimerActive(true);
       leftTimerRef.current = setInterval(() => {
         setLeftDuration((prev) => prev + 1);
@@ -71,6 +83,9 @@ export function BreastFeedingForm({
   };
 
   const toggleRightTimer = () => {
+    // Haptic feedback on timer toggle
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
     if (rightTimerActive) {
       if (rightTimerRef.current) {
         clearInterval(rightTimerRef.current);
@@ -78,6 +93,14 @@ export function BreastFeedingForm({
       }
       setRightTimerActive(false);
     } else {
+      // Stop left timer if active (only one side at a time)
+      if (leftTimerActive) {
+        if (leftTimerRef.current) {
+          clearInterval(leftTimerRef.current);
+          leftTimerRef.current = null;
+        }
+        setLeftTimerActive(false);
+      }
       setRightTimerActive(true);
       rightTimerRef.current = setInterval(() => {
         setRightDuration((prev) => prev + 1);
@@ -88,14 +111,15 @@ export function BreastFeedingForm({
   if (isEditing || isPast) {
     // Edit Mode or Past Time: Manual Inputs (forgot to record)
     return (
-      <View className="mb-6 gap-3">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-base font-medium text-muted-foreground">
+      <View className="mb-6 gap-4">
+        {/* Left Duration - Full-width tappable row */}
+        <View className="flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-3">
+          <Text className="text-base font-medium text-foreground">
             {t('common.leftShort')}
           </Text>
           <View className="flex-row items-center gap-2">
             <Input
-              className="w-[60px] text-center"
+              className="h-11 w-20 text-center text-lg"
               value={Math.floor(leftDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -107,13 +131,15 @@ export function BreastFeedingForm({
             <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
           </View>
         </View>
-        <View className="flex-row items-center justify-between">
-          <Text className="text-base font-medium text-muted-foreground">
+
+        {/* Right Duration - Full-width tappable row */}
+        <View className="flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-3">
+          <Text className="text-base font-medium text-foreground">
             {t('common.rightShort')}
           </Text>
           <View className="flex-row items-center gap-2">
             <Input
-              className="w-[60px] text-center"
+              className="h-11 w-20 text-center text-lg"
               value={Math.floor(rightDuration / 60).toString()}
               onChangeText={(text) => {
                 const mins = parseInt(text) || 0;
@@ -125,11 +151,13 @@ export function BreastFeedingForm({
             <Text className="text-base text-muted-foreground">{t('common.unitMin')}</Text>
           </View>
         </View>
-        <View className="flex-row items-center justify-between">
+
+        {/* Total Duration */}
+        <View className="flex-row items-center justify-between px-1">
           <Text className="text-base font-medium text-muted-foreground">
             {t('common.totalDuration')}
           </Text>
-          <Text className="text-base text-foreground">
+          <Text className="text-lg font-semibold text-accent">
             {formatTime(leftDuration + rightDuration)}
           </Text>
         </View>
@@ -137,47 +165,71 @@ export function BreastFeedingForm({
     );
   }
 
-  // Create Mode (Now): Timers
+  // Create Mode (Now): Large Timer Buttons for one-handed use
   return (
     <>
-      <View className="mb-3 flex-row items-center justify-between">
+      <View className="mb-4 flex-row items-center justify-between">
         <Text className="text-base font-medium text-muted-foreground">{t('common.duration')}</Text>
-        <Text className="text-base text-foreground">
-          {t('common.seconds', { params: { value: leftDuration + rightDuration } })}
+        <Text className="text-lg font-semibold text-accent">
+          {formatTime(leftDuration + rightDuration)}
         </Text>
       </View>
 
-      <View className="my-6 flex-row justify-around">
-        <View className="items-center gap-3">
+      {/* Large Timer Buttons - Optimized for one-handed use */}
+      <View className="mb-6 flex-row justify-around py-4">
+        {/* Left Timer */}
+        <View className="items-center gap-4">
           <Pressable
-            className="h-[70px] w-[70px] items-center justify-center rounded-full bg-accent"
-            onPress={toggleLeftTimer}>
+            className={`h-[88px] w-[88px] items-center justify-center rounded-full ${leftTimerActive ? 'bg-red-500' : 'bg-accent'}`}
+            onPress={toggleLeftTimer}
+            style={{
+              shadowColor: leftTimerActive ? '#EF4444' : brandColors.colors.accent,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 6,
+            }}>
             <MaterialCommunityIcons
               name={leftTimerActive ? 'pause' : 'play'}
-              size={24}
-              color={brandColors.colors.white}
+              size={36}
+              color="#FFF"
             />
           </Pressable>
-          <Text className="text-base font-medium text-foreground">
-            {t('common.leftShort')}: {formatTime(leftDuration)}
-          </Text>
+          <View className="items-center">
+            <Text className="text-sm font-medium text-muted-foreground">{t('common.leftShort')}</Text>
+            <Text className="text-xl font-bold text-foreground">{formatTime(leftDuration)}</Text>
+          </View>
         </View>
 
-        <View className="items-center gap-3">
+        {/* Right Timer */}
+        <View className="items-center gap-4">
           <Pressable
-            className="h-[70px] w-[70px] items-center justify-center rounded-full bg-accent"
-            onPress={toggleRightTimer}>
+            className={`h-[88px] w-[88px] items-center justify-center rounded-full ${rightTimerActive ? 'bg-red-500' : 'bg-accent'}`}
+            onPress={toggleRightTimer}
+            style={{
+              shadowColor: rightTimerActive ? '#EF4444' : brandColors.colors.accent,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.3,
+              shadowRadius: 8,
+              elevation: 6,
+            }}>
             <MaterialCommunityIcons
               name={rightTimerActive ? 'pause' : 'play'}
-              size={24}
-              color={brandColors.colors.white}
+              size={36}
+              color="#FFF"
             />
           </Pressable>
-          <Text className="text-base font-medium text-foreground">
-            {t('common.rightShort')}: {formatTime(rightDuration)}
-          </Text>
+          <View className="items-center">
+            <Text className="text-sm font-medium text-muted-foreground">{t('common.rightShort')}</Text>
+            <Text className="text-xl font-bold text-foreground">{formatTime(rightDuration)}</Text>
+          </View>
         </View>
       </View>
+
+      {/* Tip for one-handed use */}
+      <Text className="text-center text-xs italic text-muted-foreground">
+        {t('feeding.timerTip')}
+      </Text>
     </>
   );
 }

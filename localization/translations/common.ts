@@ -83,6 +83,8 @@ export const common = {
     reset: 'Reset',
     delete: 'Delete',
     add: 'Add',
+    tapToStart: 'Tap to start',
+    tapToPause: 'Tap to pause',
   },
   vi: {
     close: 'Đóng',
@@ -169,5 +171,7 @@ export const common = {
     reset: 'Đặt lại',
     delete: 'Xóa',
     add: 'Thêm',
+    tapToStart: 'Chạm để bắt đầu',
+    tapToPause: 'Chạm để tạm dừng',
   },
 } as const;

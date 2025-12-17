@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -231,6 +232,9 @@ export default function FeedingScreen() {
   const handleSave = async () => {
     if (isSaving) return;
 
+    // Haptic feedback on save
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
     setIsSaving(true);
     try {
       const payload: FeedingPayload = {
@@ -265,32 +269,32 @@ export default function FeedingScreen() {
     }
   };
 
+  const handleFeedingTypeChange = (value: string) => {
+    if (isFeedingType(value)) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setFeedingType(value);
+    }
+  };
+
   return (
     <View className="flex-1 bg-card">
       <ModalHeader
         title={isEditing ? t('feeding.editTitle') : t('feeding.title')}
-        onSave={handleSave}
-        isSaving={isSaving}
         closeLabel={t('common.close')}
-        saveLabel={t('common.save')}
       />
 
-      <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerClassName="p-5 pb-28"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
         {/* Feeding Type Selection */}
-        <Tabs
-          value={feedingType}
-          onValueChange={(value) => {
-            if (isFeedingType(value)) {
-              setFeedingType(value);
-            }
-          }}
-          className="mb-6">
+        <Tabs value={feedingType} onValueChange={handleFeedingTypeChange} className="mb-6">
           <TabsList className="w-full">
             {feedingTypes.map((type) => (
               <TabsTrigger
                 key={type.key}
                 value={type.key}
-                className="flex-1 flex-row items-center gap-1.5">
+                className="flex-1 flex-row items-center">
                 <MaterialCommunityIcons name={type.icon} size={20} />
                 <Text>{t(type.labelKey)}</Text>
               </TabsTrigger>
@@ -379,9 +383,33 @@ export default function FeedingScreen() {
           placeholder={t('common.notesPlaceholder')}
           multiline
           numberOfLines={4}
-          className="mt-3 min-h-20"
+          className="min-h-20"
         />
       </ScrollView>
+
+      {/* Sticky Bottom Save Bar - One-handed UX */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-card px-5 pb-8 pt-4">
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving}
+          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${isSaving ? 'bg-muted' : 'bg-accent'}`}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+          <MaterialCommunityIcons
+            name="content-save"
+            size={22}
+            color={isSaving ? '#999' : '#FFF'}
+          />
+          <Text className={`text-lg font-bold ${isSaving ? 'text-muted-foreground' : 'text-white'}`}>
+            {isSaving ? t('common.saving') : t('common.save')}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }

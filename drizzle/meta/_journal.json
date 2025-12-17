@@ -22,6 +22,13 @@
       "when": 1765851474934,
       "tag": "0002_orange_mathemanic",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1765940861751,
+      "tag": "0003_perfect_vermin",
+      "breakpoints": true
     }
   ]
 }

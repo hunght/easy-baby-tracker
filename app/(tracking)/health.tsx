@@ -2,8 +2,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 
 import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -28,6 +29,9 @@ const healthTabs: HealthTabOption[] = [
   { key: 'medicine', labelKey: 'health.tabs.medicine', icon: 'pill' },
   { key: 'symptoms', labelKey: 'health.tabs.symptoms', icon: 'magnify' },
 ];
+
+// Temperature presets for quick selection
+const temperaturePresets = [36.5, 37.0, 37.5, 38.0, 38.5, 39.0];
 
 export default function HealthScreen() {
   const router = useRouter();
@@ -80,22 +84,19 @@ export default function HealthScreen() {
     }
   }, [existingData]);
 
-  const _mutation = useMutation({
-    mutationFn: async (payload: HealthRecordPayload) => {
-      // This is just a placeholder, the actual call is in handleSave
-      // We can't easily use mutationFn here because we need to switch between save and update
-      // But we can wrap it
-      if (isEditing && id) {
-        return updateHealthRecord(id, payload);
-      } else {
-        return saveHealthRecord(payload);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: HEALTH_RECORDS_QUERY_KEY });
-      router.back();
-    },
-  });
+  const handleTabChange = (value: string | undefined) => {
+    if (value && (value === 'temperature' || value === 'medicine' || value === 'symptoms')) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setActiveTab(value);
+    }
+  };
+
+  const handleMedicineTypeChange = (value: string | undefined) => {
+    if (value && (value === 'medication' || value === 'vaccine')) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setMedicineType(value);
+    }
+  };
 
   const handleSave = async () => {
     if (isSaving) return;
@@ -104,6 +105,8 @@ export default function HealthScreen() {
     if (activeTab === 'temperature' && !temperature) return;
     if (activeTab === 'medicine' && !medication.trim()) return;
     if (activeTab === 'symptoms' && !symptoms.trim()) return;
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     setIsSaving(true);
     try {
@@ -146,30 +149,33 @@ export default function HealthScreen() {
     return false;
   };
 
+  // Determine temperature status color
+  const getTemperatureStatus = () => {
+    if (temperature < 36.0) return { color: '#3B82F6', label: t('health.tempLow') };
+    if (temperature <= 37.5) return { color: '#22C55E', label: t('health.tempNormal') };
+    if (temperature <= 38.5) return { color: '#F59E0B', label: t('health.tempMild') };
+    return { color: '#EF4444', label: t('health.tempHigh') };
+  };
+
+  const tempStatus = getTemperatureStatus();
+
   return (
     <View className="flex-1 bg-background">
       <ModalHeader
         title={isEditing ? t('health.editTitle') : t('health.title')}
-        onSave={handleSave}
-        isSaving={isSaving || !canSave()}
         closeLabel={t('common.close')}
-        saveLabel={t('common.save')}
       />
 
-      <ScrollView contentContainerClassName="p-5 pb-10" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerClassName="p-5 pb-28"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
         {/* Tab Selection */}
         <View className="mb-6">
           <ToggleGroup
             type="single"
             value={activeTab}
-            onValueChange={(value) => {
-              if (
-                value &&
-                (value === 'temperature' || value === 'medicine' || value === 'symptoms')
-              ) {
-                setActiveTab(value);
-              }
-            }}
+            onValueChange={handleTabChange}
             variant="outline"
             className="w-full">
             {healthTabs.map((tab, index) => (
@@ -178,7 +184,7 @@ export default function HealthScreen() {
                 value={tab.key}
                 isFirst={index === 0}
                 isLast={index === healthTabs.length - 1}
-                className="flex-1 flex-row items-center justify-center gap-1.5"
+                className="flex-1 flex-row items-center justify-center"
                 aria-label={t(tab.labelKey)}>
                 <MaterialCommunityIcons
                   name={tab.icon}
@@ -197,16 +203,41 @@ export default function HealthScreen() {
         {/* Temperature Tab */}
         {activeTab === 'temperature' && (
           <>
-            <View className="mb-3 flex-row items-center justify-between">
-              <Text className="text-base font-medium text-muted-foreground">
-                {t('common.temperature')}
+            {/* Temperature Display */}
+            <View className="mb-4 items-center rounded-2xl border border-border bg-card p-6">
+              <Text className="text-5xl font-bold" style={{ color: tempStatus.color }}>
+                {temperature.toFixed(1)}°C
               </Text>
-              <Text className="text-base font-semibold text-accent">
-                {temperature.toFixed(1)} °C
+              <Text className="mt-2 text-base font-medium" style={{ color: tempStatus.color }}>
+                {tempStatus.label}
               </Text>
             </View>
+
+            {/* Quick Temperature Presets */}
+            <View className="mb-4 flex-row flex-wrap justify-between gap-2">
+              {temperaturePresets.map((preset) => (
+                <Pressable
+                  key={preset}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setTemperature(preset);
+                  }}
+                  className={`h-12 w-[30%] items-center justify-center rounded-xl border ${temperature === preset
+                    ? 'border-accent bg-accent'
+                    : 'border-border bg-muted/30'
+                    }`}>
+                  <Text
+                    className={`text-base font-semibold ${temperature === preset ? 'text-white' : 'text-foreground'
+                      }`}>
+                    {preset.toFixed(1)}°
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* Slider for fine-tuning */}
             <Slider
-              style={{ width: '100%', height: 40 }}
+              style={{ width: '100%', height: 48 }}
               minimumValue={34}
               maximumValue={42}
               step={0.1}
@@ -217,9 +248,9 @@ export default function HealthScreen() {
               thumbTintColor={brandColors.colors.white}
             />
             <View className="mb-6 flex-row justify-between px-1">
-              {[34, 35, 36, 37, 38, 39, 40, 41, 42].map((value) => (
+              {[34, 36, 38, 40, 42].map((value) => (
                 <Text key={value} className="text-xs text-muted-foreground">
-                  {value}
+                  {value}°
                 </Text>
               ))}
             </View>
@@ -229,34 +260,27 @@ export default function HealthScreen() {
         {/* Medicine Tab */}
         {activeTab === 'medicine' && (
           <>
-            <View className="mb-3 flex-row items-center justify-between">
-              <View className="flex-row items-center gap-1.5">
-                <Text className="text-base font-medium text-muted-foreground">
-                  {t('common.medicineType')}
-                </Text>
-                <MaterialCommunityIcons name="information-outline" size={16} color="#999999" />
-              </View>
+            <View className="mb-3">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.medicineType')}
+              </Text>
             </View>
             <View className="mb-6">
               <ToggleGroup
                 type="single"
                 value={medicineType}
-                onValueChange={(value) => {
-                  if (value && (value === 'medication' || value === 'vaccine')) {
-                    setMedicineType(value);
-                  }
-                }}
+                onValueChange={handleMedicineTypeChange}
                 variant="outline"
                 className="w-full">
                 <ToggleGroupItem
                   value="medication"
                   isFirst={true}
                   isLast={false}
-                  className="flex-1 flex-row items-center justify-center gap-1.5"
+                  className="flex-1 flex-row items-center justify-center"
                   aria-label={t('health.medicineTypes.medication')}>
                   <MaterialCommunityIcons
                     name="pill"
-                    size={18}
+                    size={20}
                     color={medicineType === 'medication' ? brandColors.colors.white : '#666666'}
                   />
                   <Text>{t('health.medicineTypes.medication')}</Text>
@@ -265,11 +289,11 @@ export default function HealthScreen() {
                   value="vaccine"
                   isFirst={false}
                   isLast={true}
-                  className="flex-1 flex-row items-center justify-center gap-1.5"
+                  className="flex-1 flex-row items-center justify-center"
                   aria-label={t('health.medicineTypes.vaccine')}>
                   <MaterialCommunityIcons
                     name="needle"
-                    size={18}
+                    size={20}
                     color={medicineType === 'vaccine' ? brandColors.colors.white : '#666666'}
                   />
                   <Text>{t('health.medicineTypes.vaccine')}</Text>
@@ -277,16 +301,13 @@ export default function HealthScreen() {
               </ToggleGroup>
             </View>
 
-            <View className="mb-3 flex-row items-center justify-between">
+            <View className="mb-3">
               <Text className="text-base font-medium text-muted-foreground">
                 {t('common.medication')}
               </Text>
-              <Text className="text-base font-semibold text-accent">
-                {medication || t('common.undefined')}
-              </Text>
             </View>
             <Input
-              className="mb-6"
+              className="mb-6 h-12"
               value={medication}
               onChangeText={setMedication}
               placeholder={t('health.medicationPlaceholder')}
@@ -297,13 +318,13 @@ export default function HealthScreen() {
         {/* Symptoms Tab */}
         {activeTab === 'symptoms' && (
           <>
-            <View className="mb-3 flex-row items-center justify-between">
+            <View className="mb-3">
               <Text className="text-base font-medium text-muted-foreground">
                 {t('common.symptoms')}
               </Text>
             </View>
             <Input
-              className="mb-6 min-h-[120px]"
+              className="mb-6 min-h-[150px]"
               value={symptoms}
               onChangeText={setSymptoms}
               placeholder={t('health.symptomsPlaceholder')}
@@ -315,7 +336,7 @@ export default function HealthScreen() {
 
         {/* Notes */}
         <Input
-          className="mt-3 min-h-20"
+          className="min-h-20"
           value={notes}
           onChangeText={setNotes}
           placeholder={t('common.notesPlaceholder')}
@@ -323,6 +344,33 @@ export default function HealthScreen() {
           textAlignVertical="top"
         />
       </ScrollView>
+
+      {/* Sticky Bottom Save Bar */}
+      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-8 pt-4">
+        <Pressable
+          onPress={handleSave}
+          disabled={isSaving || !canSave()}
+          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${isSaving || !canSave() ? 'bg-muted' : 'bg-accent'
+            }`}
+          style={{
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+            elevation: 3,
+          }}>
+          <MaterialCommunityIcons
+            name="content-save"
+            size={22}
+            color={isSaving || !canSave() ? '#999' : '#FFF'}
+          />
+          <Text
+            className={`text-lg font-bold ${isSaving || !canSave() ? 'text-muted-foreground' : 'text-white'
+              }`}>
+            {isSaving ? t('common.saving') : t('common.save')}
+          </Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
