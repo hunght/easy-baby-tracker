@@ -350,9 +350,9 @@ export default function EasyScheduleSettingsScreen() {
             <Pressable
               onPress={handleReminderToggle}
               className="flex-row items-center justify-between p-4">
-              <View className="flex-row items-center gap-3">
+              <View className="flex-1 flex-row items-center gap-3">
                 <View
-                  className={`h-12 w-12 items-center justify-center rounded-xl ${
+                  className={`h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
                     reminderEnabled ? 'bg-accent/20' : 'bg-muted/50'
                   }`}>
                   <MaterialCommunityIcons
@@ -365,18 +365,18 @@ export default function EasyScheduleSettingsScreen() {
                   <Text className="text-base font-semibold text-foreground">
                     {t('easySchedule.settings.enableReminders')}
                   </Text>
-                  <Text className="text-sm text-muted-foreground">
+                  <Text className="text-sm text-muted-foreground" numberOfLines={2}>
                     {t('easySchedule.settings.enableRemindersDescription')}
                   </Text>
                 </View>
               </View>
               <View
-                className={`h-8 w-14 items-center justify-center rounded-full ${
+                className={`ml-3 h-8 w-14 shrink-0 rounded-full p-1 ${
                   reminderEnabled ? 'bg-accent' : 'bg-muted'
                 }`}>
                 <View
-                  className={`h-6 w-6 rounded-full bg-white ${
-                    reminderEnabled ? 'translate-x-3' : '-translate-x-3'
+                  className={`h-6 w-6 rounded-full bg-white shadow-sm ${
+                    reminderEnabled ? 'ml-auto' : 'mr-auto'
                   }`}
                 />
               </View>

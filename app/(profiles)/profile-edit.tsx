@@ -148,27 +148,38 @@ export default function ProfileEditScreen() {
   };
 
   const handleTakePhoto = async () => {
+    console.log('[ProfileEdit] handleTakePhoto called');
     setShowPhotoModal(false);
     const allowed = await requestPermission('camera');
-    if (!allowed) return;
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return;
-    }
-    await replacePhoto(result.assets[0]);
-  };
-
-  const handleChoosePhoto = async () => {
-    setShowPhotoModal(false);
-    const allowed = await requestPermission('library');
+    console.log('[ProfileEdit] Camera permission:', allowed);
     if (!allowed) return;
 
     try {
+      console.log('[ProfileEdit] Launching camera...');
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+      console.log('[ProfileEdit] Camera result:', result.canceled ? 'canceled' : 'got photo');
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+      await replacePhoto(result.assets[0]);
+    } catch (error) {
+      console.error('[ProfileEdit] Camera error:', error);
+    }
+  };
+
+  const handleChoosePhoto = async () => {
+    console.log('[ProfileEdit] handleChoosePhoto called');
+    setShowPhotoModal(false);
+    const allowed = await requestPermission('library');
+    console.log('[ProfileEdit] Library permission:', allowed);
+    if (!allowed) return;
+
+    try {
+      console.log('[ProfileEdit] Launching image library...');
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: false,
         quality: 0.8,
@@ -176,15 +187,15 @@ export default function ProfileEditScreen() {
         mediaTypes: ['images'],
       });
 
-      console.log('Image picker result:', JSON.stringify(result, null, 2));
+      console.log('[ProfileEdit] Library result:', result.canceled ? 'canceled' : 'got photo');
 
       if (result.canceled || !result.assets || result.assets.length === 0) {
-        console.log('Image picker was canceled or returned no assets');
+        console.log('[ProfileEdit] Image picker was canceled or returned no assets');
         return;
       }
       await replacePhoto(result.assets[0]);
     } catch (error) {
-      console.error('Error launching image picker:', error);
+      console.error('[ProfileEdit] Error launching image picker:', error);
     }
   };
 
@@ -329,11 +340,7 @@ export default function ProfileEditScreen() {
 
         {/* Due Date - Full row tappable */}
         <View className="mb-5">
-          <DatePickerField
-            label={t('common.dueDate')}
-            value={dueDate}
-            onChange={setDueDate}
-          />
+          <DatePickerField label={t('common.dueDate')} value={dueDate} onChange={setDueDate} />
         </View>
 
         {/* Info Text */}
@@ -368,7 +375,9 @@ export default function ProfileEditScreen() {
                 onPress={handleChoosePhoto}
                 className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-muted">
                 <MaterialCommunityIcons name="image-multiple" size={22} color="#666" />
-                <Text className="text-base font-semibold text-foreground">{t('diary.choosePhoto')}</Text>
+                <Text className="text-base font-semibold text-foreground">
+                  {t('diary.choosePhoto')}
+                </Text>
               </Pressable>
 
               {avatarUri && (
@@ -376,14 +385,18 @@ export default function ProfileEditScreen() {
                   onPress={handleRemovePhoto}
                   className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-red-500/10">
                   <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
-                  <Text className="text-base font-semibold text-red-500">{t('diary.removePhoto')}</Text>
+                  <Text className="text-base font-semibold text-red-500">
+                    {t('diary.removePhoto')}
+                  </Text>
                 </Pressable>
               )}
 
               <Pressable
                 onPress={() => setShowPhotoModal(false)}
                 className="h-14 items-center justify-center rounded-xl">
-                <Text className="text-base font-semibold text-muted-foreground">{t('common.cancel')}</Text>
+                <Text className="text-base font-semibold text-muted-foreground">
+                  {t('common.cancel')}
+                </Text>
               </Pressable>
             </View>
           </Pressable>
@@ -395,8 +408,9 @@ export default function ProfileEditScreen() {
         <Pressable
           onPress={handleSave}
           disabled={isSaving || !nickname.trim()}
-          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${isSaving || !nickname.trim() ? 'bg-muted' : 'bg-accent'
-            }`}
+          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${
+            isSaving || !nickname.trim() ? 'bg-muted' : 'bg-accent'
+          }`}
           style={{
             shadowColor: '#000',
             shadowOffset: { width: 0, height: 2 },
@@ -410,8 +424,9 @@ export default function ProfileEditScreen() {
             color={isSaving || !nickname.trim() ? '#999' : '#FFF'}
           />
           <Text
-            className={`text-lg font-bold ${isSaving || !nickname.trim() ? 'text-muted-foreground' : 'text-white'
-              }`}>
+            className={`text-lg font-bold ${
+              isSaving || !nickname.trim() ? 'text-muted-foreground' : 'text-white'
+            }`}>
             {isSaving
               ? t('common.saving')
               : numericBabyId

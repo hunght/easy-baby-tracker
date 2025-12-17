@@ -97,6 +97,20 @@ function AppProviders() {
                       headerShown: false,
                     }}
                   />
+                  <Stack.Screen
+                    name="(easy-schedule)"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="(profiles)"
+                    options={{
+                      presentation: 'modal',
+                      headerShown: false,
+                    }}
+                  />
                 </Stack>
                 <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
                 <PortalHost />

@@ -214,10 +214,10 @@ export default function HabitScreen() {
                       handleOpenDetail();
                     }}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    className="active:opacity-70">
+                    className="flex-1 flex-row items-center active:opacity-70">
                     {/* Icon */}
                     <View
-                      className="h-12 w-12 items-center justify-center rounded-full"
+                      className="h-12 w-12 shrink-0 items-center justify-center rounded-full"
                       style={{ backgroundColor: `${categoryColor}20` }}>
                       <CategoryIcon size={24} color={categoryColor} />
                     </View>
@@ -240,11 +240,11 @@ export default function HabitScreen() {
 
                   {/* Quick Log Button - larger for one-handed use */}
                   {habit.completedToday ? (
-                    <View className="h-14 w-14 items-center justify-center rounded-full bg-green-500 shadow-md">
+                    <View className="ml-3 h-14 w-14 shrink-0 items-center justify-center rounded-full bg-green-500 shadow-md">
                       <Check size={28} color="#FFF" />
                     </View>
                   ) : (
-                    <View className="h-14 w-14 items-center justify-center rounded-full bg-accent shadow-md">
+                    <View className="ml-3 h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent shadow-md">
                       <Check size={28} color="#FFF" />
                     </View>
                   )}

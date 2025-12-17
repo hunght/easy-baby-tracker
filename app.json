@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Easy Baby Tracker",
-    "slug": "BabyEase",
+    "name": "EasyBaby+",
+    "slug": "easybaby-plus",
     "version": "1.0.2",
     "orientation": "default",
     "icon": "./assets/images/icon.png",
@@ -41,7 +41,14 @@
       "expo-router",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to add baby pictures.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take baby photos."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

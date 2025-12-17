@@ -7,6 +7,7 @@ export default function EasyScheduleLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
+          presentation: 'modal',
           contentStyle: { backgroundColor: 'transparent' },
         }}>
         <Stack.Screen name="easy-schedule" />

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { ScrollView, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
 
 import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY, formulaRuleByIdKey } from '@/constants/query-keys';
@@ -9,7 +10,6 @@ import { getFormulaRuleById, getFormulaRuleByAge } from '@/database/easy-formula
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
 import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
-import { PhaseModal } from '@/pages/easy-schedule/components/PhaseModal';
 import { generateEasySchedule } from '@/lib/easy-schedule-generator';
 import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
 
@@ -28,6 +28,7 @@ function calculateAgeInWeeks(birthDate: string): number {
 
 export default function EasyScheduleScreen() {
   const { t, locale } = useLocalization();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   const { data: babyProfile } = useQuery({
@@ -38,13 +39,6 @@ export default function EasyScheduleScreen() {
 
   // Use wake time from baby profile, or default to 07:00
   const firstWakeTime = babyProfile?.firstWakeTime ?? '07:00';
-
-  const [phaseModalData, setPhaseModalData] = useState<{
-    item: EasyScheduleItem;
-    timing: { startMinutes: number; endMinutes: number };
-    endTimeLabel: string;
-    durationLabel: string;
-  } | null>(null);
 
   const labels = useMemo(
     () => ({
@@ -146,26 +140,27 @@ export default function EasyScheduleScreen() {
     return groups;
   })();
 
-  const openPhaseModal = useCallback(
+  // Navigate to phase edit page instead of opening modal
+  const openPhaseEdit = useCallback(
     (
       item: EasyScheduleItem,
       timing: { startMinutes: number; endMinutes: number },
-      endTimeLabel: string,
-      durationLabel: string
+      _endTimeLabel: string,
+      _durationLabel: string
     ) => {
-      setPhaseModalData({
-        item,
-        timing,
-        endTimeLabel,
-        durationLabel,
+      router.push({
+        pathname: '/(easy-schedule)/phase-edit',
+        params: {
+          order: item.order.toString(),
+          label: item.label,
+          activityType: item.activityType,
+          startMinutes: timing.startMinutes.toString(),
+          endMinutes: timing.endMinutes.toString(),
+        },
       });
     },
-    []
+    [router]
   );
-
-  const closePhaseModal = () => {
-    setPhaseModalData(null);
-  };
 
   if (isLoadingFormula || !formulaRule) {
     return (
@@ -205,26 +200,11 @@ export default function EasyScheduleScreen() {
               phases={phases}
               baseMinutes={groupBaseMinutes}
               locale={locale}
-              onPhasePress={openPhaseModal}
+              onPhasePress={openPhaseEdit}
             />
           );
         })}
       </ScrollView>
-
-      <PhaseModal
-        phaseData={phaseModalData}
-        onClose={closePhaseModal}
-        onAdjustmentSaved={() => {
-          // Invalidate formula rule query and baby profile to refresh UI
-          queryClient.invalidateQueries({
-            queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
-          });
-          queryClient.invalidateQueries({
-            queryKey: BABY_PROFILE_QUERY_KEY,
-          });
-        }}
-        babyProfile={babyProfile ?? null}
-      />
     </View>
   );
 }
