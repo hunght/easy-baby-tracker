@@ -23,7 +23,7 @@
 		34AC96360416EEA34CFB0BCA /* Pods-EasyBaby.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-EasyBaby.debug.xcconfig"; path = "Target Support Files/Pods-EasyBaby/Pods-EasyBaby.debug.xcconfig"; sourceTree = "<group>"; };
 		53F81D18DF93C88ECE872327 /* libPods-EasyBaby.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-EasyBaby.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		85DF53BDDEC379A17ED23A96 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-EasyBaby/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		872D0AE7C3C997D1EA9535C8 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = EasyBaby/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		872D0AE7C3C997D1EA9535C8 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = EasyBaby/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = EasyBaby/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		C841B33ABC17BF079D015DF8 /* Pods-EasyBaby.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-EasyBaby.release.xcconfig"; path = "Target Support Files/Pods-EasyBaby/Pods-EasyBaby.release.xcconfig"; sourceTree = "<group>"; };
@@ -128,7 +128,6 @@
 				34AC96360416EEA34CFB0BCA /* Pods-EasyBaby.debug.xcconfig */,
 				C841B33ABC17BF079D015DF8 /* Pods-EasyBaby.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -349,6 +348,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = EasyBaby/EasyBaby.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZMEPTM7597;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
@@ -385,6 +385,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = EasyBaby/EasyBaby.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ZMEPTM7597;
 				INFOPLIST_FILE = EasyBaby/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
