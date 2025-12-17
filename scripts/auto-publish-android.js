@@ -13,7 +13,6 @@ const { execSync } = require('child_process');
 const ROOT_DIR = path.join(__dirname, '..');
 const APP_JSON_PATH = path.join(ROOT_DIR, 'app.json');
 const PACKAGE_JSON_PATH = path.join(ROOT_DIR, 'package.json');
-const ANDROID_BUILD_GRADLE_PATH = path.join(ROOT_DIR, 'android', 'app', 'build.gradle');
 
 function incrementVersion(version) {
   const parts = version.split('.');
@@ -50,26 +49,6 @@ function updateVersions() {
   const packageJson = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, 'utf8'));
   packageJson.version = newVersion;
   fs.writeFileSync(PACKAGE_JSON_PATH, JSON.stringify(packageJson, null, 2) + '\n');
-
-  // Update native Android build.gradle (required because native android/ dir overrides app.json)
-  if (fs.existsSync(ANDROID_BUILD_GRADLE_PATH)) {
-    let buildGradle = fs.readFileSync(ANDROID_BUILD_GRADLE_PATH, 'utf8');
-    
-    // Update versionCode
-    buildGradle = buildGradle.replace(
-      /versionCode\s+\d+/,
-      `versionCode ${newAndroidVersionCode}`
-    );
-    
-    // Update versionName
-    buildGradle = buildGradle.replace(
-      /versionName\s+"[^"]+"/,
-      `versionName "${newVersion}"`
-    );
-    
-    fs.writeFileSync(ANDROID_BUILD_GRADLE_PATH, buildGradle);
-    console.log('   Updated android/app/build.gradle');
-  }
 
   console.log('✅ Version numbers updated:');
   console.log(`   Version: ${oldVersion} → ${newVersion}`);

@@ -101,7 +101,7 @@ function main() {
 
   // Build iOS (waits for completion)
   const buildSuccess = buildIOS();
-  
+
   if (!buildSuccess) {
     console.error('❌ Build failed. Aborting submission.\n');
     process.exit(1);
