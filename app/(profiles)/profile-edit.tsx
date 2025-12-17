@@ -106,6 +106,11 @@ export default function ProfileEditScreen() {
     }
   }, [existingProfile]);
 
+  // Debug: log avatarUri changes
+  useEffect(() => {
+    console.log('[ProfileEdit] avatarUri state changed to:', avatarUri);
+  }, [avatarUri]);
+
   const requestPermission = async (type: 'camera' | 'library') => {
     const permission =
       type === 'camera'
@@ -123,24 +128,32 @@ export default function ProfileEditScreen() {
   };
 
   const replacePhoto = async (asset: ImagePicker.ImagePickerAsset) => {
+    console.log('[ProfileEdit] replacePhoto called with asset:', {
+      uri: asset.uri,
+      fileName: asset.fileName,
+    });
     setPhotoProcessing(true);
     try {
       // Delete old photo if exists
       if (avatarUri) {
+        console.log('[ProfileEdit] Deleting old photo:', avatarUri);
         await FileSystem.deleteAsync(avatarUri, { idempotent: true });
       }
       const storedUri = await persistAsset(asset);
+      console.log('[ProfileEdit] persistAsset returned:', storedUri);
       if (!storedUri) {
         throw new Error('Unable to store image');
       }
       // Verify the file exists
       const fileInfo = await FileSystem.getInfoAsync(storedUri);
+      console.log('[ProfileEdit] File info:', fileInfo);
       if (!fileInfo.exists) {
         throw new Error('Stored file does not exist');
       }
+      console.log('[ProfileEdit] Setting avatarUri to:', storedUri);
       setAvatarUri(storedUri);
     } catch (error) {
-      console.error('Error replacing photo:', error);
+      console.error('[ProfileEdit] Error replacing photo:', error);
       showNotification(t('common.photoSaveError'), 'error');
     } finally {
       setPhotoProcessing(false);
@@ -148,38 +161,42 @@ export default function ProfileEditScreen() {
   };
 
   const handleTakePhoto = async () => {
-    console.log('[ProfileEdit] handleTakePhoto called');
-    setShowPhotoModal(false);
+    // Request permission while modal is still visible
     const allowed = await requestPermission('camera');
-    console.log('[ProfileEdit] Camera permission:', allowed);
     if (!allowed) return;
 
     try {
-      console.log('[ProfileEdit] Launching camera...');
+      // Launch camera while modal is still visible (iOS allows this)
+      // This avoids the issue where closing modal first causes camera to hang
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.7,
       });
-      console.log('[ProfileEdit] Camera result:', result.canceled ? 'canceled' : 'got photo');
+
+      // Close modal after camera interaction completes
+      setShowPhotoModal(false);
+
       if (result.canceled || !result.assets || result.assets.length === 0) {
         return;
       }
       await replacePhoto(result.assets[0]);
     } catch (error) {
-      console.error('[ProfileEdit] Camera error:', error);
+      console.error('Error in handleTakePhoto:', error);
+      setShowPhotoModal(false);
     }
   };
 
   const handleChoosePhoto = async () => {
     console.log('[ProfileEdit] handleChoosePhoto called');
-    setShowPhotoModal(false);
+    // Request permission while modal is still visible
     const allowed = await requestPermission('library');
     console.log('[ProfileEdit] Library permission:', allowed);
     if (!allowed) return;
 
     try {
       console.log('[ProfileEdit] Launching image library...');
+      // Launch image library while modal is still visible
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: false,
         quality: 0.8,
@@ -187,15 +204,26 @@ export default function ProfileEditScreen() {
         mediaTypes: ['images'],
       });
 
-      console.log('[ProfileEdit] Library result:', result.canceled ? 'canceled' : 'got photo');
+      console.log('[ProfileEdit] Library result:', {
+        canceled: result.canceled,
+        hasAssets: !!result.assets,
+        assetsLength: result.assets?.length,
+      });
+
+      // Close modal after library interaction completes
+      setShowPhotoModal(false);
 
       if (result.canceled || !result.assets || result.assets.length === 0) {
-        console.log('[ProfileEdit] Image picker was canceled or returned no assets');
+        console.log('[ProfileEdit] No assets selected, returning');
         return;
       }
+
+      console.log('[ProfileEdit] Calling replacePhoto with asset:', result.assets[0].uri);
       await replacePhoto(result.assets[0]);
+      console.log('[ProfileEdit] replacePhoto completed, avatarUri should be updated');
     } catch (error) {
-      console.error('[ProfileEdit] Error launching image picker:', error);
+      console.error('[ProfileEdit] Error in handleChoosePhoto:', error);
+      setShowPhotoModal(false);
     }
   };
 
@@ -276,7 +304,13 @@ export default function ProfileEditScreen() {
           <View className="relative">
             <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-muted/30">
               {avatarUri ? (
-                <Image source={{ uri: avatarUri }} className="h-24 w-24" contentFit="cover" />
+                <Image
+                  key={avatarUri}
+                  source={{ uri: avatarUri }}
+                  style={{ width: 96, height: 96 }}
+                  contentFit="cover"
+                  cachePolicy="none"
+                />
               ) : (
                 <Image source={require('@/assets/images/icon.png')} className="h-20 w-20" />
               )}

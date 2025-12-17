@@ -136,35 +136,62 @@ export default function DiaryScreen() {
   };
 
   const handleTakePhoto = async () => {
-    setShowPhotoModal(false);
+    // Request permission while modal is still visible
     const allowed = await requestPermission('camera');
-    if (!allowed) return;
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: false,
-      quality: 0.7,
-    });
-    if (result.canceled || !result.assets || result.assets.length === 0) {
+    if (!allowed) {
       return;
     }
-    await replacePhoto(result.assets[0]);
+
+    try {
+      // Launch camera while modal is still visible (iOS allows this)
+      // This avoids the issue where closing modal first causes camera to hang
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        quality: 0.7,
+      });
+
+      // Close modal after camera interaction completes
+      setShowPhotoModal(false);
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      await replacePhoto(result.assets[0]);
+    } catch (error) {
+      console.error('Error in handleTakePhoto:', error);
+      setShowPhotoModal(false);
+    }
   };
 
   const handleChoosePhoto = async () => {
-    setShowPhotoModal(false);
+    // Request permission while modal is still visible
     const allowed = await requestPermission('library');
-    if (!allowed) return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      allowsEditing: false,
-      quality: 0.8,
-      selectionLimit: 1,
-      mediaTypes: ['images'],
-    });
-    if (result.canceled || !result.assets || result.assets.length === 0) {
+    if (!allowed) {
       return;
     }
-    await replacePhoto(result.assets[0]);
+
+    try {
+      // Launch image library while modal is still visible
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: false,
+        quality: 0.8,
+        selectionLimit: 1,
+        mediaTypes: ['images'],
+      });
+
+      // Close modal after library interaction completes
+      setShowPhotoModal(false);
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      await replacePhoto(result.assets[0]);
+    } catch (error) {
+      console.error('Error in handleChoosePhoto:', error);
+      setShowPhotoModal(false);
+    }
   };
 
   const handleRemovePhoto = async () => {

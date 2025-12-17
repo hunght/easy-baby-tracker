@@ -79,6 +79,15 @@ export default function DiaryListScreen() {
     router.push(`/(tracking)/diary?id=${id}`);
   };
 
+  const handleViewPhoto = (photoUri: string, title?: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const params = new URLSearchParams({ uri: photoUri });
+    if (title) {
+      params.set('title', title);
+    }
+    router.push(`/(tracking)/photo-viewer?${params.toString()}`);
+  };
+
   return (
     <View className="flex-1 bg-background">
       <ModalHeader title={t('diary.listTitle')} closeLabel={t('common.close')} />
@@ -129,14 +138,28 @@ export default function DiaryListScreen() {
                     shadowRadius: 2,
                     elevation: 1,
                   }}>
-                  {/* Photo if available */}
+                  {/* Photo if available - tappable to view full size */}
                   {entry.photoUri && (
-                    <Image
-                      source={{ uri: entry.photoUri }}
-                      style={{ width: '100%', height: 180 }}
-                      contentFit="cover"
-                      transition={200}
-                    />
+                    <Pressable
+                      onPress={() =>
+                        handleViewPhoto(entry.photoUri!, entry.title || t('diary.title'))
+                      }
+                      className="relative">
+                      <Image
+                        source={{ uri: entry.photoUri }}
+                        style={{ width: '100%', aspectRatio: 4 / 3 }}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                      {/* Zoom hint icon */}
+                      <View className="absolute bottom-2 right-2 rounded-full bg-black/40 p-1.5">
+                        <MaterialCommunityIcons
+                          name="magnify-plus-outline"
+                          size={16}
+                          color="#FFF"
+                        />
+                      </View>
+                    </Pressable>
                   )}
 
                   <View className="p-4">

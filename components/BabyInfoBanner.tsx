@@ -1,4 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, View } from 'react-native';
@@ -51,22 +52,39 @@ export function BabyInfoBanner({
     router.push('/(tracking)/diary-list');
   };
 
+  const handleViewPhoto = () => {
+    if (profile.avatarUri) {
+      const params = new URLSearchParams({ uri: profile.avatarUri, title: profile.nickname });
+      router.push(`/(tracking)/photo-viewer?${params.toString()}`);
+    }
+  };
+
   return (
     <View className={`mx-6 mb-6 rounded-3xl border p-5 ${containerClass}`}>
       <View className="flex-row items-start justify-between">
         {/* Baby Info */}
         <View className="flex-1">
           <View className="mb-4 flex-row items-center gap-4">
-            <View
-              className={`h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm`}>
-              {profile.gender === 'boy' ? (
+            <Pressable
+              onPress={profile.avatarUri ? handleViewPhoto : undefined}
+              disabled={!profile.avatarUri}
+              className={`h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm`}>
+              {profile.avatarUri ? (
+                <Image
+                  key={profile.avatarUri}
+                  source={{ uri: profile.avatarUri }}
+                  style={{ width: 64, height: 64 }}
+                  contentFit="cover"
+                  cachePolicy="none"
+                />
+              ) : profile.gender === 'boy' ? (
                 <MaterialCommunityIcons name="face-man-profile" size={36} color={iconColor} />
               ) : profile.gender === 'girl' ? (
                 <MaterialCommunityIcons name="face-woman-profile" size={36} color={iconColor} />
               ) : (
                 <MaterialCommunityIcons name="face-man-profile" size={36} color={iconColor} />
               )}
-            </View>
+            </Pressable>
             <View>
               <Text className={`text-2xl font-bold ${textClass}`}>{profile.nickname}</Text>
               <Text className={`text-base font-medium ${subtextClass}`}>
