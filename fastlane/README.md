@@ -46,6 +46,22 @@ Download screenshots from App Store Connect
 
 Upload screenshots to App Store Connect
 
+### ios submit_for_review
+
+```sh
+[bundle exec] fastlane ios submit_for_review
+```
+
+Submit the latest TestFlight build for App Store review
+
+### ios check_status
+
+```sh
+[bundle exec] fastlane ios check_status
+```
+
+Check iOS app status in App Store Connect
+
 ---
 
 ## Android

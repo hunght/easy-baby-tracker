@@ -1,2 +1,3 @@
-Initial release
-
+• Bug fixes and performance improvements
+• Enhanced tracking experience
+• Improved stability

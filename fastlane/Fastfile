@@ -66,6 +66,74 @@ platform :ios do
       }
     )
   end
+
+  desc "Submit the latest TestFlight build for App Store review"
+  lane :submit_for_review do
+    UI.message("🍎 Submitting latest build for App Store review...")
+    UI.message("")
+
+    # Get the current version from app.json
+    require 'json'
+    app_json = JSON.parse(File.read('../app.json'))
+    app_version = app_json['expo']['version']
+    build_number = app_json['expo']['ios']['buildNumber']
+
+    UI.success("📦 Found version: #{app_version} (build #{build_number})")
+    UI.message("")
+
+    begin
+      deliver(
+        app_identifier: "com.hunght.BabyEase",
+        team_id: "111225803",
+        submit_for_review: true,
+        automatic_release: true,
+        force: true,
+        skip_binary_upload: true,
+        skip_screenshots: true,
+        skip_metadata: false,
+        metadata_path: "./fastlane/metadata/ios",
+        app_version: app_version,
+        build_number: build_number,
+        platform: "ios",
+        submission_information: {
+          add_id_info_uses_idfa: false
+        },
+        precheck_include_in_app_purchases: false,
+        ignore_language_directory_validation: true
+      )
+      UI.success("✅ Successfully submitted version #{app_version} for App Store review!")
+      UI.message("")
+      UI.message("Note: App will be automatically released once approved.")
+    rescue => ex
+      UI.important("⚠️  Could not submit for review: #{ex.message}")
+      UI.important("")
+      UI.important("Manual steps:")
+      UI.important("1. Visit: https://appstoreconnect.apple.com")
+      UI.important("2. Go to: My Apps > EasyBaby+ > App Store")
+      UI.important("3. Select the build and submit for review")
+    end
+  end
+
+  desc "Check iOS app status in App Store Connect"
+  lane :check_status do
+    UI.message("🍎 Checking iOS app status...")
+    UI.message("")
+    UI.message("📊 Visit App Store Connect to check status:")
+    UI.message("   https://appstoreconnect.apple.com")
+    UI.message("")
+    UI.message("App: EasyBaby+ (com.hunght.BabyEase)")
+    UI.message("")
+
+    # Get the current version from app.json
+    require 'json'
+    app_json = JSON.parse(File.read('../app.json'))
+    app_version = app_json['expo']['version']
+    build_number = app_json['expo']['ios']['buildNumber']
+
+    UI.message("📦 Current version in app.json:")
+    UI.message("   Version: #{app_version}")
+    UI.message("   Build Number: #{build_number}")
+  end
 end
 
 platform :android do

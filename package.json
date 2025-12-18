@@ -24,6 +24,8 @@
     "publish:auto:no-increment": "node scripts/auto-publish.js --no-increment",
     "publish:build-only": "node scripts/publish.js --skip-submit",
     "publish:submit-only": "node scripts/publish.js --skip-build",
+    "screenshots:android": "maestro test .maestro/screenshots-android.yaml",
+    "screenshots:ios": "maestro test .maestro/screenshots-ios.yaml",
     "capture:android": "bash scripts/capture-android-screenshots.sh",
     "install:android:build": "bash scripts/install-latest-android-build.sh",
     "generate:icons": "node scripts/generate-icons.js",
