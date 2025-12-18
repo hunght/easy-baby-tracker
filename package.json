@@ -1,7 +1,7 @@
 {
   "name": "native-wind",
   "main": "expo-router/entry",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "scripts": {
     "start": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c",
     "android": "kill $(lsof -ti:8081) 2>/dev/null || true && expo start -c --android",
@@ -23,6 +23,8 @@
     "publish:ios:auto": "node scripts/auto-publish-ios.js",
     "publish:build-only": "node scripts/publish.js --skip-submit",
     "publish:submit-only": "node scripts/publish.js --skip-build",
+    "capture:android": "bash scripts/capture-android-screenshots.sh",
+    "install:android:build": "bash scripts/install-latest-android-build.sh",
     "generate:icons": "node scripts/generate-icons.js",
     "release:android": "node scripts/release-android.js",
     "release:android:patch": "node scripts/release-android.js --patch",

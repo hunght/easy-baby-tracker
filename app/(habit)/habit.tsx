@@ -269,15 +269,9 @@ export default function HabitScreen() {
 
       {/* Floating Action Button for one-handed use */}
       <Pressable
+        testID="btn-add-habit"
         onPress={navigateToAddHabit}
-        className="absolute bottom-6 right-6 h-16 w-16 items-center justify-center rounded-full bg-accent shadow-lg active:opacity-80"
-        style={{
-          shadowColor: '#FF5C8D',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
-        }}>
+        className="absolute bottom-6 right-6 h-16 w-16 items-center justify-center rounded-full bg-accent shadow-lg active:opacity-80">
         <Plus size={32} color="#FFF" />
       </Pressable>
     </View>

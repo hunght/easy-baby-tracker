@@ -1,28 +1,62 @@
-appId: host.exp.Exponent
+# App ID Configuration:
+# - For Expo Go (development): host.exp.exponent
+# - For production app: com.hunght.BabyEase
+#
+# IMPORTANT: Before running Maestro:
+# 1. If using Expo Go: Start expo dev server and open app in Expo Go on device
+# 2. If using production app (recommended for screenshots):
+#    - Option A: npm run install:android:build (downloads latest EAS build)
+#    - Option B: npx expo run:android (builds and installs locally)
+#    Then change appId below to: com.hunght.BabyEase
+appId: host.exp.exponent
 ---
 - launchApp
-- assertVisible: "Easy Baby Tracker"
-- tapOn: "Easy Baby Tracker"
-- assertVisible: "Tracking"
+- assertVisible: "EasyBaby+"
+- tapOn: "EasyBaby+"
+- assertVisible:
+      id: "tab-tracking"
 - waitForAnimationToEnd:
-    timeout: 1000
+      timeout: 5000
 - takeScreenshot: 01-tracking
-- scrollUntilVisible:
-    element:
-      id: "tile-easy-schedule"
-    direction: DOWN
-    timeout: 8000
-    speed: 60
-    visibilityPercentage: 50
-    centerElement: true
+
 - tapOn:
-    id: "tile-easy-schedule"
-- waitForAnimationToEnd
+      id: "tile-sleep"
+- waitForAnimationToEnd:
+      timeout: 2000
+- takeScreenshot: 05-add-sleep
+- tapOn:
+      id: "btn-close"
+
+- tapOn:
+      id: "tile-habit"
+- tapOn:
+      id: "btn-add-habit"
+- takeScreenshot: 02-add-habit
+
+- tapOn:
+      id: "btn-close"
+- waitForAnimationToEnd:
+      timeout: 2000
+- tapOn:
+      id: "btn-close"
+
+
+
+- tapOn:
+      id: "tab-easy-schedule"
+- waitForAnimationToEnd:
+      timeout: 2000
 - takeScreenshot: 03-easy
+
 - tapOn:
-    id: "btn-close"
-- waitForAnimationToEnd
+      id: "tab-scheduling"
+- waitForAnimationToEnd:
+      timeout: 2000
+- takeScreenshot: 04-scheduling
+
+# Settings Flow
 - tapOn:
-    id: "tab-settings"
-- waitForAnimationToEnd
-- takeScreenshot: 02-settings
+      id: "tab-settings"
+- waitForAnimationToEnd:
+      timeout: 2000
+- takeScreenshot: 06-settings

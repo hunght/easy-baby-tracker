@@ -28,7 +28,8 @@ export function ModalHeader({
         size="sm"
         className="-ml-2 px-2"
         onPress={() => router.back()}
-        accessibilityLabel={closeLabel}>
+        accessibilityLabel={closeLabel}
+        testID="btn-close">
         <Text className="text-base font-semibold text-foreground">{closeLabel}</Text>
       </Button>
       <Text className="text-xl font-bold text-foreground">{title}</Text>
