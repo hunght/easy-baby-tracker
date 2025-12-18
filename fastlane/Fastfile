@@ -113,7 +113,8 @@ platform :android do
       skip_upload_images: false,
       skip_upload_screenshots: false,
       package_name: "com.hunght.BabyEase",
-      metadata_path: "./fastlane/metadata/android"
+      metadata_path: "./fastlane/metadata/android",
+      json_key: "./google-play-key.json"
     )
   end
 
