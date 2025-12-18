@@ -5,7 +5,7 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useReactQueryDevTools } from '@dev-plugins/react-query';
 import 'react-native-reanimated';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -15,6 +15,8 @@ import { ThemeProvider, useTheme } from '@/lib/ThemeContext';
 import { LocalizationProvider } from '@/localization/LocalizationProvider';
 import { DatabaseInitializer } from '@/pages/root-layout/DatabaseInitializer';
 import { NavigationStack } from '@/pages/root-layout/NavigationStack';
+
+const queryClient = new QueryClient({});
 
 export const unstable_settings = {
   anchor: '(tabs)/tracking',
@@ -32,7 +34,8 @@ export default function RootLayout() {
 
 function AppProviders() {
   const { colorScheme } = useTheme();
-  const [queryClient] = useState(() => new QueryClient());
+
+  useReactQueryDevTools(queryClient);
 
   const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 

@@ -40,6 +40,8 @@
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.16.1",
+    "@dev-plugins/react-navigation": "^0.4.0",
+    "@dev-plugins/react-query": "^0.4.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@react-native-community/slider": "5.0.1",
     "@react-navigation/native": "^7.0.0",

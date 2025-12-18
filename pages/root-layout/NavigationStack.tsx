@@ -1,10 +1,9 @@
 import { PortalHost } from '@rn-primitives/portal';
-import { Stack , useNavigationContainerRef } from 'expo-router';
+import { Stack, useNavigationContainerRef } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
 import { View } from 'react-native';
+import { useReactNavigationDevTools } from '@dev-plugins/react-navigation';
 
-import { logger } from '@/lib/logger';
 import { THEME } from '@/lib/theme';
 
 interface NavigationStackProps {
@@ -17,29 +16,7 @@ export function NavigationStack({ colorScheme }: NavigationStackProps) {
 
   const navigationRef = useNavigationContainerRef();
 
-  useEffect(() => {
-    if (!navigationRef.current) {
-      return;
-    }
-
-    const logCurrentRoute = () => {
-      const route = navigationRef.current?.getCurrentRoute();
-
-      if (route) {
-        logger.log('[Navigation] current screen:', route.name, route.params ?? {});
-      } else {
-        logger.log('[Navigation] awaiting initial route...');
-      }
-    };
-
-    const unsubscribeReady = navigationRef.current.addListener('ready', logCurrentRoute);
-    const unsubscribeState = navigationRef.current.addListener('state', logCurrentRoute);
-
-    return () => {
-      unsubscribeReady();
-      unsubscribeState();
-    };
-  }, [navigationRef]);
+  useReactNavigationDevTools(navigationRef);
 
   return (
     <View style={{ backgroundColor, flex: 1 }} className="flex-1">
