@@ -1,110 +1,107 @@
-# Clerk Auth Template
+# Easy Baby Tracker 👶
 
-This is a [React Native](https://reactnative.dev) project built with [Expo](https://expo.dev), [Clerk](https://go.clerk.com/gjgxNgT), and [React Native Reusables](https://reactnativereusables.com).
+**The simple, privacy-first baby tracking app that works offline.**
 
-It was initialized using the following command:
+Track every precious moment of your baby's journey with our lightweight, easy-to-use app. Monitor feeding, sleep, diapers, growth, and health - all stored securely on your device.
 
-```bash
-npx @react-native-reusables/cli@latest init -t native-wind
-```
+[![Download on the App Store](https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/en-us?size=250x83&releaseDate=1733011200)](https://apps.apple.com/us/app/easy-baby-tracker/id6755802501)
+[![Get it on Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=com.hunght.BabyEase)
 
-## Getting Started
+## ✨ Key Features
 
-Before running the app, make sure to:
+### 🍼 Comprehensive Tracking
 
-1. [Set up your Clerk account](https://go.clerk.com/blVsQlm)
-2. In the instance setup, leave the default option selected: **Email, phone, username**
-3. Enable Apple, GitHub, and Google as sign-in options under SSO Connections
-4. Rename `.env.example` to `.env.local` and paste your `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` from [your API keys](https://go.clerk.com/u8KAui7)
+- **Feeding Tracker**: Log breastfeeding, bottle feeding, and pumping sessions with timers
+- **Sleep Monitor**: Track sleep patterns, naps, and bedtime routines
+- **Diaper Log**: Record wet and dirty diapers to monitor your baby's health
+- **Growth Charts**: Track weight, height, and head circumference with beautiful visualizations
+- **Health Records**: Log medications, temperatures, and doctor visits
 
-Then start the development server:
+### 📊 Insights & Analytics
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Visual charts and graphs to identify patterns
+- Daily, weekly, and monthly summaries
+- Trend analysis for feeding and sleep schedules
+- Timeline view of your baby's entire day
 
-This will launch the Expo Go Server. You can open the app with:
+### ⏰ E.A.S.Y. Method Support
 
-- **iOS**: press `i` to launch in the iOS simulator (Mac only)
-- **Android**: press `a` to launch in the Android emulator
-- **Web**: press `w` to run in a browser
+- Built-in E.A.S.Y. scheduling (Eat, Activity, Sleep, You time)
+- Age-appropriate routine recommendations
+- Customizable schedules for your baby's needs
+- Notifications to help you stay on track
 
-Or scan the QR code with the [Expo Go](https://expo.dev/go) app to test on your device.
+### 🔒 Privacy-Focused Design
 
-## Included Screens and Features
+- **100% offline** - no internet required
+- All data stored securely on your device only
+- No cloud sync, no data sharing
+- Your baby's information stays completely private
+- No ads, no tracking, no third-party analytics
 
-- Protected routes using Clerk authentication
-- Sign in screen
-- OAuth with Apple, GitHub, and Google
-- Forgot password screen
-- Reset password screen
-- Verify email screen
-- User profile button
-- Sign out screen
+### ✨ Designed for Parents
 
-## Project Features
+- Clean, intuitive interface
+- Quick entry for busy parents
+- Dark mode support for nighttime feeding
+- Multiple baby profiles
+- One-handed operation - perfect for when you're holding your baby
 
-- ⚛️ Built with [Expo Router](https://expo.dev/router)
-- 🔐 Authentication powered by [Clerk](https://go.clerk.com/Q1MKAz0)
-- 🎨 Styled with [Tailwind CSS](https://tailwindcss.com/) via [Nativewind](https://www.nativewind.dev/)
-- 📦 UI powered by [React Native Reusables](https://github.com/founded-labs/react-native-reusables)
-- �️ SQLite database with [Drizzle ORM](https://orm.drizzle.team/) and full web support
-- 🚀 New Architecture enabled
-- 🔥 Edge to Edge enabled
-- 📱 Runs on iOS, Android, and Web
+## 📱 Download
 
-## SQLite Database
+- **iOS**: [Download on the App Store](https://apps.apple.com/us/app/easy-baby-tracker/id6755802501)
+- **Android**: [Get it on Google Play](https://play.google.com/store/apps/details?id=com.hunght.BabyEase)
 
-This project uses SQLite with Drizzle ORM for local data storage, with full web compatibility.
+## 🎯 Perfect For
 
-### Web Compatibility Setup
+- First-time parents navigating newborn care
+- Experienced parents managing multiple children
+- Caregivers and grandparents helping with baby care
+- Parents sharing care responsibilities
+- Anyone tracking baby's routine for pediatrician visits
 
-The project is configured for SQLite to work on web platform:
+## 🌟 Why Choose Easy Baby Tracker?
 
-1. **Metro Config** - Added WASM support and required HTTP headers for SharedArrayBuffer:
-   - WASM assets handling for expo-sqlite web version
-   - Cross-Origin headers for web worker support
+Unlike other baby apps that require internet, subscriptions, or share your data, Easy Baby Tracker respects your privacy. Everything stays on your device, works offline, and puts you in complete control of your baby's information.
 
-2. **App Plugin** - expo-sqlite plugin registered in app.json
+Whether you're tracking your newborn's first weeks or monitoring your toddler's development, Easy Baby Tracker grows with your family.
 
-3. **Database Service** - Web-specific initialization in `database/db.ts`
+## 📸 Screenshots
 
-### Database Management
+### Main Tracking Interface
 
-```bash
-# Generate new migration after schema changes
-npm run db:generate
+![Tracking Screen](assets/screenshots/01-tracking.png)
 
-# View database with Drizzle Studio
-# Open the app and Drizzle Studio will be available in Expo dev tools
-```
+### Quick Activity Logging
 
-### Key Features
+![Add Habit](assets/screenshots/02-add-habit.png)
 
-- ✅ Works on iOS, Android, and Web
-- ✅ Automatic migrations on app startup
-- ✅ Web-specific optimizations and error handling
-- ✅ TypeScript support with Drizzle ORM
-- ✅ Type-safe database queries
+### E.A.S.Y. Schedule View
 
-### Database Schema
+![E.A.S.Y. Schedule](assets/screenshots/03-easy.png)
 
-The database schema is defined in `db/schema.ts` using Drizzle ORM. Migrations are automatically generated and applied on app startup via the `MigrationHandler` component in `app/_layout.tsx`.
+### Scheduling & Routines
 
-## Learn More
+![Scheduling](assets/screenshots/04-scheduling.png)
 
-- [Clerk Docs](https://go.clerk.com/Q1MKAz0)
-- [React Native Docs](https://reactnative.dev/docs/getting-started)
-- [Expo Docs](https://docs.expo.dev/)
-- [Nativewind Docs](https://www.nativewind.dev/)
-- [React Native Reusables](https://reactnativereusables.com)
+### Sleep Tracking
+
+![Add Sleep](assets/screenshots/05-add-sleep.png)
+
+### Settings & Customization
+
+![Settings](assets/screenshots/06-settings.png)
+
+## 🤝 Connect With Us
+
+- **Website**: [easybabytracker.com](https://easybabytracker.com)
+- **Twitter**: [@hugboringdev](https://x.com/hugboringdev)
+- **GitHub**: [View Source Code](https://github.com/hunght/easy-baby-tracker)
+
+## 📄 License
+
+This project is open source and available for the community to use and contribute to.
 
 ---
 
-If this template helps you move faster, consider giving [React Native Reusables](https://github.com/founded-labs/react-native-reusables) a ⭐ on GitHub. It helps a lot!
+**Note**: Easy Baby Tracker is designed to complement, not replace, professional medical advice. Always consult your pediatrician for health concerns.
