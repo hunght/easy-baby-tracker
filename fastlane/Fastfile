@@ -189,18 +189,32 @@ platform :android do
     end
   end
 
-  desc "Promote version 1.0.2 (version code 4) from internal to production"
+  desc "Promote latest internal release to production"
   lane :promote_to_production do
     package_name = "com.hunght.BabyEase"
     json_key = "./google-play-key.json"
-    target_version_code = 4  # Version code for 1.0.2
 
-    UI.message("🚀 Promoting version 1.0.2 (version code #{target_version_code}) to production...")
+    UI.message("🔍 Detecting latest version from internal track...")
+
+    # Get the latest version code from internal track
+    version_codes = google_play_track_version_codes(
+      package_name: package_name,
+      track: "internal",
+      json_key: json_key
+    )
+
+    if version_codes.nil? || version_codes.empty?
+      UI.user_error!("❌ No versions found in internal track. Please upload a build first.")
+    end
+
+    target_version_code = version_codes.first
+    UI.success("� Found latest internal version code: #{target_version_code}")
+    UI.message("")
+    UI.message("🚀 Promoting version code #{target_version_code} to production...")
     UI.message("")
 
     begin
       # Promote from internal to production
-      # Note: This requires the version to exist in a lower track (internal)
       supply(
         package_name: package_name,
         json_key: json_key,
@@ -212,31 +226,43 @@ platform :android do
         skip_upload_metadata: true,
         skip_upload_images: true,
         skip_upload_screenshots: true,
-        skip_upload_changelogs: false
+        skip_upload_changelogs: true
       )
-      UI.success("✅ Successfully promoted version 1.0.2 to PRODUCTION")
+      UI.success("✅ Successfully promoted version code #{target_version_code} to PRODUCTION")
       UI.message("")
-      UI.message("Note: The old 1.0.1 version will be automatically superseded in production")
-      UI.message("")
-      UI.message("The app is now submitted for Google Play review to address the misleading claims issue")
+      UI.message("Note: Previous versions will be automatically superseded in production")
     rescue => ex
       UI.important("⚠️  Could not promote to production: #{ex.message}")
       UI.important("")
       UI.important("Manual steps:")
       UI.important("1. Visit: https://play.google.com/console/developers")
       UI.important("2. Go to: Release > Internal testing")
-      UI.important("3. Find version 1.0.2 (version code 4)")
+      UI.important("3. Find version code #{target_version_code}")
       UI.important("4. Click 'Promote release' > Select 'Production'")
     end
   end
 
-  desc "Promote version 1.0.2 (version code 4) from internal to beta track"
+  desc "Promote latest internal release to beta track"
   lane :promote_to_beta do
     package_name = "com.hunght.BabyEase"
     json_key = "./google-play-key.json"
-    target_version_code = 4  # Version code for 1.0.2
 
-    UI.message("🚀 Promoting version 1.0.2 (version code #{target_version_code}) to beta...")
+    UI.message("🔍 Detecting latest version from internal track...")
+
+    version_codes = google_play_track_version_codes(
+      package_name: package_name,
+      track: "internal",
+      json_key: json_key
+    )
+
+    if version_codes.nil? || version_codes.empty?
+      UI.user_error!("❌ No versions found in internal track. Please upload a build first.")
+    end
+
+    target_version_code = version_codes.first
+    UI.success("� Found latest internal version code: #{target_version_code}")
+    UI.message("")
+    UI.message("🚀 Promoting version code #{target_version_code} to beta...")
     UI.message("")
 
     begin
@@ -253,21 +279,35 @@ platform :android do
         skip_upload_screenshots: true,
         skip_upload_changelogs: false
       )
-      UI.success("✅ Successfully promoted version 1.0.2 to BETA")
+      UI.success("✅ Successfully promoted version code #{target_version_code} to BETA")
       UI.message("")
-      UI.message("Note: The old 1.0.1 version will be automatically superseded in beta")
+      UI.message("Note: Previous versions will be automatically superseded in beta")
     rescue => ex
       UI.important("⚠️  Could not promote to beta: #{ex.message}")
     end
   end
 
-  desc "Promote version 1.0.2 (version code 4) from internal to alpha track"
+  desc "Promote latest internal release to alpha track"
   lane :promote_to_alpha do
     package_name = "com.hunght.BabyEase"
     json_key = "./google-play-key.json"
-    target_version_code = 4  # Version code for 1.0.2
 
-    UI.message("🚀 Promoting version 1.0.2 (version code #{target_version_code}) to alpha...")
+    UI.message("🔍 Detecting latest version from internal track...")
+
+    version_codes = google_play_track_version_codes(
+      package_name: package_name,
+      track: "internal",
+      json_key: json_key
+    )
+
+    if version_codes.nil? || version_codes.empty?
+      UI.user_error!("❌ No versions found in internal track. Please upload a build first.")
+    end
+
+    target_version_code = version_codes.first
+    UI.success("� Found latest internal version code: #{target_version_code}")
+    UI.message("")
+    UI.message("🚀 Promoting version code #{target_version_code} to alpha...")
     UI.message("")
 
     begin
@@ -284,17 +324,17 @@ platform :android do
         skip_upload_screenshots: true,
         skip_upload_changelogs: false
       )
-      UI.success("✅ Successfully promoted version 1.0.2 to ALPHA")
+      UI.success("✅ Successfully promoted version code #{target_version_code} to ALPHA")
       UI.message("")
-      UI.message("Note: The old 1.0.1 version will be automatically superseded in alpha")
+      UI.message("Note: Previous versions will be automatically superseded in alpha")
     rescue => ex
       UI.important("⚠️  Could not promote to alpha: #{ex.message}")
     end
   end
 
-  desc "Promote version 1.0.2 to both Beta and Alpha tracks"
+  desc "Promote latest internal release to both Beta and Alpha tracks"
   lane :promote_to_testing_tracks do
-    UI.message("🚀 Promoting version 1.0.2 to Beta and Alpha tracks...")
+    UI.message("🚀 Promoting latest internal release to Beta and Alpha tracks...")
     UI.message("")
 
     UI.message("Step 1: Promoting to Beta...")
@@ -305,30 +345,30 @@ platform :android do
     promote_to_alpha
 
     UI.message("")
-    UI.success("✅ Successfully promoted version 1.0.2 to Beta and Alpha tracks")
+    UI.success("✅ Successfully promoted to Beta and Alpha tracks")
     UI.message("")
-    UI.message("Note: Old 1.0.1 versions are now automatically superseded in all tracks")
+    UI.message("Note: Previous versions are now automatically superseded in all tracks")
   end
 
-  desc "Complete process: Promote 1.0.2 to all tracks (Production, Beta, Alpha)"
+  desc "Complete process: Promote latest internal release to all tracks (Production, Beta, Alpha)"
   lane :promote_all_tracks do
     UI.message("🚀 Starting promotion process...")
     UI.message("")
-    UI.message("This will promote version 1.0.2 to all tracks, automatically superseding old 1.0.1 versions")
+    UI.message("This will promote the latest internal release to all tracks")
     UI.message("")
 
-    # Step 1: Promote 1.0.2 to production
-    UI.message("Step 1: Promoting 1.0.2 to Production...")
+    # Step 1: Promote to production
+    UI.message("Step 1: Promoting to Production...")
     promote_to_production
 
     UI.message("")
-    UI.message("Step 2: Promoting 1.0.2 to Beta and Alpha...")
+    UI.message("Step 2: Promoting to Beta and Alpha...")
     promote_to_testing_tracks
 
     UI.message("")
     UI.success("✅ Promotion process completed!")
     UI.message("")
-    UI.message("📊 All tracks now have version 1.0.2, and old 1.0.1 versions are superseded")
+    UI.message("📊 All tracks now have the latest version, previous versions are superseded")
     UI.message("")
     UI.message("Check the results:")
     UI.message("   fastlane android check_release_status")

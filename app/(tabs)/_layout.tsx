@@ -8,13 +8,11 @@ import { HapticTab } from '@/components/haptic-tab';
 import { useTheme } from '@/lib/ThemeContext';
 import { NAV_THEME } from '@/lib/theme';
 import { useLocalization } from '@/localization/LocalizationProvider';
-import { QuickActionMenu } from '@/components/QuickActionMenu';
 
 export default function TabLayout() {
   const { colorScheme } = useTheme();
   const { t } = useLocalization();
   const insets = useSafeAreaInsets();
-  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
@@ -79,18 +77,6 @@ export default function TabLayout() {
             ),
             tabBarButton: (props) => <HapticTab {...props} testID="tab-tracking" />,
           }}
-          listeners={({ navigation }) => ({
-            tabPress: (e) => {
-              if (navigation.isFocused()) {
-                e.preventDefault();
-                setIsMenuOpen((prev) => !prev);
-              } else {
-                // If navigating to tab, ensure menu is closed or open?
-                // Default behavior is fine, but maybe close menu if it was somehow open?
-                if (isMenuOpen) setIsMenuOpen(false);
-              }
-            },
-          })}
         />
         <Tabs.Screen
           name="scheduling"
@@ -114,7 +100,6 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-      <QuickActionMenu isOpen={isMenuOpen} onToggle={() => setIsMenuOpen(!isMenuOpen)} />
     </SafeAreaView>
   );
 }
