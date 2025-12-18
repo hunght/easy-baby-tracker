@@ -28,9 +28,7 @@ export default function RootLayout() {
   return (
     <LocalizationProvider>
       <ThemeProvider>
-        <FeatureFlagProvider>
-          <AppProviders />
-        </FeatureFlagProvider>
+        <AppProviders />
       </ThemeProvider>
     </LocalizationProvider>
   );
@@ -72,50 +70,52 @@ function AppProviders() {
       <NotificationProvider>
         <DatabaseInitializer>
           <QueryClientProvider client={queryClient}>
-            <NavigationThemeProvider value={navTheme}>
-              <View style={{ backgroundColor, flex: 1 }} className="flex-1">
-                <Stack
-                  ref={navigationRef}
-                  screenOptions={{
-                    // Render screens transparently so our wrapper View controls background via Tailwind
-                    contentStyle: { backgroundColor: 'transparent' },
-                    headerShown: false,
-                  }}>
-                  <Stack.Screen name="index" options={{ headerShown: false }} />
-                  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="(habit)"
-                    options={{
-                      presentation: 'modal',
+            <FeatureFlagProvider>
+              <NavigationThemeProvider value={navTheme}>
+                <View style={{ backgroundColor, flex: 1 }} className="flex-1">
+                  <Stack
+                    ref={navigationRef}
+                    screenOptions={{
+                      // Render screens transparently so our wrapper View controls background via Tailwind
+                      contentStyle: { backgroundColor: 'transparent' },
                       headerShown: false,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="(tracking)"
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="(easy-schedule)"
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                    }}
-                  />
-                  <Stack.Screen
-                    name="(profiles)"
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                    }}
-                  />
-                </Stack>
-                <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-                <PortalHost />
-              </View>
-            </NavigationThemeProvider>
+                    }}>
+                    <Stack.Screen name="index" options={{ headerShown: false }} />
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen
+                      name="(habit)"
+                      options={{
+                        presentation: 'modal',
+                        headerShown: false,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="(tracking)"
+                      options={{
+                        presentation: 'modal',
+                        headerShown: false,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="(easy-schedule)"
+                      options={{
+                        presentation: 'modal',
+                        headerShown: false,
+                      }}
+                    />
+                    <Stack.Screen
+                      name="(profiles)"
+                      options={{
+                        presentation: 'modal',
+                        headerShown: false,
+                      }}
+                    />
+                  </Stack>
+                  <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+                  <PortalHost />
+                </View>
+              </NavigationThemeProvider>
+            </FeatureFlagProvider>
           </QueryClientProvider>
         </DatabaseInitializer>
       </NotificationProvider>

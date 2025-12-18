@@ -49,21 +49,24 @@ platform :ios do
 
   desc "Upload screenshots to App Store Connect"
   lane :upload_screenshots do
+    # Get the current version from app.json
+    require 'json'
+    app_json = JSON.parse(File.read('../app.json'))
+    app_version = app_json['expo']['version']
+    
+    UI.message("📸 Uploading screenshots for version #{app_version}...")
+    
     deliver(
       skip_binary_upload: true,
       skip_metadata: true,
       force: true,
       app_identifier: "com.hunght.BabyEase",
       screenshots_path: "./fastlane/metadata/ios/screenshots",
-      team_id: "111225803", # "Hung Hoang The" team
-      app_version: "1.0",
+      team_id: "111225803",
+      app_version: app_version,
       platform: "ios",
-      app_review_information: {
-        "contact_first_name" => "Hung",
-        "contact_last_name" => "Hoang",
-        "contact_phone" => "+1 206 555 0100",
-        "contact_email" => "hth321@gmail.com"
-      }
+      ignore_language_directory_validation: true,
+      overwrite_screenshots: true
     )
   end
 
@@ -180,6 +183,7 @@ platform :android do
       skip_upload_metadata: true,
       skip_upload_images: false,
       skip_upload_screenshots: false,
+      skip_upload_changelogs: true,
       package_name: "com.hunght.BabyEase",
       metadata_path: "./fastlane/metadata/android",
       json_key: "./google-play-key.json"

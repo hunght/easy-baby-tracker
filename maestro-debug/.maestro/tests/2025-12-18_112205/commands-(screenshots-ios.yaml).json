@@ -1,0 +1,427 @@
+[
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "idRegex": "btn-add-habit",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031757656,
+      "duration": 1306
+    }
+  },
+  {
+    "command": {
+      "waitForAnimationToEndCommand": {
+        "timeout": 2000,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031765524,
+      "duration": 358
+    }
+  },
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "textRegex": "EasyBaby+",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031744897,
+      "duration": 2361
+    }
+  },
+  {
+    "command": {
+      "assertConditionCommand": {
+        "condition": {
+          "visible": {
+            "idRegex": "tab-tracking",
+            "optional": false
+          }
+        },
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031747259,
+      "duration": 3243
+    }
+  },
+  {
+    "command": {
+      "takeScreenshotCommand": {
+        "path": "../fastlane/metadata/ios/screenshots/en-US/03-easy",
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031763272,
+      "duration": 82
+    }
+  },
+  {
+    "command": {
+      "takeScreenshotCommand": {
+        "path": "../fastlane/metadata/ios/screenshots/en-US/02-add-habit",
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031758962,
+      "duration": 74
+    }
+  },
+  {
+    "command": {
+      "takeScreenshotCommand": {
+        "path": "../fastlane/metadata/ios/screenshots/en-US/01-tracking",
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031753241,
+      "duration": 77
+    }
+  },
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "idRegex": "tab-settings",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031764614,
+      "duration": 909
+    }
+  },
+  {
+    "command": {
+      "waitForAnimationToEndCommand": {
+        "timeout": 2000,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031760306,
+      "duration": 377
+    }
+  },
+  {
+    "command": {
+      "waitForAnimationToEndCommand": {
+        "timeout": 5000,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031750502,
+      "duration": 2738
+    }
+  },
+  {
+    "command": {
+      "launchAppCommand": {
+        "appId": "host.exp.Exponent",
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031737472,
+      "duration": 2571
+    }
+  },
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "idRegex": "tile-habit",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031756437,
+      "duration": 1218
+    }
+  },
+  {
+    "command": {
+      "waitForAnimationToEndCommand": {
+        "timeout": 2000,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031762858,
+      "duration": 414
+    }
+  },
+  {
+    "command": {
+      "takeScreenshotCommand": {
+        "path": "../fastlane/metadata/ios/screenshots/en-US/06-settings",
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031765882,
+      "duration": 68
+    }
+  },
+  {
+    "command": {
+      "waitForAnimationToEndCommand": {
+        "timeout": 2000,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031754700,
+      "duration": 372
+    }
+  },
+  {
+    "command": {
+      "applyConfigurationCommand": {
+        "config": {
+          "appId": "host.exp.Exponent"
+        },
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031737471,
+      "duration": 1
+    }
+  },
+  {
+    "command": {
+      "takeScreenshotCommand": {
+        "path": "../fastlane/metadata/ios/screenshots/en-US/04-scheduling",
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031764534,
+      "duration": 80
+    }
+  },
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "idRegex": "btn-close",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031760683,
+      "duration": 1206
+    }
+  },
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "idRegex": "tab-scheduling",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031763354,
+      "duration": 799
+    }
+  },
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "idRegex": "tile-sleep",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031753318,
+      "duration": 1382
+    }
+  },
+  {
+    "command": {
+      "defineVariablesCommand": {
+        "env": {
+          "MAESTRO_FILENAME": "screenshots-ios"
+        },
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031737465,
+      "duration": 6
+    }
+  },
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "idRegex": "btn-close",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031759036,
+      "duration": 1270
+    }
+  },
+  {
+    "command": {
+      "assertConditionCommand": {
+        "condition": {
+          "visible": {
+            "textRegex": "EasyBaby+",
+            "optional": false
+          }
+        },
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031740046,
+      "duration": 4850
+    }
+  },
+  {
+    "command": {
+      "takeScreenshotCommand": {
+        "path": "../fastlane/metadata/ios/screenshots/en-US/05-add-sleep",
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031755073,
+      "duration": 72
+    }
+  },
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "idRegex": "btn-close",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031755145,
+      "duration": 1292
+    }
+  },
+  {
+    "command": {
+      "waitForAnimationToEndCommand": {
+        "timeout": 2000,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031764153,
+      "duration": 381
+    }
+  },
+  {
+    "command": {
+      "tapOnElement": {
+        "selector": {
+          "idRegex": "tab-easy-schedule",
+          "optional": false
+        },
+        "retryIfNoChange": false,
+        "waitUntilVisible": false,
+        "longPress": false,
+        "optional": false
+      }
+    },
+    "metadata": {
+      "status": "COMPLETED",
+      "timestamp": 1766031761889,
+      "duration": 969
+    }
+  }
+]
