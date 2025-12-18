@@ -65,7 +65,10 @@ export async function getDiaryEntries(options?: {
   return await query;
 }
 
-export async function getDiaryEntryById(entryId: number, babyId?: number): Promise<DiaryEntryRecord | null> {
+export async function getDiaryEntryById(
+  entryId: number,
+  babyId?: number
+): Promise<DiaryEntryRecord | null> {
   const resolvedBabyId = await resolveBabyId(babyId);
   const result = await db
     .select()
@@ -75,7 +78,6 @@ export async function getDiaryEntryById(entryId: number, babyId?: number): Promi
 
   return result[0] ?? null;
 }
-
 
 export async function updateDiaryEntry(id: number, payload: DiaryEntryPayload): Promise<void> {
   const { babyId: providedBabyId, ...rest } = payload;

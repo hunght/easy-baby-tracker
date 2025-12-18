@@ -26,8 +26,8 @@ export function StickySaveBar({
   const { t } = useLocalization();
   const isDisabled = isSaving || disabled;
   const displayLabel = isSaving
-    ? savingLabel ?? label ?? t('common.saving')
-    : label ?? t('common.save');
+    ? (savingLabel ?? label ?? t('common.saving'))
+    : (label ?? t('common.save'));
 
   return (
     <View
@@ -46,11 +46,11 @@ export function StickySaveBar({
           elevation: 3,
         }}>
         <MaterialCommunityIcons name={icon} size={22} color={isDisabled ? '#999' : '#FFF'} />
-        <Text className={`text-lg font-bold ${isDisabled ? 'text-muted-foreground' : 'text-white'}`}>
+        <Text
+          className={`text-lg font-bold ${isDisabled ? 'text-muted-foreground' : 'text-white'}`}>
           {displayLabel}
         </Text>
       </Pressable>
     </View>
   );
 }
-

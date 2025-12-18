@@ -24,9 +24,9 @@ const sleepKinds: {
   labelKey: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 }[] = [
-    { key: 'nap', labelKey: 'sleep.kinds.nap', icon: 'white-balance-sunny' },
-    { key: 'night', labelKey: 'sleep.kinds.night', icon: 'weather-night' },
-  ];
+  { key: 'nap', labelKey: 'sleep.kinds.nap', icon: 'white-balance-sunny' },
+  { key: 'night', labelKey: 'sleep.kinds.night', icon: 'weather-night' },
+];
 
 function formatClock(seconds: number): string {
   const hrs = Math.floor(seconds / 3600);
@@ -307,8 +307,9 @@ export default function SleepScreen() {
               {formatClock(resolvedDuration)}
             </Text>
             <Pressable
-              className={`h-[88px] w-[88px] items-center justify-center rounded-full ${timerActive ? 'bg-red-500' : 'bg-lavender'
-                }`}
+              className={`h-[88px] w-[88px] items-center justify-center rounded-full ${
+                timerActive ? 'bg-red-500' : 'bg-lavender'
+              }`}
               onPress={handleTimerPress}
               style={{
                 shadowColor: timerActive ? '#EF4444' : brandColors.colors.lavender,
@@ -337,7 +338,9 @@ export default function SleepScreen() {
             disabled={timerActive}
             className={`flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-4 ${timerActive ? 'opacity-60' : ''}`}>
             <View>
-              <Text className="text-sm font-medium text-muted-foreground">{t('common.starts')}</Text>
+              <Text className="text-sm font-medium text-muted-foreground">
+                {t('common.starts')}
+              </Text>
               <Text className="mt-1 text-lg font-semibold text-foreground">
                 {formatDateTime(startTime)}
               </Text>
@@ -394,10 +397,7 @@ export default function SleepScreen() {
         onChange={handlePickerChange}
       />
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={isSaving}
-      />
+      <StickySaveBar onPress={handleSave} isSaving={isSaving} />
     </View>
   );
 }

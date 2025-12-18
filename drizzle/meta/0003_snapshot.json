@@ -92,24 +92,17 @@
       "indexes": {
         "idx_baby_habits_baby_id": {
           "name": "idx_baby_habits_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_baby_habits_definition": {
           "name": "idx_baby_habits_definition",
-          "columns": [
-            "habit_definition_id"
-          ],
+          "columns": ["habit_definition_id"],
           "isUnique": false
         },
         "idx_baby_habits_unique": {
           "name": "idx_baby_habits_unique",
-          "columns": [
-            "baby_id",
-            "habit_definition_id"
-          ],
+          "columns": ["baby_id", "habit_definition_id"],
           "isUnique": true
         }
       },
@@ -118,12 +111,8 @@
           "name": "baby_habits_baby_id_baby_profiles_id_fk",
           "tableFrom": "baby_habits",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -131,12 +120,8 @@
           "name": "baby_habits_habit_definition_id_habit_definitions_id_fk",
           "tableFrom": "baby_habits",
           "tableTo": "habit_definitions",
-          "columnsFrom": [
-            "habit_definition_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["habit_definition_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -247,9 +232,7 @@
       "indexes": {
         "idx_concern_choices_baby_id": {
           "name": "idx_concern_choices_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         }
       },
@@ -258,12 +241,8 @@
           "name": "concern_choices_baby_id_baby_profiles_id_fk",
           "tableFrom": "concern_choices",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -335,23 +314,17 @@
       "indexes": {
         "idx_diaper_changes_baby_id": {
           "name": "idx_diaper_changes_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_diaper_changes_recorded_at": {
           "name": "idx_diaper_changes_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_diaper_changes_time": {
           "name": "idx_diaper_changes_time",
-          "columns": [
-            "time"
-          ],
+          "columns": ["time"],
           "isUnique": false
         }
       },
@@ -360,12 +333,8 @@
           "name": "diaper_changes_baby_id_baby_profiles_id_fk",
           "tableFrom": "diaper_changes",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -423,16 +392,12 @@
       "indexes": {
         "idx_diary_entries_baby_id": {
           "name": "idx_diary_entries_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_diary_entries_created_at": {
           "name": "idx_diary_entries_created_at",
-          "columns": [
-            "createdAt"
-          ],
+          "columns": ["createdAt"],
           "isUnique": false
         }
       },
@@ -441,12 +406,8 @@
           "name": "diary_entries_baby_id_baby_profiles_id_fk",
           "tableFrom": "diary_entries",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -568,39 +529,27 @@
       "indexes": {
         "idx_formula_rules_baby_id": {
           "name": "idx_formula_rules_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_formula_rules_custom": {
           "name": "idx_formula_rules_custom",
-          "columns": [
-            "is_custom"
-          ],
+          "columns": ["is_custom"],
           "isUnique": false
         },
         "idx_formula_rules_weeks": {
           "name": "idx_formula_rules_weeks",
-          "columns": [
-            "min_weeks",
-            "max_weeks"
-          ],
+          "columns": ["min_weeks", "max_weeks"],
           "isUnique": false
         },
         "idx_formula_rules_valid_date": {
           "name": "idx_formula_rules_valid_date",
-          "columns": [
-            "valid_date"
-          ],
+          "columns": ["valid_date"],
           "isUnique": false
         },
         "idx_formula_rules_baby_date_unique": {
           "name": "idx_formula_rules_baby_date_unique",
-          "columns": [
-            "baby_id",
-            "valid_date"
-          ],
+          "columns": ["baby_id", "valid_date"],
           "isUnique": true
         }
       },
@@ -609,12 +558,8 @@
           "name": "easy_formula_rules_baby_id_baby_profiles_id_fk",
           "tableFrom": "easy_formula_rules",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -721,23 +666,17 @@
       "indexes": {
         "idx_feedings_baby_id": {
           "name": "idx_feedings_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_feedings_recorded_at": {
           "name": "idx_feedings_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_feedings_start_time": {
           "name": "idx_feedings_start_time",
-          "columns": [
-            "startTime"
-          ],
+          "columns": ["startTime"],
           "isUnique": false
         }
       },
@@ -746,12 +685,8 @@
           "name": "feedings_baby_id_baby_profiles_id_fk",
           "tableFrom": "feedings",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -823,23 +758,17 @@
       "indexes": {
         "idx_growth_records_baby_id": {
           "name": "idx_growth_records_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_growth_records_recorded_at": {
           "name": "idx_growth_records_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_growth_records_time": {
           "name": "idx_growth_records_time",
-          "columns": [
-            "time"
-          ],
+          "columns": ["time"],
           "isUnique": false
         }
       },
@@ -848,12 +777,8 @@
           "name": "growth_records_baby_id_baby_profiles_id_fk",
           "tableFrom": "growth_records",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1001,23 +926,17 @@
       "indexes": {
         "idx_habit_logs_baby_id": {
           "name": "idx_habit_logs_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_habit_logs_baby_habit_id": {
           "name": "idx_habit_logs_baby_habit_id",
-          "columns": [
-            "baby_habit_id"
-          ],
+          "columns": ["baby_habit_id"],
           "isUnique": false
         },
         "idx_habit_logs_completed_at": {
           "name": "idx_habit_logs_completed_at",
-          "columns": [
-            "completed_at"
-          ],
+          "columns": ["completed_at"],
           "isUnique": false
         }
       },
@@ -1026,12 +945,8 @@
           "name": "habit_logs_baby_id_baby_profiles_id_fk",
           "tableFrom": "habit_logs",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1039,12 +954,8 @@
           "name": "habit_logs_baby_habit_id_baby_habits_id_fk",
           "tableFrom": "habit_logs",
           "tableTo": "baby_habits",
-          "columnsFrom": [
-            "baby_habit_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_habit_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1130,30 +1041,22 @@
       "indexes": {
         "idx_health_records_baby_id": {
           "name": "idx_health_records_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_health_records_recorded_at": {
           "name": "idx_health_records_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_health_records_time": {
           "name": "idx_health_records_time",
-          "columns": [
-            "time"
-          ],
+          "columns": ["time"],
           "isUnique": false
         },
         "idx_health_records_type": {
           "name": "idx_health_records_type",
-          "columns": [
-            "type"
-          ],
+          "columns": ["type"],
           "isUnique": false
         }
       },
@@ -1162,12 +1065,8 @@
           "name": "health_records_baby_id_baby_profiles_id_fk",
           "tableFrom": "health_records",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1260,23 +1159,17 @@
       "indexes": {
         "idx_pumpings_baby_id": {
           "name": "idx_pumpings_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_pumpings_recorded_at": {
           "name": "idx_pumpings_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_pumpings_start_time": {
           "name": "idx_pumpings_start_time",
-          "columns": [
-            "startTime"
-          ],
+          "columns": ["startTime"],
           "isUnique": false
         }
       },
@@ -1285,12 +1178,8 @@
           "name": "pumpings_baby_id_baby_profiles_id_fk",
           "tableFrom": "pumpings",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1355,30 +1244,22 @@
       "indexes": {
         "idx_scheduled_notifications_baby_id": {
           "name": "idx_scheduled_notifications_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_scheduled_notifications_type": {
           "name": "idx_scheduled_notifications_type",
-          "columns": [
-            "notification_type"
-          ],
+          "columns": ["notification_type"],
           "isUnique": false
         },
         "idx_scheduled_notifications_notification_id": {
           "name": "idx_scheduled_notifications_notification_id",
-          "columns": [
-            "notification_id"
-          ],
+          "columns": ["notification_id"],
           "isUnique": false
         },
         "idx_scheduled_notifications_scheduled_time": {
           "name": "idx_scheduled_notifications_scheduled_time",
-          "columns": [
-            "scheduled_time"
-          ],
+          "columns": ["scheduled_time"],
           "isUnique": false
         }
       },
@@ -1387,12 +1268,8 @@
           "name": "scheduled_notifications_baby_id_baby_profiles_id_fk",
           "tableFrom": "scheduled_notifications",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1464,23 +1341,17 @@
       "indexes": {
         "idx_sleep_sessions_baby_id": {
           "name": "idx_sleep_sessions_baby_id",
-          "columns": [
-            "baby_id"
-          ],
+          "columns": ["baby_id"],
           "isUnique": false
         },
         "idx_sleep_sessions_recorded_at": {
           "name": "idx_sleep_sessions_recorded_at",
-          "columns": [
-            "recordedAt"
-          ],
+          "columns": ["recordedAt"],
           "isUnique": false
         },
         "idx_sleep_sessions_start_time": {
           "name": "idx_sleep_sessions_start_time",
-          "columns": [
-            "startTime"
-          ],
+          "columns": ["startTime"],
           "isUnique": false
         }
       },
@@ -1489,12 +1360,8 @@
           "name": "sleep_sessions_baby_id_baby_profiles_id_fk",
           "tableFrom": "sleep_sessions",
           "tableTo": "baby_profiles",
-          "columnsFrom": [
-            "baby_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["baby_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

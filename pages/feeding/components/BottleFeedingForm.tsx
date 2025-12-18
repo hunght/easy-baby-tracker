@@ -105,11 +105,13 @@ export function BottleFeedingForm({
           <Pressable
             key={ing.key}
             onPress={() => handleIngredientChange(ing.key)}
-            className={`flex-1 flex-row items-center justify-center gap-1.5 py-4 ${ingredientType === ing.key ? 'bg-accent' : ''
-              } ${index > 0 ? 'border-l border-border' : ''}`}>
+            className={`flex-1 flex-row items-center justify-center gap-1.5 py-4 ${
+              ingredientType === ing.key ? 'bg-accent' : ''
+            } ${index > 0 ? 'border-l border-border' : ''}`}>
             <Text
-              className={`text-sm font-semibold ${ingredientType === ing.key ? 'text-accent-foreground' : 'text-muted-foreground'
-                }`}>
+              className={`text-sm font-semibold ${
+                ingredientType === ing.key ? 'text-accent-foreground' : 'text-muted-foreground'
+              }`}>
               {t(ing.labelKey)}
             </Text>
           </Pressable>
@@ -132,11 +134,13 @@ export function BottleFeedingForm({
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setAmountMl(preset);
             }}
-            className={`h-11 w-[30%] items-center justify-center rounded-xl border ${amountMl === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
-              }`}>
+            className={`h-11 w-[30%] items-center justify-center rounded-xl border ${
+              amountMl === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
+            }`}>
             <Text
-              className={`text-sm font-semibold ${amountMl === preset ? 'text-white' : 'text-foreground'
-                }`}>
+              className={`text-sm font-semibold ${
+                amountMl === preset ? 'text-white' : 'text-foreground'
+              }`}>
               {preset} ml
             </Text>
           </Pressable>

@@ -269,11 +269,7 @@ export default function GrowthScreen() {
         />
       </ScrollView>
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={isSaving}
-        disabled={!canSave()}
-      />
+      <StickySaveBar onPress={handleSave} isSaving={isSaving} disabled={!canSave()} />
     </View>
   );
 }

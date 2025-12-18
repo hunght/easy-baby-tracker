@@ -306,10 +306,7 @@ export default function PhaseEditScreen() {
         </View>
       </ScrollView>
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={mutation.isPending}
-      />
+      <StickySaveBar onPress={handleSave} isSaving={mutation.isPending} />
 
       {/* Time Pickers */}
       <DateTimePickerModal

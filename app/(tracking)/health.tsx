@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
@@ -223,13 +223,13 @@ export default function HealthScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     setTemperature(preset);
                   }}
-                  className={`h-12 w-[30%] items-center justify-center rounded-xl border ${temperature === preset
-                    ? 'border-accent bg-accent'
-                    : 'border-border bg-muted/30'
-                    }`}>
+                  className={`h-12 w-[30%] items-center justify-center rounded-xl border ${
+                    temperature === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
+                  }`}>
                   <Text
-                    className={`text-base font-semibold ${temperature === preset ? 'text-white' : 'text-foreground'
-                      }`}>
+                    className={`text-base font-semibold ${
+                      temperature === preset ? 'text-white' : 'text-foreground'
+                    }`}>
                     {preset.toFixed(1)}°
                   </Text>
                 </Pressable>
@@ -346,11 +346,7 @@ export default function HealthScreen() {
         />
       </ScrollView>
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={isSaving}
-        disabled={!canSave()}
-      />
+      <StickySaveBar onPress={handleSave} isSaving={isSaving} disabled={!canSave()} />
     </View>
   );
 }

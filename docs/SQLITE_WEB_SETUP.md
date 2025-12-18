@@ -41,6 +41,7 @@ module.exports = withNativeWind(config, { input: './global.css', inlineRem: 16 }
 ```
 
 **Key Points:**
+
 - WASM asset support enables expo-sqlite to load WebAssembly on web
 - Cross-Origin headers are required for SharedArrayBuffer (used by SQLite WASM)
 - SQL file extension support is for Drizzle migration files
@@ -50,17 +51,13 @@ module.exports = withNativeWind(config, { input: './global.css', inlineRem: 16 }
 ```json
 {
   "expo": {
-    "plugins": [
-      "expo-router",
-      "expo-secure-store",
-      "expo-web-browser",
-      "expo-sqlite"
-    ]
+    "plugins": ["expo-router", "expo-secure-store", "expo-web-browser", "expo-sqlite"]
   }
 }
 ```
 
 **Key Points:**
+
 - The `expo-sqlite` plugin must be registered for proper native configuration
 - This enables SQLite functionality on iOS and Android
 
@@ -91,6 +88,7 @@ export const db = drizzle(expoDb);
 ```
 
 **Key Points:**
+
 - Uses `openDatabaseSync` for synchronous database initialization
 - Change listener is disabled across all platforms (as per Expo's modern SQLite recommendations)
 - Platform-specific options can be added if needed
@@ -139,6 +137,7 @@ When running `npm run web`, Metro's development server automatically applies the
 ## Testing Web Compatibility
 
 1. Start the development server:
+
    ```bash
    npm run web
    ```
@@ -160,16 +159,19 @@ For production web builds, ensure your web server (Netlify, Vercel, etc.) is con
 ## Troubleshooting
 
 ### Database doesn't initialize on web
+
 - Check browser console for WASM loading errors
 - Verify Metro config includes WASM asset support
 - Ensure Cross-Origin headers are present in Network tab
 
 ### "SharedArrayBuffer is not defined"
+
 - Verify Cross-Origin headers are set correctly
 - Check that both COOP and COEP headers are present
 - Try restarting the Metro server with cache clear: `npm start -- --clear`
 
 ### Migrations fail on web
+
 - Check that migration files are generated correctly
 - Verify SQL file extension is added to Metro sourceExts
 - Test migrations on native platforms first

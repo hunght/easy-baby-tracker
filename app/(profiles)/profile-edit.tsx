@@ -442,9 +442,7 @@ export default function ProfileEditScreen() {
         onPress={handleSave}
         isSaving={isSaving}
         disabled={!nickname.trim()}
-        label={
-          numericBabyId ? t('common.saveChanges') : t('common.continue')
-        }
+        label={numericBabyId ? t('common.saveChanges') : t('common.continue')}
       />
     </View>
   );

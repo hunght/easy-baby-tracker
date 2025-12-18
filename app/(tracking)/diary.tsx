@@ -368,11 +368,7 @@ export default function DiaryScreen() {
         </Pressable>
       </Modal>
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={isSaving}
-        disabled={!hasContent}
-      />
+      <StickySaveBar onPress={handleSave} isSaving={isSaving} disabled={!hasContent} />
     </View>
   );
 }

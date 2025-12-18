@@ -171,18 +171,18 @@ export default function DiaperScreen() {
               <Pressable
                 key={type.key}
                 onPress={() => handleDiaperKindChange(type.key)}
-                className={`h-14 w-[47%] flex-row items-center justify-center gap-2 rounded-xl border-2 ${diaperKind === type.key
-                    ? 'border-accent bg-accent'
-                    : 'border-border bg-muted/30'
-                  }`}>
+                className={`h-14 w-[47%] flex-row items-center justify-center gap-2 rounded-xl border-2 ${
+                  diaperKind === type.key ? 'border-accent bg-accent' : 'border-border bg-muted/30'
+                }`}>
                 <MaterialCommunityIcons
                   name={type.icon}
                   size={22}
                   color={diaperKind === type.key ? '#FFF' : '#666'}
                 />
                 <Text
-                  className={`text-base font-semibold ${diaperKind === type.key ? 'text-white' : 'text-foreground'
-                    }`}>
+                  className={`text-base font-semibold ${
+                    diaperKind === type.key ? 'text-white' : 'text-foreground'
+                  }`}>
                   {t(type.labelKey)}
                 </Text>
               </Pressable>
@@ -207,10 +207,11 @@ export default function DiaperScreen() {
                 <Pressable
                   key={level}
                   onPress={() => handleWetnessChange(level)}
-                  className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-xl border-2 ${wetness && wetness >= level
+                  className={`h-14 flex-1 flex-row items-center justify-center gap-2 rounded-xl border-2 ${
+                    wetness && wetness >= level
                       ? 'border-accent bg-accent/20'
                       : 'border-border bg-muted/30'
-                    }`}>
+                  }`}>
                   {Array.from({ length: level }).map((_, i) => (
                     <MaterialCommunityIcons
                       key={i}
@@ -239,10 +240,11 @@ export default function DiaperScreen() {
                 <Pressable
                   key={colorOption.key}
                   onPress={() => handleColorChange(colorOption.key)}
-                  className={`h-14 w-14 items-center justify-center rounded-full ${color === colorOption.key
+                  className={`h-14 w-14 items-center justify-center rounded-full ${
+                    color === colorOption.key
                       ? 'border-[3px] border-accent'
                       : 'border-2 border-border'
-                    }`}
+                  }`}
                   style={{ backgroundColor: colorOption.color }}>
                   {color === colorOption.key && (
                     <MaterialCommunityIcons name="check" size={20} color="#FFF" />
@@ -264,10 +266,7 @@ export default function DiaperScreen() {
         />
       </ScrollView>
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={isSaving}
-      />
+      <StickySaveBar onPress={handleSave} isSaving={isSaving} />
     </View>
   );
 }

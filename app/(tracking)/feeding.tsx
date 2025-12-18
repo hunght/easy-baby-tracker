@@ -292,10 +292,7 @@ export default function FeedingScreen() {
         <Tabs value={feedingType} onValueChange={handleFeedingTypeChange} className="mb-6">
           <TabsList className="w-full">
             {feedingTypes.map((type) => (
-              <TabsTrigger
-                key={type.key}
-                value={type.key}
-                className="flex-1 flex-row items-center">
+              <TabsTrigger key={type.key} value={type.key} className="flex-1 flex-row items-center">
                 <MaterialCommunityIcons name={type.icon} size={20} />
                 <Text>{t(type.labelKey)}</Text>
               </TabsTrigger>
@@ -388,11 +385,7 @@ export default function FeedingScreen() {
         />
       </ScrollView>
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={isSaving}
-        containerClassName="bg-card"
-      />
+      <StickySaveBar onPress={handleSave} isSaving={isSaving} containerClassName="bg-card" />
     </View>
   );
 }

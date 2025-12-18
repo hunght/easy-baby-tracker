@@ -14,7 +14,7 @@ export default function ChartsScreen() {
   return (
     <View className="flex-1 bg-background">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-        <View className="rounded-b-2xl bg-background px-4 pb-3 pt-2  ">
+        <View className="rounded-b-2xl bg-background px-4 pb-3 pt-2">
           <TabsList className="w-full">
             <TabsTrigger value="timeline" className="flex-1">
               <Text className="font-semibold">{t('tabs.timeline')}</Text>

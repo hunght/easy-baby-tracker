@@ -272,11 +272,13 @@ export default function PumpingScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setLeftAmountMl(preset);
                 }}
-                className={`h-10 w-[30%] items-center justify-center rounded-xl border ${leftAmountMl === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
-                  }`}>
+                className={`h-10 w-[30%] items-center justify-center rounded-xl border ${
+                  leftAmountMl === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
+                }`}>
                 <Text
-                  className={`text-sm font-semibold ${leftAmountMl === preset ? 'text-white' : 'text-foreground'
-                    }`}>
+                  className={`text-sm font-semibold ${
+                    leftAmountMl === preset ? 'text-white' : 'text-foreground'
+                  }`}>
                   {preset}
                 </Text>
               </Pressable>
@@ -321,11 +323,13 @@ export default function PumpingScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setRightAmountMl(preset);
                 }}
-                className={`h-10 w-[30%] items-center justify-center rounded-xl border ${rightAmountMl === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
-                  }`}>
+                className={`h-10 w-[30%] items-center justify-center rounded-xl border ${
+                  rightAmountMl === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
+                }`}>
                 <Text
-                  className={`text-sm font-semibold ${rightAmountMl === preset ? 'text-white' : 'text-foreground'
-                    }`}>
+                  className={`text-sm font-semibold ${
+                    rightAmountMl === preset ? 'text-white' : 'text-foreground'
+                  }`}>
                   {preset}
                 </Text>
               </Pressable>
@@ -357,9 +361,7 @@ export default function PumpingScreen() {
           // Edit Mode: Manual Inputs
           <View className="mb-6 gap-4">
             <View className="flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-3">
-              <Text className="text-base font-medium text-foreground">
-                {t('common.leftShort')}
-              </Text>
+              <Text className="text-base font-medium text-foreground">{t('common.leftShort')}</Text>
               <View className="flex-row items-center gap-2">
                 <Input
                   className="h-11 w-20 text-center text-lg"
@@ -482,11 +484,7 @@ export default function PumpingScreen() {
         />
       </ScrollView>
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={isSaving}
-        disabled={totalAmount === 0}
-      />
+      <StickySaveBar onPress={handleSave} isSaving={isSaving} disabled={totalAmount === 0} />
     </View>
   );
 }

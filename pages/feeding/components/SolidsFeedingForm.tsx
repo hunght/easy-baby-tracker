@@ -106,11 +106,13 @@ export function SolidsFeedingForm({
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setAmountGrams(preset);
             }}
-            className={`h-11 w-[30%] items-center justify-center rounded-xl border ${amountGrams === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
-              }`}>
+            className={`h-11 w-[30%] items-center justify-center rounded-xl border ${
+              amountGrams === preset ? 'border-accent bg-accent' : 'border-border bg-muted/30'
+            }`}>
             <Text
-              className={`text-sm font-semibold ${amountGrams === preset ? 'text-white' : 'text-foreground'
-                }`}>
+              className={`text-sm font-semibold ${
+                amountGrams === preset ? 'text-white' : 'text-foreground'
+              }`}>
               {preset} g
             </Text>
           </Pressable>

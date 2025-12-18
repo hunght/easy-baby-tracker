@@ -414,10 +414,7 @@ export default function EasyScheduleSettingsScreen() {
         </View>
       </ScrollView>
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={isSaving}
-      />
+      <StickySaveBar onPress={handleSave} isSaving={isSaving} />
 
       {/* Time Picker Modal */}
       <DateTimePickerModal

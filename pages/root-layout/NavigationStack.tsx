@@ -1,10 +1,8 @@
-
 import { PortalHost } from '@rn-primitives/portal';
-import { Stack } from 'expo-router';
+import { Stack , useNavigationContainerRef } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { View } from 'react-native';
-import { useNavigationContainerRef } from 'expo-router';
 
 import { logger } from '@/lib/logger';
 import { THEME } from '@/lib/theme';
@@ -17,12 +15,7 @@ export function NavigationStack({ colorScheme }: NavigationStackProps) {
   // Get the background color from THEME
   const backgroundColor = THEME[colorScheme].background;
 
-
-
   const navigationRef = useNavigationContainerRef();
-
-
-
 
   useEffect(() => {
     if (!navigationRef.current) {
@@ -93,4 +86,3 @@ export function NavigationStack({ colorScheme }: NavigationStackProps) {
     </View>
   );
 }
-

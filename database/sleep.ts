@@ -22,7 +22,11 @@ async function resolveBabyId(provided?: number): Promise<number> {
   return requireActiveBabyProfileId();
 }
 
-function computeDurationSeconds(startTime?: number | null, endTime?: number | null, duration?: number | null) {
+function computeDurationSeconds(
+  startTime?: number | null,
+  endTime?: number | null,
+  duration?: number | null
+) {
   if (duration != null) {
     return duration;
   }
@@ -89,18 +93,22 @@ export async function getSleepSessions(options?: {
   return await query;
 }
 
-export async function getSleepSessionById(sessionId: number, babyId?: number): Promise<SleepSessionRecord | null> {
+export async function getSleepSessionById(
+  sessionId: number,
+  babyId?: number
+): Promise<SleepSessionRecord | null> {
   const resolvedBabyId = await resolveBabyId(babyId);
 
   const result = await db
     .select()
     .from(schema.sleepSessions)
-    .where(and(eq(schema.sleepSessions.id, sessionId), eq(schema.sleepSessions.babyId, resolvedBabyId)))
+    .where(
+      and(eq(schema.sleepSessions.id, sessionId), eq(schema.sleepSessions.babyId, resolvedBabyId))
+    )
     .limit(1);
 
   return result[0] ?? null;
 }
-
 
 export async function updateSleepSession(id: number, payload: SleepSessionPayload): Promise<void> {
   const { babyId: providedBabyId, ...rest } = payload;

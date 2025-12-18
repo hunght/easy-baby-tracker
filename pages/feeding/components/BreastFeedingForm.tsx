@@ -114,9 +114,7 @@ export function BreastFeedingForm({
       <View className="mb-6 gap-4">
         {/* Left Duration - Full-width tappable row */}
         <View className="flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-3">
-          <Text className="text-base font-medium text-foreground">
-            {t('common.leftShort')}
-          </Text>
+          <Text className="text-base font-medium text-foreground">{t('common.leftShort')}</Text>
           <View className="flex-row items-center gap-2">
             <Input
               className="h-11 w-20 text-center text-lg"
@@ -134,9 +132,7 @@ export function BreastFeedingForm({
 
         {/* Right Duration - Full-width tappable row */}
         <View className="flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-3">
-          <Text className="text-base font-medium text-foreground">
-            {t('common.rightShort')}
-          </Text>
+          <Text className="text-base font-medium text-foreground">{t('common.rightShort')}</Text>
           <View className="flex-row items-center gap-2">
             <Input
               className="h-11 w-20 text-center text-lg"
@@ -196,7 +192,9 @@ export function BreastFeedingForm({
             />
           </Pressable>
           <View className="items-center">
-            <Text className="text-sm font-medium text-muted-foreground">{t('common.leftShort')}</Text>
+            <Text className="text-sm font-medium text-muted-foreground">
+              {t('common.leftShort')}
+            </Text>
             <Text className="text-xl font-bold text-foreground">{formatTime(leftDuration)}</Text>
           </View>
         </View>
@@ -220,7 +218,9 @@ export function BreastFeedingForm({
             />
           </Pressable>
           <View className="items-center">
-            <Text className="text-sm font-medium text-muted-foreground">{t('common.rightShort')}</Text>
+            <Text className="text-sm font-medium text-muted-foreground">
+              {t('common.rightShort')}
+            </Text>
             <Text className="text-xl font-bold text-foreground">{formatTime(rightDuration)}</Text>
           </View>
         </View>

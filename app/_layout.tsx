@@ -5,7 +5,6 @@ import {
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useNavigationContainerRef } from 'expo-router';
 import { useState } from 'react';
 import 'react-native-reanimated';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
@@ -37,7 +36,6 @@ function AppProviders() {
 
   const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
-
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <NotificationProvider>
@@ -45,9 +43,7 @@ function AppProviders() {
           <QueryClientProvider client={queryClient}>
             <FeatureFlagProvider>
               <NavigationThemeProvider value={navTheme}>
-                <NavigationStack
-                  colorScheme={colorScheme}
-                />
+                <NavigationStack colorScheme={colorScheme} />
               </NavigationThemeProvider>
             </FeatureFlagProvider>
           </QueryClientProvider>
