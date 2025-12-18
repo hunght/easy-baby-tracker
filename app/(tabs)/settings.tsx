@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
@@ -14,10 +14,11 @@ import { useNotification } from '@/components/NotificationContext';
 import { useTheme } from '@/lib/ThemeContext';
 
 import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
-import { getBabyProfiles, getActiveBabyProfile, setActiveBabyProfileId } from '@/database/baby-profile';
+import { getBabyProfiles, getActiveBabyProfile } from '@/database/baby-profile';
 import type { Locale } from '@/localization/translations';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
+import { useSetActiveBabyProfile } from '@/hooks/use-set-active-baby-profile';
 
 // Theme mode options
 const themeModes: readonly ('system' | 'light' | 'dark')[] = ['system', 'light', 'dark'];
@@ -50,7 +51,6 @@ export default function SettingsScreen() {
   const { t, locale, setLocale, availableLocales } = useLocalization();
   const { themeMode, setThemeMode } = useTheme();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { showNotification } = useNotification();
 
   const { data: profiles = [], isLoading } = useQuery({
@@ -65,22 +65,21 @@ export default function SettingsScreen() {
 
   const { features, toggleFeature } = useFeatureFlags();
 
-  const setActiveBabyMutation = useMutation({
-    mutationFn: async (babyId: number) => {
-      await setActiveBabyProfileId(babyId);
-    },
-    onSuccess: (_, babyId) => {
-      queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: BABY_PROFILES_QUERY_KEY });
-      const profile = profiles.find((p) => p.id === babyId);
-      showNotification(
-        profile
-          ? `${profile.nickname} is now active`
-          : t('settings.profileUpdated', { defaultValue: 'Profile updated' }),
-        'success'
-      );
-    },
-  });
+  const setActiveBabyMutation = useSetActiveBabyProfile();
+
+  const handleSetActiveBaby = (babyId: number) => {
+    setActiveBabyMutation.mutate(babyId, {
+      onSuccess: () => {
+        const profile = profiles.find((p) => p.id === babyId);
+        showNotification(
+          profile
+            ? `${profile.nickname} is now active`
+            : t('settings.profileUpdated', { defaultValue: 'Profile updated' }),
+          'success'
+        );
+      },
+    });
+  };
 
   const [activeTab, setActiveTab] = useState<'baby' | 'features' | 'system'>('baby');
 
@@ -170,7 +169,7 @@ export default function SettingsScreen() {
                       size="sm"
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setActiveBabyMutation.mutate(profile.id);
+                        handleSetActiveBaby(profile.id);
                       }}
                       disabled={isActive || setActiveBabyMutation.isPending}
                       className="mt-3">

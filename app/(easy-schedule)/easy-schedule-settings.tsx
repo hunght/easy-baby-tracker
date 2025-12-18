@@ -8,6 +8,7 @@ import { useState, useEffect, useMemo } from 'react';
 
 import { Text } from '@/components/ui/text';
 import { ModalHeader } from '@/components/ModalHeader';
+import { StickySaveBar } from '@/components/StickySaveBar';
 import { DateTimePickerModal } from '@/components/DateTimePickerModal';
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 import { getActiveBabyProfile, updateBabyFirstWakeTime } from '@/database/baby-profile';
@@ -413,32 +414,10 @@ export default function EasyScheduleSettingsScreen() {
         </View>
       </ScrollView>
 
-      {/* Sticky Bottom Save Bar */}
-      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-8 pt-4">
-        <Pressable
-          onPress={handleSave}
-          disabled={isSaving}
-          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${
-            isSaving ? 'bg-muted' : 'bg-accent'
-          }`}
-          style={{
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-          }}>
-          <MaterialCommunityIcons
-            name="content-save"
-            size={22}
-            color={isSaving ? '#999' : '#FFF'}
-          />
-          <Text
-            className={`text-lg font-bold ${isSaving ? 'text-muted-foreground' : 'text-white'}`}>
-            {isSaving ? t('common.saving') : t('common.save')}
-          </Text>
-        </Pressable>
-      </View>
+      <StickySaveBar
+        onPress={handleSave}
+        isSaving={isSaving}
+      />
 
       {/* Time Picker Modal */}
       <DateTimePickerModal

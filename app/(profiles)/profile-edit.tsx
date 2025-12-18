@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { DatePickerField } from '@/components/DatePickerField';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { StickySaveBar } from '@/components/StickySaveBar';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useNotification } from '@/components/NotificationContext';
@@ -437,38 +438,14 @@ export default function ProfileEditScreen() {
         </Pressable>
       </Modal>
 
-      {/* Sticky Bottom Save Bar - One-handed UX */}
-      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background px-5 pb-8 pt-4">
-        <Pressable
-          onPress={handleSave}
-          disabled={isSaving || !nickname.trim()}
-          className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${
-            isSaving || !nickname.trim() ? 'bg-muted' : 'bg-accent'
-          }`}
-          style={{
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            elevation: 3,
-          }}>
-          <MaterialCommunityIcons
-            name="content-save"
-            size={22}
-            color={isSaving || !nickname.trim() ? '#999' : '#FFF'}
-          />
-          <Text
-            className={`text-lg font-bold ${
-              isSaving || !nickname.trim() ? 'text-muted-foreground' : 'text-white'
-            }`}>
-            {isSaving
-              ? t('common.saving')
-              : numericBabyId
-                ? t('common.saveChanges')
-                : t('common.continue')}
-          </Text>
-        </Pressable>
-      </View>
+      <StickySaveBar
+        onPress={handleSave}
+        isSaving={isSaving}
+        disabled={!nickname.trim()}
+        label={
+          numericBabyId ? t('common.saveChanges') : t('common.continue')
+        }
+      />
     </View>
   );
 }
