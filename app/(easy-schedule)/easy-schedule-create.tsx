@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -197,260 +199,267 @@ export default function EasyScheduleCreateScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background">
-      {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-4">
-        <Pressable
-          onPress={() => router.back()}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.close')}>
-          <Text className="text-base font-semibold text-accent">{t('common.close')}</Text>
-        </Pressable>
-        <Text
-          className="mx-3 flex-1 text-center text-xl font-bold text-foreground"
-          numberOfLines={1}
-          ellipsizeMode="tail">
-          {t('easySchedule.create.title')}
-        </Text>
-        <Pressable
-          onPress={handleSave}
-          disabled={mutation.isPending}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.save')}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+      className="bg-background">
+      <View className="flex-1 bg-background">
+        {/* Header */}
+        <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-4">
+          <Pressable
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}>
+            <Text className="text-base font-semibold text-accent">{t('common.close')}</Text>
+          </Pressable>
           <Text
-            className={`text-base font-semibold ${mutation.isPending ? 'text-muted-foreground' : 'text-primary'}`}>
-            {t('common.save')}
+            className="mx-3 flex-1 text-center text-xl font-bold text-foreground"
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {t('easySchedule.create.title')}
           </Text>
-        </Pressable>
-      </View>
-
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="p-5 pb-10 gap-4"
-        showsVerticalScrollIndicator={false}>
-        {/* Info Card */}
-        <Card className="rounded-lg border-info/20 bg-info/5">
-          <CardContent className="p-4">
-            <View className="flex-row gap-3">
-              <Ionicons name="information-circle" size={24} color={brandColors.colors.info} />
-              <View className="flex-1">
-                <Text className="mb-1 text-sm font-semibold text-foreground">
-                  {t('easySchedule.create.infoTitle')}
-                </Text>
-                <Text className="text-xs leading-5 text-muted-foreground">
-                  {t('easySchedule.create.infoDescription')}
-                </Text>
-              </View>
-            </View>
-          </CardContent>
-        </Card>
-
-        {/* Basic Information */}
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle>{t('easySchedule.create.basicInfo.title')}</CardTitle>
-          </CardHeader>
-          <CardContent className="gap-4">
-            <View>
-              <Label nativeID="formulaName">{t('easySchedule.create.basicInfo.name')}</Label>
-              <Input
-                placeholder={t('easySchedule.create.basicInfo.namePlaceholder')}
-                value={formulaName}
-                onChangeText={setFormulaName}
-                aria-labelledby="formulaName"
-              />
-              {errors.name && <Text className="text-sm text-destructive">{errors.name}</Text>}
-            </View>
-
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <Label nativeID="minWeeks">{t('easySchedule.create.basicInfo.minWeeks')}</Label>
-                <Input
-                  placeholder="0"
-                  value={minWeeks}
-                  onChangeText={setMinWeeks}
-                  keyboardType="number-pad"
-                  aria-labelledby="minWeeks"
-                />
-                {errors.minWeeks && (
-                  <Text className="text-sm text-destructive">{errors.minWeeks}</Text>
-                )}
-              </View>
-              <View className="flex-1">
-                <Label nativeID="maxWeeks">{t('easySchedule.create.basicInfo.maxWeeks')}</Label>
-                <Input
-                  placeholder={t('easySchedule.create.basicInfo.maxWeeksPlaceholder')}
-                  value={maxWeeks}
-                  onChangeText={setMaxWeeks}
-                  keyboardType="number-pad"
-                  aria-labelledby="maxWeeks"
-                />
-                {errors.maxWeeks && (
-                  <Text className="text-sm text-destructive">{errors.maxWeeks}</Text>
-                )}
-              </View>
-            </View>
-          </CardContent>
-        </Card>
-
-        {/* Cycle Phases */}
-        <Card className="rounded-lg">
-          <CardHeader>
-            <View className="flex-row items-center justify-between">
-              <CardTitle>{t('easySchedule.create.cycles.title')}</CardTitle>
-              <TouchableOpacity
-                onPress={addPhase}
-                className="flex-row items-center gap-1 rounded-md bg-primary px-3 py-2">
-                <Ionicons name="add" size={16} color={brandColors.colors.white} />
-                <Text className="text-xs font-semibold text-white">
-                  {t('easySchedule.create.cycles.add')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </CardHeader>
-          <CardContent className="gap-4">
-            <Text className="text-xs text-muted-foreground">
-              {t('easySchedule.create.cycles.subtitle')}
+          <Pressable
+            onPress={handleSave}
+            disabled={mutation.isPending}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.save')}>
+            <Text
+              className={`text-base font-semibold ${mutation.isPending ? 'text-muted-foreground' : 'text-primary'}`}>
+              {t('common.save')}
             </Text>
-
-            {phases.map((phase, index) => (
-              <Card key={index} className="rounded-lg border-border/50 bg-card">
-                <CardHeader>
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-base font-semibold text-foreground">
-                      {t('easySchedule.create.cycles.cycleNumber', {
-                        params: { number: index + 1 },
-                      })}
-                    </Text>
-                    <View className="flex-row items-center gap-3">
-                      <Text className="text-xs text-muted-foreground">
-                        {t('easySchedule.create.cycles.total')}:{' '}
-                        {formatDuration(calculateTotalCycle(phase))}
-                      </Text>
-                      {phases.length > 1 && (
-                        <TouchableOpacity onPress={() => removePhase(index)}>
-                          <Ionicons
-                            name="trash-outline"
-                            size={20}
-                            color={brandColors.colors.destructive}
-                          />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                </CardHeader>
-                <CardContent className="gap-3">
-                  <View className="flex-row gap-3">
-                    <View className="flex-1">
-                      <View className="mb-1.5 flex-row items-center gap-1">
-                        <Badge className="bg-accent">
-                          <Text className="font-semibold text-white">E</Text>
-                        </Badge>
-                        <Label className="text-xs">
-                          {t('easySchedule.create.cycles.eatLabel')}
-                        </Label>
-                      </View>
-                      <View className="flex-row items-center gap-2">
-                        <Input
-                          className="flex-1"
-                          placeholder="30"
-                          value={phase.eat}
-                          onChangeText={(value) => updatePhase(index, 'eat', value)}
-                          keyboardType="number-pad"
-                          aria-labelledby={`eat-${index}`}
-                        />
-                        <Text className="text-xs text-muted-foreground">min</Text>
-                      </View>
-                      {errors.phases?.[index]?.eat && (
-                        <Text className="text-xs text-destructive">{errors.phases[index].eat}</Text>
-                      )}
-                    </View>
-                    <View className="flex-1">
-                      <View className="mb-1.5 flex-row items-center gap-1">
-                        <Badge variant="secondary">
-                          <Text className="font-semibold">A</Text>
-                        </Badge>
-                        <Label className="text-xs">
-                          {t('easySchedule.create.cycles.activityLabel')}
-                        </Label>
-                      </View>
-                      <View className="flex-row items-center gap-2">
-                        <Input
-                          className="flex-1"
-                          placeholder="90"
-                          value={phase.activity}
-                          onChangeText={(value) => updatePhase(index, 'activity', value)}
-                          keyboardType="number-pad"
-                          aria-labelledby={`activity-${index}`}
-                        />
-                        <Text className="text-xs text-muted-foreground">min</Text>
-                      </View>
-                      {errors.phases?.[index]?.activity && (
-                        <Text className="text-xs text-destructive">
-                          {errors.phases[index].activity}
-                        </Text>
-                      )}
-                    </View>
-                    <View className="flex-1">
-                      <View className="mb-1.5 flex-row items-center gap-1">
-                        <Badge className="bg-mint">
-                          <Text className="font-semibold text-white">S</Text>
-                        </Badge>
-                        <Label className="text-xs">
-                          {t('easySchedule.create.cycles.sleepLabel')}
-                        </Label>
-                      </View>
-                      <View className="flex-row items-center gap-2">
-                        <Input
-                          className="flex-1"
-                          placeholder="120"
-                          value={phase.sleep}
-                          onChangeText={(value) => updatePhase(index, 'sleep', value)}
-                          keyboardType="number-pad"
-                          aria-labelledby={`sleep-${index}`}
-                        />
-                        <Text className="text-xs text-muted-foreground">min</Text>
-                      </View>
-                      {errors.phases?.[index]?.sleep && (
-                        <Text className="text-xs text-destructive">
-                          {errors.phases[index].sleep}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                </CardContent>
-              </Card>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Description */}
-        <Card className="rounded-lg">
-          <CardHeader>
-            <CardTitle>{t('easySchedule.create.description.title')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder={t('easySchedule.create.description.placeholder')}
-              multiline
-              numberOfLines={6}
-              className="min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-base text-foreground"
-              textAlignVertical="top"
-            />
-            <Text className="mt-2 text-xs text-muted-foreground">
-              {t('easySchedule.create.description.hint')}
-            </Text>
-          </CardContent>
-        </Card>
-      </ScrollView>
-
-      {mutation.isPending && (
-        <View className="absolute inset-0 items-center justify-center bg-background/80">
-          <ActivityIndicator size="large" color={brandColors.colors.primary} />
+          </Pressable>
         </View>
-      )}
-    </View>
+
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="p-5 pb-10 gap-4"
+          showsVerticalScrollIndicator={false}>
+          {/* Info Card */}
+          <Card className="rounded-lg border-info/20 bg-info/5">
+            <CardContent className="p-4">
+              <View className="flex-row gap-3">
+                <Ionicons name="information-circle" size={24} color={brandColors.colors.info} />
+                <View className="flex-1">
+                  <Text className="mb-1 text-sm font-semibold text-foreground">
+                    {t('easySchedule.create.infoTitle')}
+                  </Text>
+                  <Text className="text-xs leading-5 text-muted-foreground">
+                    {t('easySchedule.create.infoDescription')}
+                  </Text>
+                </View>
+              </View>
+            </CardContent>
+          </Card>
+
+          {/* Basic Information */}
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>{t('easySchedule.create.basicInfo.title')}</CardTitle>
+            </CardHeader>
+            <CardContent className="gap-4">
+              <View>
+                <Label nativeID="formulaName">{t('easySchedule.create.basicInfo.name')}</Label>
+                <Input
+                  placeholder={t('easySchedule.create.basicInfo.namePlaceholder')}
+                  value={formulaName}
+                  onChangeText={setFormulaName}
+                  aria-labelledby="formulaName"
+                />
+                {errors.name && <Text className="text-sm text-destructive">{errors.name}</Text>}
+              </View>
+
+              <View className="flex-row gap-3">
+                <View className="flex-1">
+                  <Label nativeID="minWeeks">{t('easySchedule.create.basicInfo.minWeeks')}</Label>
+                  <Input
+                    placeholder="0"
+                    value={minWeeks}
+                    onChangeText={setMinWeeks}
+                    keyboardType="number-pad"
+                    aria-labelledby="minWeeks"
+                  />
+                  {errors.minWeeks && (
+                    <Text className="text-sm text-destructive">{errors.minWeeks}</Text>
+                  )}
+                </View>
+                <View className="flex-1">
+                  <Label nativeID="maxWeeks">{t('easySchedule.create.basicInfo.maxWeeks')}</Label>
+                  <Input
+                    placeholder={t('easySchedule.create.basicInfo.maxWeeksPlaceholder')}
+                    value={maxWeeks}
+                    onChangeText={setMaxWeeks}
+                    keyboardType="number-pad"
+                    aria-labelledby="maxWeeks"
+                  />
+                  {errors.maxWeeks && (
+                    <Text className="text-sm text-destructive">{errors.maxWeeks}</Text>
+                  )}
+                </View>
+              </View>
+            </CardContent>
+          </Card>
+
+          {/* Cycle Phases */}
+          <Card className="rounded-lg">
+            <CardHeader>
+              <View className="flex-row items-center justify-between">
+                <CardTitle>{t('easySchedule.create.cycles.title')}</CardTitle>
+                <TouchableOpacity
+                  onPress={addPhase}
+                  className="flex-row items-center gap-1 rounded-md bg-primary px-3 py-2">
+                  <Ionicons name="add" size={16} color={brandColors.colors.white} />
+                  <Text className="text-xs font-semibold text-white">
+                    {t('easySchedule.create.cycles.add')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </CardHeader>
+            <CardContent className="gap-4">
+              <Text className="text-xs text-muted-foreground">
+                {t('easySchedule.create.cycles.subtitle')}
+              </Text>
+
+              {phases.map((phase, index) => (
+                <Card key={index} className="rounded-lg border-border/50 bg-card">
+                  <CardHeader>
+                    <View className="flex-row items-center justify-between">
+                      <Text className="text-base font-semibold text-foreground">
+                        {t('easySchedule.create.cycles.cycleNumber', {
+                          params: { number: index + 1 },
+                        })}
+                      </Text>
+                      <View className="flex-row items-center gap-3">
+                        <Text className="text-xs text-muted-foreground">
+                          {t('easySchedule.create.cycles.total')}:{' '}
+                          {formatDuration(calculateTotalCycle(phase))}
+                        </Text>
+                        {phases.length > 1 && (
+                          <TouchableOpacity onPress={() => removePhase(index)}>
+                            <Ionicons
+                              name="trash-outline"
+                              size={20}
+                              color={brandColors.colors.destructive}
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  </CardHeader>
+                  <CardContent className="gap-3">
+                    <View className="flex-row gap-3">
+                      <View className="flex-1">
+                        <View className="mb-1.5 flex-row items-center gap-1">
+                          <Badge className="bg-accent">
+                            <Text className="font-semibold text-white">E</Text>
+                          </Badge>
+                          <Label className="text-xs">
+                            {t('easySchedule.create.cycles.eatLabel')}
+                          </Label>
+                        </View>
+                        <View className="flex-row items-center gap-2">
+                          <Input
+                            className="flex-1"
+                            placeholder="30"
+                            value={phase.eat}
+                            onChangeText={(value) => updatePhase(index, 'eat', value)}
+                            keyboardType="number-pad"
+                            aria-labelledby={`eat-${index}`}
+                          />
+                          <Text className="text-xs text-muted-foreground">min</Text>
+                        </View>
+                        {errors.phases?.[index]?.eat && (
+                          <Text className="text-xs text-destructive">
+                            {errors.phases[index].eat}
+                          </Text>
+                        )}
+                      </View>
+                      <View className="flex-1">
+                        <View className="mb-1.5 flex-row items-center gap-1">
+                          <Badge variant="secondary">
+                            <Text className="font-semibold">A</Text>
+                          </Badge>
+                          <Label className="text-xs">
+                            {t('easySchedule.create.cycles.activityLabel')}
+                          </Label>
+                        </View>
+                        <View className="flex-row items-center gap-2">
+                          <Input
+                            className="flex-1"
+                            placeholder="90"
+                            value={phase.activity}
+                            onChangeText={(value) => updatePhase(index, 'activity', value)}
+                            keyboardType="number-pad"
+                            aria-labelledby={`activity-${index}`}
+                          />
+                          <Text className="text-xs text-muted-foreground">min</Text>
+                        </View>
+                        {errors.phases?.[index]?.activity && (
+                          <Text className="text-xs text-destructive">
+                            {errors.phases[index].activity}
+                          </Text>
+                        )}
+                      </View>
+                      <View className="flex-1">
+                        <View className="mb-1.5 flex-row items-center gap-1">
+                          <Badge className="bg-mint">
+                            <Text className="font-semibold text-white">S</Text>
+                          </Badge>
+                          <Label className="text-xs">
+                            {t('easySchedule.create.cycles.sleepLabel')}
+                          </Label>
+                        </View>
+                        <View className="flex-row items-center gap-2">
+                          <Input
+                            className="flex-1"
+                            placeholder="120"
+                            value={phase.sleep}
+                            onChangeText={(value) => updatePhase(index, 'sleep', value)}
+                            keyboardType="number-pad"
+                            aria-labelledby={`sleep-${index}`}
+                          />
+                          <Text className="text-xs text-muted-foreground">min</Text>
+                        </View>
+                        {errors.phases?.[index]?.sleep && (
+                          <Text className="text-xs text-destructive">
+                            {errors.phases[index].sleep}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
+                  </CardContent>
+                </Card>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Description */}
+          <Card className="rounded-lg">
+            <CardHeader>
+              <CardTitle>{t('easySchedule.create.description.title')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TextInput
+                value={description}
+                onChangeText={setDescription}
+                placeholder={t('easySchedule.create.description.placeholder')}
+                multiline
+                numberOfLines={6}
+                className="min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-base text-foreground"
+                textAlignVertical="top"
+              />
+              <Text className="mt-2 text-xs text-muted-foreground">
+                {t('easySchedule.create.description.hint')}
+              </Text>
+            </CardContent>
+          </Card>
+        </ScrollView>
+
+        {mutation.isPending && (
+          <View className="absolute inset-0 items-center justify-center bg-background/80">
+            <ActivityIndicator size="large" color={brandColors.colors.primary} />
+          </View>
+        )}
+      </View>
+    </KeyboardAvoidingView>
   );
 }

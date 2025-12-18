@@ -8,7 +8,6 @@ import { seedHabitDefinitions } from '@/database/habits';
 import {
   cancelStoredScheduledNotification,
   restoreScheduledNotifications,
-  restoreEasyScheduleReminders,
 } from '@/lib/notification-scheduler';
 import {
   setNotificationHandler,
@@ -63,23 +62,6 @@ export function MigrationCompleteHandler({ children }: { children: React.ReactNo
     restoreScheduledNotifications().catch((error) => {
       console.error('[MigrationCompleteHandler] Failed to restore scheduled notifications:', error);
     });
-
-    // Restore and reschedule EASY schedule reminders on app startup
-    // This ensures reminders are always scheduled for the configured number of days ahead
-    console.log('[MigrationCompleteHandler] Calling restoreEasyScheduleReminders');
-    restoreEasyScheduleReminders()
-      .then(() => {
-        console.log(
-          '[MigrationCompleteHandler] restoreEasyScheduleReminders completed successfully'
-        );
-      })
-      .catch((error) => {
-        console.error(
-          '[MigrationCompleteHandler] Failed to restore EASY schedule reminders:',
-          error
-        );
-        console.error('[MigrationCompleteHandler] Error stack:', error.stack);
-      });
 
     // Handle notification tap - navigate to appropriate screen
     const handleNotificationResponse = async (

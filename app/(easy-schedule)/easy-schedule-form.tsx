@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useState, useEffect } from 'react';
 
@@ -318,239 +320,250 @@ export default function EasyScheduleFormScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background">
-      {/* Header */}
-      <View className="flex-row items-center justify-between border-b border-border bg-card px-5 py-4">
-        <Pressable
-          onPress={() => router.back()}
-          className="p-1"
-          accessibilityRole="button"
-          accessibilityLabel={t('common.close')}>
-          <Ionicons name="close" size={28} color={brandColors.colors.black} />
-        </Pressable>
-        <Text className="flex-1 text-center text-lg font-semibold text-foreground">
-          {isEditable ? t('easySchedule.editTitle') : t('easySchedule.infoTitle')}
-        </Text>
-        <View className="flex-row items-center gap-2">
-          {isEditable && (
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={updateMutation.isPending}
-              accessibilityRole="button"
-              accessibilityLabel={t('common.save')}>
-              {updateMutation.isPending ? (
-                <ActivityIndicator size="small" color={brandColors.colors.primary} />
-              ) : (
-                <Ionicons name="checkmark" size={28} color={brandColors.colors.primary} />
-              )}
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            onPress={handleClone}
-            disabled={cloneMutation.isPending}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+      className="bg-background">
+      <View className="flex-1 bg-background">
+        {/* Header */}
+        <View className="flex-row items-center justify-between border-b border-border bg-card px-5 py-4">
+          <Pressable
+            onPress={() => router.back()}
+            className="p-1"
             accessibilityRole="button"
-            accessibilityLabel={t('easySchedule.cloneFormula')}>
-            <Ionicons
-              name="copy-outline"
-              size={24}
-              color={
-                cloneMutation.isPending ? brandColors.colors.secondary : brandColors.colors.primary
-              }
-            />
-          </TouchableOpacity>
-          {isCustomFormula && (
+            accessibilityLabel={t('common.close')}>
+            <Ionicons name="close" size={28} color={brandColors.colors.black} />
+          </Pressable>
+          <Text className="flex-1 text-center text-lg font-semibold text-foreground">
+            {isEditable ? t('easySchedule.editTitle') : t('easySchedule.infoTitle')}
+          </Text>
+          <View className="flex-row items-center gap-2">
+            {isEditable && (
+              <TouchableOpacity
+                onPress={handleSave}
+                disabled={updateMutation.isPending}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.save')}>
+                {updateMutation.isPending ? (
+                  <ActivityIndicator size="small" color={brandColors.colors.primary} />
+                ) : (
+                  <Ionicons name="checkmark" size={28} color={brandColors.colors.primary} />
+                )}
+              </TouchableOpacity>
+            )}
             <TouchableOpacity
-              onPress={handleDelete}
-              disabled={deleteMutation.isPending}
+              onPress={handleClone}
+              disabled={cloneMutation.isPending}
               accessibilityRole="button"
-              accessibilityLabel={t('common.delete')}>
+              accessibilityLabel={t('easySchedule.cloneFormula')}>
               <Ionicons
-                name="trash-outline"
+                name="copy-outline"
                 size={24}
                 color={
-                  deleteMutation.isPending
+                  cloneMutation.isPending
                     ? brandColors.colors.secondary
-                    : brandColors.colors.destructive
+                    : brandColors.colors.primary
                 }
               />
             </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      <ScrollView className="flex-1" contentContainerClassName="p-5">
-        {/* Basic Information Card */}
-        <Card className="mb-4 rounded-lg">
-          <CardHeader>
-            <CardTitle>{t('easySchedule.create.basicInfo.title')}</CardTitle>
-          </CardHeader>
-          <CardContent className="gap-4">
-            <View>
-              <Label nativeID="formulaName">{t('easySchedule.create.basicInfo.name')}</Label>
-              <Input
-                value={formulaName}
-                onChangeText={setFormulaName}
-                placeholder={t('easySchedule.create.basicInfo.namePlaceholder')}
-                editable={isEditable}
-                className={!isEditable ? 'opacity-60' : ''}
-              />
-            </View>
-
-            <View className="flex-row gap-4">
-              <View className="flex-1">
-                <Label nativeID="minWeeks">{t('easySchedule.create.basicInfo.minWeeks')}</Label>
-                <Input
-                  value={minWeeks}
-                  onChangeText={setMinWeeks}
-                  keyboardType="numeric"
-                  placeholder="0"
-                  editable={isEditable}
-                  className={!isEditable ? 'opacity-60' : ''}
+            {isCustomFormula && (
+              <TouchableOpacity
+                onPress={handleDelete}
+                disabled={deleteMutation.isPending}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.delete')}>
+                <Ionicons
+                  name="trash-outline"
+                  size={24}
+                  color={
+                    deleteMutation.isPending
+                      ? brandColors.colors.secondary
+                      : brandColors.colors.destructive
+                  }
                 />
-              </View>
-              <View className="flex-1">
-                <Label nativeID="maxWeeks">{t('easySchedule.create.basicInfo.maxWeeks')}</Label>
-                <Input
-                  value={maxWeeks}
-                  onChangeText={setMaxWeeks}
-                  keyboardType="numeric"
-                  placeholder={t('easySchedule.create.basicInfo.maxWeeksPlaceholder')}
-                  editable={isEditable}
-                  className={!isEditable ? 'opacity-60' : ''}
-                />
-              </View>
-            </View>
-          </CardContent>
-        </Card>
-
-        {/* Cycles Card */}
-        <Card className="mb-4 rounded-lg">
-          <CardHeader>
-            <View className="flex-row items-center justify-between">
-              <CardTitle>{t('easySchedule.create.cycles.title')}</CardTitle>
-              {isEditable && (
-                <TouchableOpacity onPress={addPhase}>
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={24}
-                    color={brandColors.colors.primary}
-                  />
-                </TouchableOpacity>
-              )}
-            </View>
-          </CardHeader>
-          <CardContent className="gap-4">
-            {phases.map((phase, index) => (
-              <View key={index} className="rounded-md border border-border p-3">
-                <View className="mb-2 flex-row items-center justify-between">
-                  <Text className="font-semibold text-foreground">
-                    {t('easySchedule.create.cycles.cycleNumber', { params: { number: index + 1 } })}
-                  </Text>
-                  <View className="flex-row items-center gap-2">
-                    <Badge variant="secondary">
-                      <Text className="text-xs">{formatDuration(calculateTotalCycle(phase))}</Text>
-                    </Badge>
-                    {isEditable && phases.length > 1 && (
-                      <TouchableOpacity onPress={() => removePhase(index)}>
-                        <Ionicons
-                          name="close-circle"
-                          size={20}
-                          color={brandColors.colors.destructive}
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-
-                <View className="gap-2">
-                  <View className="flex-row items-center gap-2">
-                    <Badge
-                      variant="default"
-                      className="bg-accent"
-                      style={{ backgroundColor: brandColors.colors.accent }}>
-                      <Text className="text-white">E</Text>
-                    </Badge>
-                    <Input
-                      value={phase.eat}
-                      onChangeText={(val) => updatePhase(index, 'eat', val)}
-                      keyboardType="numeric"
-                      placeholder="30"
-                      className="flex-1"
-                      editable={isEditable}
-                    />
-                    <Text className="text-sm text-muted-foreground">
-                      {t('easySchedule.create.cycles.minutes')}
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center gap-2">
-                    <Badge variant="secondary">
-                      <Text>A</Text>
-                    </Badge>
-                    <Input
-                      value={phase.activity}
-                      onChangeText={(val) => updatePhase(index, 'activity', val)}
-                      keyboardType="numeric"
-                      placeholder="90"
-                      className="flex-1"
-                      editable={isEditable}
-                    />
-                    <Text className="text-sm text-muted-foreground">
-                      {t('easySchedule.create.cycles.minutes')}
-                    </Text>
-                  </View>
-
-                  <View className="flex-row items-center gap-2">
-                    <Badge
-                      variant="default"
-                      className="bg-mint"
-                      style={{ backgroundColor: brandColors.colors.mint }}>
-                      <Text className="text-white">S</Text>
-                    </Badge>
-                    <Input
-                      value={phase.sleep}
-                      onChangeText={(val) => updatePhase(index, 'sleep', val)}
-                      keyboardType="numeric"
-                      placeholder="120"
-                      className="flex-1"
-                      editable={isEditable}
-                    />
-                    <Text className="text-sm text-muted-foreground">
-                      {t('easySchedule.create.cycles.minutes')}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Description Card */}
-        <Card className="mb-4 rounded-lg">
-          <CardHeader>
-            <CardTitle>{t('easySchedule.create.description.title')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder={t('easySchedule.create.description.placeholder')}
-              multiline
-              numberOfLines={6}
-              editable={isEditable}
-              className={`min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-base text-foreground ${!isEditable ? 'opacity-60' : ''}`}
-              textAlignVertical="top"
-            />
-            {isEditable && (
-              <Text className="mt-2 text-xs text-muted-foreground">
-                {t('easySchedule.create.description.hint')}
-              </Text>
+              </TouchableOpacity>
             )}
-          </CardContent>
-        </Card>
+          </View>
+        </View>
 
-        <View className="h-10" />
-      </ScrollView>
-    </View>
+        <ScrollView className="flex-1" contentContainerClassName="p-5">
+          {/* Basic Information Card */}
+          <Card className="mb-4 rounded-lg">
+            <CardHeader>
+              <CardTitle>{t('easySchedule.create.basicInfo.title')}</CardTitle>
+            </CardHeader>
+            <CardContent className="gap-4">
+              <View>
+                <Label nativeID="formulaName">{t('easySchedule.create.basicInfo.name')}</Label>
+                <Input
+                  value={formulaName}
+                  onChangeText={setFormulaName}
+                  placeholder={t('easySchedule.create.basicInfo.namePlaceholder')}
+                  editable={isEditable}
+                  className={!isEditable ? 'opacity-60' : ''}
+                />
+              </View>
+
+              <View className="flex-row gap-4">
+                <View className="flex-1">
+                  <Label nativeID="minWeeks">{t('easySchedule.create.basicInfo.minWeeks')}</Label>
+                  <Input
+                    value={minWeeks}
+                    onChangeText={setMinWeeks}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    editable={isEditable}
+                    className={!isEditable ? 'opacity-60' : ''}
+                  />
+                </View>
+                <View className="flex-1">
+                  <Label nativeID="maxWeeks">{t('easySchedule.create.basicInfo.maxWeeks')}</Label>
+                  <Input
+                    value={maxWeeks}
+                    onChangeText={setMaxWeeks}
+                    keyboardType="numeric"
+                    placeholder={t('easySchedule.create.basicInfo.maxWeeksPlaceholder')}
+                    editable={isEditable}
+                    className={!isEditable ? 'opacity-60' : ''}
+                  />
+                </View>
+              </View>
+            </CardContent>
+          </Card>
+
+          {/* Cycles Card */}
+          <Card className="mb-4 rounded-lg">
+            <CardHeader>
+              <View className="flex-row items-center justify-between">
+                <CardTitle>{t('easySchedule.create.cycles.title')}</CardTitle>
+                {isEditable && (
+                  <TouchableOpacity onPress={addPhase}>
+                    <Ionicons
+                      name="add-circle-outline"
+                      size={24}
+                      color={brandColors.colors.primary}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </CardHeader>
+            <CardContent className="gap-4">
+              {phases.map((phase, index) => (
+                <View key={index} className="rounded-md border border-border p-3">
+                  <View className="mb-2 flex-row items-center justify-between">
+                    <Text className="font-semibold text-foreground">
+                      {t('easySchedule.create.cycles.cycleNumber', {
+                        params: { number: index + 1 },
+                      })}
+                    </Text>
+                    <View className="flex-row items-center gap-2">
+                      <Badge variant="secondary">
+                        <Text className="text-xs">
+                          {formatDuration(calculateTotalCycle(phase))}
+                        </Text>
+                      </Badge>
+                      {isEditable && phases.length > 1 && (
+                        <TouchableOpacity onPress={() => removePhase(index)}>
+                          <Ionicons
+                            name="close-circle"
+                            size={20}
+                            color={brandColors.colors.destructive}
+                          />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+
+                  <View className="gap-2">
+                    <View className="flex-row items-center gap-2">
+                      <Badge
+                        variant="default"
+                        className="bg-accent"
+                        style={{ backgroundColor: brandColors.colors.accent }}>
+                        <Text className="text-white">E</Text>
+                      </Badge>
+                      <Input
+                        value={phase.eat}
+                        onChangeText={(val) => updatePhase(index, 'eat', val)}
+                        keyboardType="numeric"
+                        placeholder="30"
+                        className="flex-1"
+                        editable={isEditable}
+                      />
+                      <Text className="text-sm text-muted-foreground">
+                        {t('easySchedule.create.cycles.minutes')}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center gap-2">
+                      <Badge variant="secondary">
+                        <Text>A</Text>
+                      </Badge>
+                      <Input
+                        value={phase.activity}
+                        onChangeText={(val) => updatePhase(index, 'activity', val)}
+                        keyboardType="numeric"
+                        placeholder="90"
+                        className="flex-1"
+                        editable={isEditable}
+                      />
+                      <Text className="text-sm text-muted-foreground">
+                        {t('easySchedule.create.cycles.minutes')}
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center gap-2">
+                      <Badge
+                        variant="default"
+                        className="bg-mint"
+                        style={{ backgroundColor: brandColors.colors.mint }}>
+                        <Text className="text-white">S</Text>
+                      </Badge>
+                      <Input
+                        value={phase.sleep}
+                        onChangeText={(val) => updatePhase(index, 'sleep', val)}
+                        keyboardType="numeric"
+                        placeholder="120"
+                        className="flex-1"
+                        editable={isEditable}
+                      />
+                      <Text className="text-sm text-muted-foreground">
+                        {t('easySchedule.create.cycles.minutes')}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Description Card */}
+          <Card className="mb-4 rounded-lg">
+            <CardHeader>
+              <CardTitle>{t('easySchedule.create.description.title')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TextInput
+                value={description}
+                onChangeText={setDescription}
+                placeholder={t('easySchedule.create.description.placeholder')}
+                multiline
+                numberOfLines={6}
+                editable={isEditable}
+                className={`min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-base text-foreground ${!isEditable ? 'opacity-60' : ''}`}
+                textAlignVertical="top"
+              />
+              {isEditable && (
+                <Text className="mt-2 text-xs text-muted-foreground">
+                  {t('easySchedule.create.description.hint')}
+                </Text>
+              )}
+            </CardContent>
+          </Card>
+
+          <View className="h-10" />
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
   );
 }

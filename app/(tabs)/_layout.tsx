@@ -22,6 +22,7 @@ export default function TabLayout() {
           tabBarActiveTintColor: NAV_THEME[colorScheme].colors.text,
           headerShown: false,
           tabBarButton: HapticTab,
+          tabBarHideOnKeyboard: true,
           tabBarStyle: {
             height: 60 + insets.bottom,
             paddingBottom: 10 + insets.bottom,

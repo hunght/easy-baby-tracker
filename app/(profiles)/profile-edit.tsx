@@ -6,7 +6,15 @@ import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, View } from 'react-native';
+import {
+  Alert,
+  Modal,
+  Pressable,
+  ScrollView,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { z } from 'zod';
 
 import { DatePickerField } from '@/components/DatePickerField';
@@ -284,166 +292,171 @@ export default function ProfileEditScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background">
-      <ModalHeader
-        title={numericBabyId ? t('profileEdit.editTitle') : t('profileEdit.createTitle')}
-        closeLabel={t('common.close')}
-      />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+      className="bg-background">
+      <View className="flex-1 bg-background">
+        <ModalHeader
+          title={numericBabyId ? t('profileEdit.editTitle') : t('profileEdit.createTitle')}
+          closeLabel={t('common.close')}
+        />
 
-      <ScrollView
-        contentContainerClassName="px-5 pb-28 pt-4"
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
-        {/* Photo Section */}
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowPhotoModal(true);
-          }}
-          disabled={photoProcessing}
-          className="mb-6 items-center">
-          <View className="relative">
-            <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-muted/30">
-              {avatarUri ? (
-                <Image
-                  key={avatarUri}
-                  source={{ uri: avatarUri }}
-                  style={{ width: 96, height: 96 }}
-                  contentFit="cover"
-                  cachePolicy="none"
-                />
-              ) : (
-                <Image source={require('@/assets/images/icon.png')} className="h-20 w-20" />
-              )}
+        <ScrollView
+          contentContainerClassName="px-5 pb-28 pt-4"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          {/* Photo Section */}
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowPhotoModal(true);
+            }}
+            disabled={photoProcessing}
+            className="mb-6 items-center">
+            <View className="relative">
+              <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-muted/30">
+                {avatarUri ? (
+                  <Image
+                    key={avatarUri}
+                    source={{ uri: avatarUri }}
+                    style={{ width: 96, height: 96 }}
+                    contentFit="cover"
+                    cachePolicy="none"
+                  />
+                ) : (
+                  <Image source={require('@/assets/images/icon.png')} className="h-20 w-20" />
+                )}
+              </View>
+              {/* Camera badge */}
+              <View className="absolute -bottom-1 -right-1 h-8 w-8 items-center justify-center rounded-full bg-accent">
+                <MaterialCommunityIcons name="camera" size={16} color="#FFF" />
+              </View>
             </View>
-            {/* Camera badge */}
-            <View className="absolute -bottom-1 -right-1 h-8 w-8 items-center justify-center rounded-full bg-accent">
-              <MaterialCommunityIcons name="camera" size={16} color="#FFF" />
-            </View>
+            <Text className="mt-3 text-base font-semibold text-accent">
+              {avatarUri ? t('profileEdit.changePhoto') : t('common.addPhoto')}
+            </Text>
+          </Pressable>
+
+          {/* Nickname */}
+          <View className="mb-5">
+            <Label className="mb-2 text-base font-semibold text-muted-foreground">
+              {t('common.nickname')}
+            </Label>
+            <Input
+              value={nickname}
+              onChangeText={setNickname}
+              placeholder={t('common.nicknamePlaceholder')}
+              className="h-12 text-base"
+            />
           </View>
-          <Text className="mt-3 text-base font-semibold text-accent">
-            {avatarUri ? t('profileEdit.changePhoto') : t('common.addPhoto')}
+
+          {/* Gender - Full width 3-segment toggle */}
+          <View className="mb-5">
+            <Label className="mb-2 text-base font-semibold text-muted-foreground">
+              {t('common.gender')}
+            </Label>
+            <ToggleGroup
+              type="single"
+              value={gender}
+              onValueChange={handleGenderChange}
+              variant="outline"
+              className="w-full">
+              {genderSegments.map((segment, index) => (
+                <ToggleGroupItem
+                  key={segment.key}
+                  value={segment.key}
+                  isFirst={index === 0}
+                  isLast={index === genderSegments.length - 1}
+                  className="flex-1"
+                  aria-label={t(segment.labelKey)}>
+                  <Text className="text-base font-semibold">{t(segment.labelKey)}</Text>
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </View>
+
+          {/* Birthdate - Full row tappable */}
+          <View className="mb-5">
+            <DatePickerField
+              label={t('common.birthdate')}
+              value={birthDate}
+              onChange={setBirthDate}
+            />
+          </View>
+
+          {/* Due Date - Full row tappable */}
+          <View className="mb-5">
+            <DatePickerField label={t('common.dueDate')} value={dueDate} onChange={setDueDate} />
+          </View>
+
+          {/* Info Text */}
+          <Text className="text-sm leading-relaxed text-muted-foreground">
+            {t('profileEdit.info')}
           </Text>
-        </Pressable>
+        </ScrollView>
 
-        {/* Nickname */}
-        <View className="mb-5">
-          <Label className="mb-2 text-base font-semibold text-muted-foreground">
-            {t('common.nickname')}
-          </Label>
-          <Input
-            value={nickname}
-            onChangeText={setNickname}
-            placeholder={t('common.nicknamePlaceholder')}
-            className="h-12 text-base"
-          />
-        </View>
-
-        {/* Gender - Full width 3-segment toggle */}
-        <View className="mb-5">
-          <Label className="mb-2 text-base font-semibold text-muted-foreground">
-            {t('common.gender')}
-          </Label>
-          <ToggleGroup
-            type="single"
-            value={gender}
-            onValueChange={handleGenderChange}
-            variant="outline"
-            className="w-full">
-            {genderSegments.map((segment, index) => (
-              <ToggleGroupItem
-                key={segment.key}
-                value={segment.key}
-                isFirst={index === 0}
-                isLast={index === genderSegments.length - 1}
-                className="flex-1"
-                aria-label={t(segment.labelKey)}>
-                <Text className="text-base font-semibold">{t(segment.labelKey)}</Text>
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </View>
-
-        {/* Birthdate - Full row tappable */}
-        <View className="mb-5">
-          <DatePickerField
-            label={t('common.birthdate')}
-            value={birthDate}
-            onChange={setBirthDate}
-          />
-        </View>
-
-        {/* Due Date - Full row tappable */}
-        <View className="mb-5">
-          <DatePickerField label={t('common.dueDate')} value={dueDate} onChange={setDueDate} />
-        </View>
-
-        {/* Info Text */}
-        <Text className="text-sm leading-relaxed text-muted-foreground">
-          {t('profileEdit.info')}
-        </Text>
-      </ScrollView>
-
-      {/* Photo Selection Modal - Bottom Sheet Style */}
-      <Modal
-        visible={showPhotoModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowPhotoModal(false)}>
-        <Pressable
-          className="flex-1 justify-end bg-black/50"
-          onPress={() => setShowPhotoModal(false)}>
-          <Pressable onPress={(e) => e.stopPropagation()}>
-            <View className="rounded-t-3xl bg-card px-5 pb-10 pt-6">
-              <Text className="mb-4 text-center text-lg font-bold text-foreground">
-                {t('profileEdit.photoOptions')}
-              </Text>
-
-              <Pressable
-                onPress={handleTakePhoto}
-                className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-accent">
-                <MaterialCommunityIcons name="camera" size={22} color="#FFF" />
-                <Text className="text-base font-semibold text-white">{t('diary.takePhoto')}</Text>
-              </Pressable>
-
-              <Pressable
-                onPress={handleChoosePhoto}
-                className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-muted">
-                <MaterialCommunityIcons name="image-multiple" size={22} color="#666" />
-                <Text className="text-base font-semibold text-foreground">
-                  {t('diary.choosePhoto')}
+        {/* Photo Selection Modal - Bottom Sheet Style */}
+        <Modal
+          visible={showPhotoModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowPhotoModal(false)}>
+          <Pressable
+            className="flex-1 justify-end bg-black/50"
+            onPress={() => setShowPhotoModal(false)}>
+            <Pressable onPress={(e) => e.stopPropagation()}>
+              <View className="rounded-t-3xl bg-card px-5 pb-10 pt-6">
+                <Text className="mb-4 text-center text-lg font-bold text-foreground">
+                  {t('profileEdit.photoOptions')}
                 </Text>
-              </Pressable>
 
-              {avatarUri && (
                 <Pressable
-                  onPress={handleRemovePhoto}
-                  className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-red-500/10">
-                  <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
-                  <Text className="text-base font-semibold text-red-500">
-                    {t('diary.removePhoto')}
+                  onPress={handleTakePhoto}
+                  className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-accent">
+                  <MaterialCommunityIcons name="camera" size={22} color="#FFF" />
+                  <Text className="text-base font-semibold text-white">{t('diary.takePhoto')}</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleChoosePhoto}
+                  className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-muted">
+                  <MaterialCommunityIcons name="image-multiple" size={22} color="#666" />
+                  <Text className="text-base font-semibold text-foreground">
+                    {t('diary.choosePhoto')}
                   </Text>
                 </Pressable>
-              )}
 
-              <Pressable
-                onPress={() => setShowPhotoModal(false)}
-                className="h-14 items-center justify-center rounded-xl">
-                <Text className="text-base font-semibold text-muted-foreground">
-                  {t('common.cancel')}
-                </Text>
-              </Pressable>
-            </View>
+                {avatarUri && (
+                  <Pressable
+                    onPress={handleRemovePhoto}
+                    className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-red-500/10">
+                    <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
+                    <Text className="text-base font-semibold text-red-500">
+                      {t('diary.removePhoto')}
+                    </Text>
+                  </Pressable>
+                )}
+
+                <Pressable
+                  onPress={() => setShowPhotoModal(false)}
+                  className="h-14 items-center justify-center rounded-xl">
+                  <Text className="text-base font-semibold text-muted-foreground">
+                    {t('common.cancel')}
+                  </Text>
+                </Pressable>
+              </View>
+            </Pressable>
           </Pressable>
-        </Pressable>
-      </Modal>
+        </Modal>
 
-      <StickySaveBar
-        onPress={handleSave}
-        isSaving={isSaving}
-        disabled={!nickname.trim()}
-        label={numericBabyId ? t('common.saveChanges') : t('common.continue')}
-      />
-    </View>
+        <StickySaveBar
+          onPress={handleSave}
+          isSaving={isSaving}
+          disabled={!nickname.trim()}
+          label={numericBabyId ? t('common.saveChanges') : t('common.continue')}
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 }

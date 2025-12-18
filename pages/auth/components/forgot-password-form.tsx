@@ -7,7 +7,7 @@ import { useSignIn } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
 import { useLocalSearchParams } from 'expo-router/build/hooks';
 import * as React from 'react';
-import { View } from 'react-native';
+import { View, KeyboardAvoidingView, Platform } from 'react-native';
 
 export function ForgotPasswordForm() {
   const { email: emailParam = '' } = useLocalSearchParams<{ email?: string }>();
@@ -42,39 +42,43 @@ export function ForgotPasswordForm() {
   };
 
   return (
-    <View className="gap-6">
-      <Card className="border-border/0 shadow-none sm:border-border sm:shadow-sm sm:shadow-black/5">
-        <CardHeader>
-          <CardTitle className="text-center text-xl sm:text-left">Forgot password?</CardTitle>
-          <CardDescription className="text-center sm:text-left">
-            Enter your email to reset your password
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="gap-6">
-          <View className="gap-6">
-            <View className="gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                defaultValue={email}
-                placeholder="m@example.com"
-                keyboardType="email-address"
-                autoComplete="email"
-                autoCapitalize="none"
-                onChangeText={setEmail}
-                onSubmitEditing={onSubmit}
-                returnKeyType="send"
-              />
-              {error.email ? (
-                <Text className="text-sm font-medium text-destructive">{error.email}</Text>
-              ) : null}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}>
+      <View className="gap-6">
+        <Card className="border-border/0 shadow-none sm:border-border sm:shadow-sm sm:shadow-black/5">
+          <CardHeader>
+            <CardTitle className="text-center text-xl sm:text-left">Forgot password?</CardTitle>
+            <CardDescription className="text-center sm:text-left">
+              Enter your email to reset your password
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="gap-6">
+            <View className="gap-6">
+              <View className="gap-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  defaultValue={email}
+                  placeholder="m@example.com"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  onChangeText={setEmail}
+                  onSubmitEditing={onSubmit}
+                  returnKeyType="send"
+                />
+                {error.email ? (
+                  <Text className="text-sm font-medium text-destructive">{error.email}</Text>
+                ) : null}
+              </View>
+              <Button className="w-full" onPress={onSubmit}>
+                <Text>Reset your password</Text>
+              </Button>
             </View>
-            <Button className="w-full" onPress={onSubmit}>
-              <Text>Reset your password</Text>
-            </Button>
-          </View>
-        </CardContent>
-      </Card>
-    </View>
+          </CardContent>
+        </Card>
+      </View>
+    </KeyboardAvoidingView>
   );
 }

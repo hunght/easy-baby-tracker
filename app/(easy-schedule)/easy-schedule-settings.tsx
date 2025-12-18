@@ -12,11 +12,12 @@ import { StickySaveBar } from '@/components/StickySaveBar';
 import { DateTimePickerModal } from '@/components/DateTimePickerModal';
 import { BABY_PROFILE_QUERY_KEY } from '@/constants/query-keys';
 import { getActiveBabyProfile, updateBabyFirstWakeTime } from '@/database/baby-profile';
-import { getAppState, setAppState } from '@/database/app-state';
 import {
-  getScheduledNotifications,
-  deleteScheduledNotificationByNotificationId,
-} from '@/database/scheduled-notifications';
+  getAppState,
+  getEasyReminderState,
+  setAppState,
+  setEasyReminderState,
+} from '@/database/app-state';
 import { getFormulaRuleByDate, deleteDaySpecificRule } from '@/database/easy-formula-rules';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { useNotification } from '@/components/NotificationContext';
@@ -25,10 +26,7 @@ import {
   rescheduleEasyReminders,
   type EasyScheduleReminderLabels,
 } from '@/lib/notification-scheduler';
-import { cancelScheduledNotificationAsync } from '@/lib/notifications-wrapper';
-import { safeParseEasyScheduleNotificationData } from '@/lib/json-parse';
 
-const EASY_REMINDER_ENABLED_KEY = 'easyScheduleReminderEnabled';
 const EASY_REMINDER_ADVANCE_MINUTES_KEY = 'easyScheduleReminderAdvanceMinutes';
 
 const ADVANCE_OPTIONS = [5, 10, 15, 30];
@@ -76,8 +74,8 @@ export default function EasyScheduleSettingsScreen() {
       await deleteDaySpecificRule(babyProfile.id, today);
 
       // Reschedule reminders if enabled
-      const reminderEnabledValue = await getAppState(EASY_REMINDER_ENABLED_KEY);
-      if (reminderEnabledValue === 'true') {
+      const reminderEnabledValue = await getEasyReminderState();
+      if (reminderEnabledValue) {
         const advanceMinutesValue = await getAppState(EASY_REMINDER_ADVANCE_MINUTES_KEY);
         const advanceMinutes = advanceMinutesValue ? parseInt(advanceMinutesValue, 10) : 5;
 
@@ -145,8 +143,8 @@ export default function EasyScheduleSettingsScreen() {
         setFirstWakeTime(babyProfile.firstWakeTime);
       }
 
-      const reminderEnabledValue = await getAppState(EASY_REMINDER_ENABLED_KEY);
-      if (reminderEnabledValue === 'true') {
+      const reminderEnabledValue = await getEasyReminderState();
+      if (reminderEnabledValue) {
         setReminderEnabled(true);
       }
 
@@ -207,11 +205,7 @@ export default function EasyScheduleSettingsScreen() {
         );
       }
 
-      // Save reminder settings
-      await setAppState(EASY_REMINDER_ENABLED_KEY, reminderEnabled ? 'true' : 'false');
-      await setAppState(EASY_REMINDER_ADVANCE_MINUTES_KEY, String(reminderAdvanceMinutes));
-
-      // Handle reminders
+      // Check permissions before enabling reminders
       if (reminderEnabled) {
         const hasPermission = await requestNotificationPermissions();
         if (!hasPermission) {
@@ -222,51 +216,12 @@ export default function EasyScheduleSettingsScreen() {
           setIsSaving(false);
           return;
         }
-
-        if (!babyProfile) {
-          console.error('Cannot schedule reminders: no baby profile');
-          setIsSaving(false);
-          return;
-        }
-
-        const labels: EasyScheduleReminderLabels = {
-          eat: t('easySchedule.activityLabels.eat'),
-          activity: t('easySchedule.activityLabels.activity'),
-          sleep: (napNumber: number) =>
-            t('easySchedule.activityLabels.sleep').replace('{{number}}', String(napNumber)),
-          yourTime: t('easySchedule.activityLabels.yourTime'),
-          reminderTitle: (params) =>
-            t('easySchedule.reminder.title', {
-              params: { emoji: params.emoji, activity: params.activity },
-            }),
-          reminderBody: (params) =>
-            t('easySchedule.reminder.body', {
-              params: {
-                activity: params.activity,
-                time: params.time,
-                advance: params.advance,
-              },
-            }),
-        };
-
-        await rescheduleEasyReminders(babyProfile, firstWakeTime, reminderAdvanceMinutes, labels);
-      } else {
-        // Cancel all EASY reminders if disabled
-        const existingNotifications = await getScheduledNotifications({
-          notificationType: 'sleep',
-        });
-        for (const notification of existingNotifications) {
-          const data = safeParseEasyScheduleNotificationData(notification.data);
-          if (data && data.activityType) {
-            try {
-              await cancelScheduledNotificationAsync(notification.notificationId);
-              await deleteScheduledNotificationByNotificationId(notification.notificationId);
-            } catch (error) {
-              console.error('Error canceling notification:', error);
-            }
-          }
-        }
       }
+
+      // Save reminder settings (rescheduling/canceling is handled in setAppState)
+      // Set advance minutes first so it's available when rescheduling
+      await setAppState(EASY_REMINDER_ADVANCE_MINUTES_KEY, String(reminderAdvanceMinutes));
+      await setEasyReminderState(reminderEnabled);
 
       showNotification(t('common.saveSuccess'), 'success');
       setTimeout(() => router.back(), 500);
