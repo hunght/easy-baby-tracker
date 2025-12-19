@@ -130,8 +130,11 @@ export async function seedPredefinedFormulas(): Promise<void> {
  * Convert DB record to EasyFormulaRule
  */
 function dbToFormulaRule(record: FormulaRuleSelect): EasyFormulaRule {
+  // record.id is already a string, EasyFormulaRuleId is a string type alias
+  // TypeScript accepts this assignment without assertion since both are strings
+  const id: EasyFormulaRuleId = record.id;
   return {
-    id: record.id as EasyFormulaRuleId,
+    id,
     minWeeks: record.minWeeks,
     maxWeeks: record.maxWeeks,
     labelKey: record.labelKey ?? record.labelText ?? '',
@@ -491,12 +494,17 @@ function calculateDurationMinutes(startTime: string, endTime: string): number {
  * Adjust schedule phase timing and update formula rule
  * Gets current formula from baby profile, calculates new duration, and saves updated phases
  */
-export async function adjustSchedulePhaseTiming(
-  babyId: number,
-  itemOrder: number,
-  newStartTime: string,
-  newEndTime: string
-): Promise<string> {
+export async function adjustSchedulePhaseTiming({
+  babyId,
+  itemOrder,
+  newStartTime,
+  newEndTime,
+}: {
+  babyId: number;
+  itemOrder: number;
+  newStartTime: string;
+  newEndTime: string;
+}): Promise<string> {
   // Get baby profile and verify formula is selected
   const babyProfile = await getActiveBabyProfile();
   if (!babyProfile || babyProfile.id !== babyId) {

@@ -5,7 +5,7 @@ import { Platform, Text, View } from 'react-native';
 import { DATABASE_NAME, expoDb, getExpoDb } from '@/database/db';
 
 // Database backup and recovery utilities
-async function backupDatabase(): Promise<string | null> {
+export async function backupDatabase(): Promise<string | null> {
   if (Platform.OS === 'web') {
     // Web uses IndexedDB, backup not supported via file system
     console.warn('Database backup not supported on web platform');
@@ -48,30 +48,139 @@ async function backupDatabase(): Promise<string | null> {
   }
 }
 
-async function resetDatabase(): Promise<void> {
-  const dbInstance = Platform.OS === 'web' ? getExpoDb() : expoDb;
+export async function resetDatabase(): Promise<void> {
+  if (Platform.OS === 'web') {
+    // On web, we need to delete the IndexedDB database and reinitialize
+    try {
+      console.log('Resetting database on web...');
 
-  try {
-    console.log('Resetting database...');
+      // First, try to drop all tables to clear data
+      try {
+        const dbInstance = getExpoDb();
 
-    // Get all table names and drop them
-    const tables = await dbInstance.getAllAsync<{ name: string }>(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
-    );
+        // Get all table names and drop them
+        const tables = await dbInstance.getAllAsync<{ name: string }>(
+          `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
+        );
 
-    for (const table of tables) {
-      if (table.name !== '__drizzle_migrations') {
-        await dbInstance.execAsync(`DROP TABLE IF EXISTS "${table.name}"`);
-        console.log(`Dropped table: ${table.name}`);
+        for (const table of tables) {
+          try {
+            await dbInstance.execAsync(`DROP TABLE IF EXISTS "${table.name}"`);
+            console.log(`Dropped table: ${table.name}`);
+          } catch (dropError) {
+            console.warn(`Failed to drop table ${table.name}:`, dropError);
+          }
+        }
+
+        // Also reset migrations table
+        try {
+          await dbInstance.execAsync(`DROP TABLE IF EXISTS __drizzle_migrations`);
+          console.log('Dropped migrations table');
+        } catch (migrationError) {
+          console.warn('Failed to drop migrations table:', migrationError);
+        }
+
+        // Close the connection
+        await dbInstance.closeAsync();
+        console.log('Database connection closed');
+      } catch (closeError) {
+        console.warn('Error closing database:', closeError);
       }
-    }
 
-    // Also reset migrations table to rerun all migrations
-    await dbInstance.execAsync(`DROP TABLE IF EXISTS __drizzle_migrations`);
-    console.log('Database reset complete');
-  } catch (error) {
-    console.error('Failed to reset database:', error);
-    throw error;
+      // Wait a bit for connections to close
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      // Delete IndexedDB database
+      return new Promise((resolve) => {
+        if (typeof indexedDB === 'undefined') {
+          console.error('IndexedDB not available');
+          // Fallback: just reload
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              window.location.reload();
+            }, 500);
+          }
+          resolve();
+          return;
+        }
+
+        console.log(`Attempting to delete IndexedDB database: ${DATABASE_NAME}`);
+        const deleteRequest = indexedDB.deleteDatabase(DATABASE_NAME);
+
+        deleteRequest.onsuccess = () => {
+          console.log('IndexedDB database deleted successfully');
+          // Reload the page to reinitialize everything
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              console.log('Reloading page...');
+              window.location.reload();
+            }, 500);
+          }
+          resolve();
+        };
+
+        deleteRequest.onerror = (event) => {
+          console.error('Failed to delete IndexedDB database:', event);
+          // Still try to reload - the database might be partially cleared
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              console.log('Reloading page despite deletion error...');
+              window.location.reload();
+            }, 500);
+          }
+          resolve(); // Resolve instead of reject to allow reload
+        };
+
+        deleteRequest.onblocked = () => {
+          console.warn(
+            'IndexedDB deletion blocked - database may be in use, will retry after reload'
+          );
+          // Still try to reload - next time it should work
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              console.log('Reloading page (deletion was blocked)...');
+              window.location.reload();
+            }, 1000);
+          }
+          resolve();
+        };
+      });
+    } catch (error) {
+      console.error('Failed to reset database on web:', error);
+      // Fallback: try to reload anyway
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }
+      throw error;
+    }
+  } else {
+    // Native platforms: drop all tables
+    const dbInstance = expoDb;
+
+    try {
+      console.log('Resetting database...');
+
+      // Get all table names and drop them
+      const tables = await dbInstance.getAllAsync<{ name: string }>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
+      );
+
+      for (const table of tables) {
+        if (table.name !== '__drizzle_migrations') {
+          await dbInstance.execAsync(`DROP TABLE IF EXISTS "${table.name}"`);
+          console.log(`Dropped table: ${table.name}`);
+        }
+      }
+
+      // Also reset migrations table to rerun all migrations
+      await dbInstance.execAsync(`DROP TABLE IF EXISTS __drizzle_migrations`);
+      console.log('Database reset complete');
+    } catch (error) {
+      console.error('Failed to reset database:', error);
+      throw error;
+    }
   }
 }
 
@@ -100,6 +209,8 @@ export function MigrationRecoveryHandler({
           const backupPath = await backupDatabase();
           if (backupPath) {
             console.log(`Backup created at: ${backupPath}`);
+          } else {
+            console.warn('Backup failed or not supported, proceeding with reset anyway');
           }
 
           // Reset database

@@ -1,8 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import { useKeyboardVisible } from '@/hooks/use-keyboard-visible';
 
 type StickySaveBarProps = {
   onPress: () => void;
@@ -24,6 +26,13 @@ export function StickySaveBar({
   containerClassName = 'bg-background',
 }: StickySaveBarProps) {
   const { t } = useLocalization();
+  const isKeyboardVisible = useKeyboardVisible();
+
+  // Hide the bar when keyboard is visible
+  if (isKeyboardVisible) {
+    return null;
+  }
+
   const isDisabled = isSaving || disabled;
   const displayLabel = isSaving
     ? (savingLabel ?? label ?? t('common.saving'))
@@ -32,25 +41,10 @@ export function StickySaveBar({
   return (
     <View
       className={`absolute bottom-0 left-0 right-0 border-t border-border ${containerClassName} px-5 pb-8 pt-4`}>
-      <Pressable
-        onPress={onPress}
-        disabled={isDisabled}
-        className={`h-14 flex-row items-center justify-center gap-2 rounded-2xl ${
-          isDisabled ? 'bg-muted' : 'bg-accent'
-        }`}
-        style={{
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 3,
-        }}>
+      <Button onPress={onPress} disabled={isDisabled} variant="default" size="lg">
         <MaterialCommunityIcons name={icon} size={22} color={isDisabled ? '#999' : '#FFF'} />
-        <Text
-          className={`text-lg font-bold ${isDisabled ? 'text-muted-foreground' : 'text-white'}`}>
-          {displayLabel}
-        </Text>
-      </Pressable>
+        <Text>{displayLabel}</Text>
+      </Button>
     </View>
   );
 }

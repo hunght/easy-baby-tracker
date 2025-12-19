@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, View } from 'react-native';
+import { Platform, Pressable, ScrollView, View, KeyboardAvoidingView } from 'react-native';
 
 import { Input } from '@/components/ui/input';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -265,139 +265,146 @@ export default function SleepScreen() {
   const pickerValue = pickerTarget === 'start' ? startTime : (endTime ?? new Date());
 
   return (
-    <View className="flex-1 bg-background">
-      <ModalHeader
-        title={isEditing ? t('sleep.editTitle') : t('sleep.title')}
-        closeLabel={t('common.close')}
-      />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={{ flex: 1 }}
+      className="bg-background">
+      <View className="flex-1 bg-background">
+        <ModalHeader
+          title={isEditing ? t('sleep.editTitle') : t('sleep.title')}
+          closeLabel={t('common.close')}
+        />
 
-      <ScrollView
-        contentContainerClassName="p-5 pb-28 gap-6"
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
-        {/* Sleep Type Selection */}
-        <ToggleGroup
-          type="single"
-          value={sleepKind}
-          onValueChange={handleSleepKindChange}
-          variant="outline"
-          className="w-full">
-          {sleepKinds.map((kind, index) => (
-            <ToggleGroupItem
-              key={kind.key}
-              value={kind.key}
-              isFirst={index === 0}
-              isLast={index === sleepKinds.length - 1}
-              className="flex-1 flex-row items-center justify-center"
-              aria-label={t(kind.labelKey)}>
-              <MaterialCommunityIcons
-                name={kind.icon}
-                size={22}
-                color={sleepKind === kind.key ? brandColors.colors.white : '#666666'}
-              />
-              <Text className="text-base">{t(kind.labelKey)}</Text>
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <ScrollView
+          contentContainerClassName="p-5 pb-28 gap-6"
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          {/* Sleep Type Selection */}
+          <ToggleGroup
+            type="single"
+            value={sleepKind}
+            onValueChange={handleSleepKindChange}
+            variant="outline"
+            className="w-full">
+            {sleepKinds.map((kind, index) => (
+              <ToggleGroupItem
+                key={kind.key}
+                value={kind.key}
+                isFirst={index === 0}
+                isLast={index === sleepKinds.length - 1}
+                className="flex-1 flex-row items-center justify-center"
+                aria-label={t(kind.labelKey)}>
+                <MaterialCommunityIcons
+                  name={kind.icon}
+                  size={22}
+                  color={sleepKind === kind.key ? brandColors.colors.white : '#666666'}
+                />
+                <Text className="text-base">{t(kind.labelKey)}</Text>
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
 
-        {/* Timer Section - Large button for one-handed use */}
-        {!isEditing && (
-          <View className="items-center gap-5 rounded-2xl border border-border bg-card p-6">
-            <Text className="text-5xl font-bold text-foreground">
-              {formatClock(resolvedDuration)}
-            </Text>
-            <Pressable
-              className={`h-[88px] w-[88px] items-center justify-center rounded-full ${
-                timerActive ? 'bg-red-500' : 'bg-lavender'
-              }`}
-              onPress={handleTimerPress}
-              style={{
-                shadowColor: timerActive ? '#EF4444' : brandColors.colors.lavender,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 6,
-              }}>
-              <MaterialCommunityIcons
-                name={timerActive ? 'pause' : 'play'}
-                size={40}
-                color="#FFF"
-              />
-            </Pressable>
-            <Text className="text-center text-sm text-muted-foreground">
-              {t(timerActive ? 'sleep.timer.stop' : 'sleep.timer.start')}
-            </Text>
-          </View>
-        )}
-
-        {/* Time Settings Card */}
-        <View className="gap-4 rounded-2xl border border-border bg-card p-4">
-          {/* Start Time */}
-          <Pressable
-            onPress={() => openPicker('start')}
-            disabled={timerActive}
-            className={`flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-4 ${timerActive ? 'opacity-60' : ''}`}>
-            <View>
-              <Text className="text-sm font-medium text-muted-foreground">
-                {t('common.starts')}
+          {/* Timer Section - Large button for one-handed use */}
+          {!isEditing && (
+            <View className="items-center gap-5 rounded-2xl border border-border bg-card p-6">
+              <Text className="text-5xl font-bold text-foreground">
+                {formatClock(resolvedDuration)}
               </Text>
-              <Text className="mt-1 text-lg font-semibold text-foreground">
-                {formatDateTime(startTime)}
+              <Pressable
+                className={`h-[88px] w-[88px] items-center justify-center rounded-full ${
+                  timerActive ? 'bg-red-500' : 'bg-lavender'
+                }`}
+                onPress={handleTimerPress}
+                style={{
+                  shadowColor: timerActive ? '#EF4444' : brandColors.colors.lavender,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
+                }}>
+                <MaterialCommunityIcons
+                  name={timerActive ? 'pause' : 'play'}
+                  size={40}
+                  color="#FFF"
+                />
+              </Pressable>
+              <Text className="text-center text-sm text-muted-foreground">
+                {t(timerActive ? 'sleep.timer.stop' : 'sleep.timer.start')}
               </Text>
             </View>
-            <MaterialCommunityIcons name="clock-edit-outline" size={24} color="#666" />
-          </Pressable>
+          )}
 
-          {/* End Time */}
-          <View className="flex-row items-center gap-2">
+          {/* Time Settings Card */}
+          <View className="gap-4 rounded-2xl border border-border bg-card p-4">
+            {/* Start Time */}
             <Pressable
-              onPress={() => openPicker('end')}
-              className="flex-1 flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-4">
+              onPress={() => openPicker('start')}
+              disabled={timerActive}
+              className={`flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-4 ${timerActive ? 'opacity-60' : ''}`}>
               <View>
-                <Text className="text-sm font-medium text-muted-foreground">{t('sleep.ends')}</Text>
+                <Text className="text-sm font-medium text-muted-foreground">
+                  {t('common.starts')}
+                </Text>
                 <Text className="mt-1 text-lg font-semibold text-foreground">
-                  {endTime ? formatDateTime(endTime) : t('sleep.unset')}
+                  {formatDateTime(startTime)}
                 </Text>
               </View>
               <MaterialCommunityIcons name="clock-edit-outline" size={24} color="#666" />
             </Pressable>
-            {endTime && !timerActive && (
+
+            {/* End Time */}
+            <View className="flex-row items-center gap-2">
               <Pressable
-                onPress={clearEndTime}
-                className="h-14 w-14 items-center justify-center rounded-xl bg-red-500/20">
-                <MaterialCommunityIcons name="close" size={24} color="#EF4444" />
+                onPress={() => openPicker('end')}
+                className="flex-1 flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-4">
+                <View>
+                  <Text className="text-sm font-medium text-muted-foreground">
+                    {t('sleep.ends')}
+                  </Text>
+                  <Text className="mt-1 text-lg font-semibold text-foreground">
+                    {endTime ? formatDateTime(endTime) : t('sleep.unset')}
+                  </Text>
+                </View>
+                <MaterialCommunityIcons name="clock-edit-outline" size={24} color="#666" />
               </Pressable>
-            )}
+              {endTime && !timerActive && (
+                <Pressable
+                  onPress={clearEndTime}
+                  className="h-14 w-14 items-center justify-center rounded-xl bg-red-500/20">
+                  <MaterialCommunityIcons name="close" size={24} color="#EF4444" />
+                </Pressable>
+              )}
+            </View>
+
+            {/* Duration */}
+            <View className="flex-row items-center justify-between px-1">
+              <Text className="text-base font-medium text-muted-foreground">
+                {t('common.duration')}
+              </Text>
+              <Text className="text-xl font-bold text-accent">{formatClock(resolvedDuration)}</Text>
+            </View>
           </View>
 
-          {/* Duration */}
-          <View className="flex-row items-center justify-between px-1">
-            <Text className="text-base font-medium text-muted-foreground">
-              {t('common.duration')}
-            </Text>
-            <Text className="text-xl font-bold text-accent">{formatClock(resolvedDuration)}</Text>
-          </View>
-        </View>
+          {/* Notes */}
+          <Input
+            className="min-h-[100px]"
+            value={notes}
+            onChangeText={setNotes}
+            placeholder={t('common.notesPlaceholder')}
+            multiline
+            textAlignVertical="top"
+          />
+        </ScrollView>
 
-        {/* Notes */}
-        <Input
-          className="min-h-[100px]"
-          value={notes}
-          onChangeText={setNotes}
-          placeholder={t('common.notesPlaceholder')}
-          multiline
-          textAlignVertical="top"
+        <DateTimePickerModal
+          visible={!!pickerTarget}
+          value={pickerValue}
+          onClose={closePicker}
+          onChange={handlePickerChange}
         />
-      </ScrollView>
 
-      <DateTimePickerModal
-        visible={!!pickerTarget}
-        value={pickerValue}
-        onClose={closePicker}
-        onChange={handlePickerChange}
-      />
-
-      <StickySaveBar onPress={handleSave} isSaving={isSaving} />
-    </View>
+        <StickySaveBar onPress={handleSave} isSaving={isSaving} />
+      </View>
+    </KeyboardAvoidingView>
   );
 }

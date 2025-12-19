@@ -157,7 +157,12 @@ export default function PhaseEditScreen() {
         throw new Error('Missing required data');
       }
 
-      return await adjustSchedulePhaseTiming(babyProfile.id, order, startTimeValue, endTimeValue);
+      return await adjustSchedulePhaseTiming({
+        babyId: babyProfile.id,
+        itemOrder: order,
+        newStartTime: startTimeValue,
+        newEndTime: endTimeValue,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });

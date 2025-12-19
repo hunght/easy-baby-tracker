@@ -1,10 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 
 import { Text } from '@/components/ui/text';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -18,14 +18,9 @@ import {
   setAppState,
   setEasyReminderState,
 } from '@/database/app-state';
-import { getFormulaRuleByDate, deleteDaySpecificRule } from '@/database/easy-formula-rules';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { useNotification } from '@/components/NotificationContext';
-import {
-  requestNotificationPermissions,
-  rescheduleEasyReminders,
-  type EasyScheduleReminderLabels,
-} from '@/lib/notification-scheduler';
+import { requestNotificationPermissions } from '@/lib/notification-scheduler';
 
 const EASY_REMINDER_ADVANCE_MINUTES_KEY = 'easyScheduleReminderAdvanceMinutes';
 
@@ -48,93 +43,6 @@ export default function EasyScheduleSettingsScreen() {
     queryFn: getActiveBabyProfile,
     staleTime: 30 * 1000,
   });
-
-  // Get today's date
-  const today = useMemo(() => {
-    const now = new Date();
-    return now.toISOString().split('T')[0];
-  }, []);
-
-  // Check if there's a day-specific rule for today
-  const { data: todayCustomRule } = useQuery({
-    queryKey: ['formulaRule', 'date', babyProfile?.id, today],
-    queryFn: () => getFormulaRuleByDate(babyProfile!.id, today),
-    enabled: !!babyProfile?.id,
-    staleTime: 30 * 1000,
-  });
-
-  const hasCustomRuleToday = !!todayCustomRule;
-
-  // Mutation to reset custom rule for today
-  const resetCustomRuleMutation = useMutation({
-    mutationFn: async () => {
-      if (!babyProfile?.id) {
-        throw new Error('Baby profile not found');
-      }
-      await deleteDaySpecificRule(babyProfile.id, today);
-
-      // Reschedule reminders if enabled
-      const reminderEnabledValue = await getEasyReminderState();
-      if (reminderEnabledValue) {
-        const advanceMinutesValue = await getAppState(EASY_REMINDER_ADVANCE_MINUTES_KEY);
-        const advanceMinutes = advanceMinutesValue ? parseInt(advanceMinutesValue, 10) : 5;
-
-        const labels: EasyScheduleReminderLabels = {
-          eat: t('easySchedule.activityLabels.eat'),
-          activity: t('easySchedule.activityLabels.activity'),
-          sleep: (napNumber: number) =>
-            t('easySchedule.activityLabels.sleep').replace('{{number}}', String(napNumber)),
-          yourTime: t('easySchedule.activityLabels.yourTime'),
-          reminderTitle: (params) =>
-            t('easySchedule.reminder.title', {
-              params: { emoji: params.emoji, activity: params.activity },
-            }),
-          reminderBody: (params) =>
-            t('easySchedule.reminder.body', {
-              params: {
-                activity: params.activity,
-                time: params.time,
-                advance: params.advance,
-              },
-            }),
-        };
-
-        await rescheduleEasyReminders(babyProfile, firstWakeTime, advanceMinutes, labels);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ['formulaRule', 'date', babyProfile?.id, today],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['timeAdjustments', babyProfile?.id, today],
-      });
-      showNotification(t('easySchedule.settings.customRuleReset'), 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to reset custom rule:', error);
-      showNotification(t('common.saveError'), 'error');
-    },
-  });
-
-  const handleResetCustomRule = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      t('easySchedule.settings.resetCustomRuleTitle'),
-      t('easySchedule.settings.resetCustomRuleMessage'),
-      [
-        {
-          text: t('common.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('common.reset'),
-          style: 'destructive',
-          onPress: () => resetCustomRuleMutation.mutate(),
-        },
-      ]
-    );
-  };
 
   // Load settings
   useEffect(() => {
@@ -263,38 +171,6 @@ export default function EasyScheduleSettingsScreen() {
             <MaterialCommunityIcons name="chevron-right" size={24} color="#999" />
           </Pressable>
         </View>
-
-        {/* Custom Rule Reset Section */}
-        {hasCustomRuleToday && (
-          <View className="mb-6">
-            <Text className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {t('easySchedule.settings.customSchedule')}
-            </Text>
-            <View className="rounded-2xl border border-orange-500/30 bg-orange-500/5 p-4">
-              <View className="mb-3 flex-row items-start gap-3">
-                <View className="h-10 w-10 items-center justify-center rounded-xl bg-orange-500/20">
-                  <MaterialCommunityIcons name="calendar-edit" size={22} color="#F97316" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-base font-semibold text-foreground">
-                    {t('easySchedule.settings.customRuleActive')}
-                  </Text>
-                  <Text className="mt-1 text-sm text-muted-foreground">
-                    {t('easySchedule.settings.customRuleDescription')}
-                  </Text>
-                </View>
-              </View>
-              <Pressable
-                onPress={handleResetCustomRule}
-                disabled={resetCustomRuleMutation.isPending}
-                className="h-12 items-center justify-center rounded-xl border border-orange-500/50 bg-orange-500/10">
-                <Text className="text-base font-semibold text-orange-600">
-                  {t('easySchedule.settings.resetToOriginal')}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
 
         {/* Reminder Settings Section */}
         <View className="mb-6">
