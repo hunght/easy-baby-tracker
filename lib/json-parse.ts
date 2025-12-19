@@ -71,12 +71,15 @@ export function safeParseEasyScheduleNotificationData(
 
 /**
  * Zod schema for EasyCyclePhase array
+ * Supports the new phase structure with optional fields and eatActivity
  */
 const easyCyclePhaseArraySchema = z.array(
   z.object({
-    eat: z.number(),
-    activity: z.number(),
+    eat: z.number().optional(),
+    activity: z.number().optional(),
+    eatActivity: z.number().optional(),
     sleep: z.number(),
+    combined: z.boolean().optional(),
   })
 );
 
@@ -85,9 +88,13 @@ const easyCyclePhaseArraySchema = z.array(
  * @param jsonString - The JSON string containing phases array
  * @returns Validated phases array or empty array if parsing fails
  */
-export function safeParseEasyCyclePhases(
-  jsonString: string | null | undefined
-): { eat: number; activity: number; sleep: number }[] {
+export function safeParseEasyCyclePhases(jsonString: string | null | undefined): {
+  eat?: number;
+  activity?: number;
+  eatActivity?: number;
+  sleep: number;
+  combined?: boolean;
+}[] {
   const result = safeParseJson(jsonString, easyCyclePhaseArraySchema);
   return result ?? [];
 }

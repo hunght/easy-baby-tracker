@@ -20,11 +20,11 @@ export async function seedPredefinedFormulas(): Promise<void> {
       description: 'easySchedule.formulas.easy3.description',
       // 4 naps + night sleep: E 45m, A 15m, S varies (2h, 2h, 2h, 45m, 12h night)
       phases: JSON.stringify([
-        { eat: 45, activity: 15, sleep: 120 },
-        { eat: 45, activity: 15, sleep: 120 },
-        { eat: 45, activity: 15, sleep: 120 },
-        { eat: 45, activity: 15, sleep: 45 },
-        { eat: 0, activity: 75, sleep: 12 * 60 },
+        { eat: 30, activity: 30, sleep: 120 },
+        { eat: 30, activity: 30, sleep: 120 },
+        { eat: 30, activity: 30, sleep: 120 },
+        { eat: 30, activity: 30, sleep: 45 },
+        { eatActivity: 75, sleep: 12 * 60 },
       ]),
     },
     {
@@ -41,11 +41,11 @@ export async function seedPredefinedFormulas(): Promise<void> {
       // Cycle 4: 17:00 - 18:30 (1.5h) | E 30, A 30, S 30
       // Night sleep: 12h
       phases: JSON.stringify([
-        { eat: 45, activity: 45, sleep: 120 },
-        { eat: 45, activity: 45, sleep: 120 },
-        { eat: 45, activity: 45, sleep: 90 },
+        { eat: 30, activity: 60, sleep: 120 },
+        { eat: 30, activity: 60, sleep: 120 },
+        { eat: 30, activity: 60, sleep: 90 },
         { eat: 30, activity: 30, sleep: 30 },
-        { eat: 0, activity: 75, sleep: 12 * 60 },
+        { eatActivity: 75, sleep: 12 * 60 },
       ]),
     },
     {
@@ -61,10 +61,10 @@ export async function seedPredefinedFormulas(): Promise<void> {
       // Cycle 3: 15:00 - 17:30 (2.5h) | E.A. 2h, S.Y. 30m (catnap)
       // Cycle 4: 17:30 - 19:00 | Optional feed, bedtime routine
       phases: JSON.stringify([
-        { eat: 45, activity: 75, sleep: 120 },
-        { eat: 45, activity: 75, sleep: 120 },
-        { eat: 45, activity: 75, sleep: 30 },
-        { eat: 30, activity: 60, sleep: 0 },
+        { eat: 30, activity: 90, sleep: 120 },
+        { eat: 30, activity: 90, sleep: 120 },
+        { eat: 30, activity: 90, sleep: 30 },
+        { eatActivity: 90, sleep: 12 * 60 },
       ]),
     },
     {
@@ -81,10 +81,10 @@ export async function seedPredefinedFormulas(): Promise<void> {
       // Cycle 3: 15:00 - 18:00 (3h) | E.A. 3h wake (4h to bedtime)
       // Cycle 4: 18:00 - 19:00 | Bedtime routine (bath, feed, sleep)
       phases: JSON.stringify([
-        { eat: 45, activity: 75, sleep: 120 },
-        { eat: 45, activity: 135, sleep: 60 },
-        { eat: 45, activity: 135, sleep: 0 },
-        { eat: 30, activity: 30, sleep: 0 },
+        { eat: 30, activity: 90, sleep: 120 },
+        { eat: 30, activity: 150, sleep: 60 },
+        { eat: 30, activity: 150, sleep: 0 },
+        { eatActivity: 30, sleep: 12.5 * 60 },
       ]),
     },
     {
@@ -102,10 +102,10 @@ export async function seedPredefinedFormulas(): Promise<void> {
       // 18:00: E dinner, bedtime routine
       // 19:00: Night sleep 10-12h
       phases: JSON.stringify([
-        { eat: 30, activity: 270, sleep: 0 },
+        { eat: 30, activity: 210, sleep: 0 },
         { eat: 30, activity: 30, sleep: 120 },
         { eat: 30, activity: 210, sleep: 0 },
-        { eat: 30, activity: 60, sleep: 0 },
+        { eat: 30, activity: 30, sleep: 12 * 60 },
       ]),
     },
   ];

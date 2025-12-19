@@ -1,4 +1,4 @@
-export type EasyScheduleActivityType = 'E' | 'A' | 'S' | 'Y';
+export type EasyScheduleActivityType = 'E' | 'A' | 'E.A' | 'S' | 'Y';
 
 export type EasyScheduleItem = {
   activityType: EasyScheduleActivityType;
@@ -12,15 +12,19 @@ export type EasyScheduleItem = {
 export type EasyScheduleLabels = {
   eat: string;
   activity: string;
+  eatAndActivity?: string; // Optional label for combined E.A phase
   sleep: (napNumber: number) => string;
   yourTime: string;
 };
 
 // Each cycle represents one EASY block: Eat -> Activity -> Sleep (Y overlaps with S)
+// If both eat > 0 and activity > 0, can create combined E.A phase (baby can eat and play based on needs)
 export type EasyCyclePhase = {
-  eat: number; // duration in minutes
-  activity: number; // duration in minutes
+  eat?: number; // duration in minutes (optional, 0 to skip, or combine with activity for E.A)
+  activity?: number; // duration in minutes (optional if eatActivity is used)
+  eatActivity?: number; // duration in minutes for E.A phase (creates combined eat and activity phase)
   sleep: number; // duration in minutes
+  combined?: boolean; // if true and both eat > 0 and activity > 0, create E.A instead of separate E and A
 };
 
 // Formula rule ID type - matches database IDs
@@ -85,45 +89,84 @@ export function generateEasySchedule(
   options.phases.forEach((phase, index) => {
     const napNumber = index + 1;
 
-    // E - Eat
-    items.push({
-      activityType: 'E',
-      startTime: currentTime,
-      durationMinutes: phase.eat,
-      order: order++,
-      label: options.labels.eat,
-    });
-    currentTime = addMinutes(currentTime, phase.eat);
+    // Handle eatActivity - creates E.A type phase
+    if (phase.eatActivity !== undefined && phase.eatActivity > 0) {
+      // E.A - Combined eat and activity phase
+      items.push({
+        activityType: 'E.A',
+        startTime: currentTime,
+        durationMinutes: phase.eatActivity,
+        order: order++,
+        label:
+          options.labels.eatAndActivity || `${options.labels.eat} & ${options.labels.activity}`,
+      });
+      currentTime = addMinutes(currentTime, phase.eatActivity);
+    } else {
+      // Check if we should create combined E.A phase
+      const eat = phase.eat ?? 0;
+      const activity = phase.activity ?? 0;
+      const shouldCombine = phase.combined && eat > 0 && activity > 0;
 
-    // A - Activity
-    items.push({
-      activityType: 'A',
-      startTime: currentTime,
-      durationMinutes: phase.activity,
-      order: order++,
-      label: options.labels.activity,
-    });
-    currentTime = addMinutes(currentTime, phase.activity);
+      if (shouldCombine) {
+        // E.A - Combined Eat and Activity (baby can do both based on needs)
+        const combinedDuration = eat + activity;
+        items.push({
+          activityType: 'E.A',
+          startTime: currentTime,
+          durationMinutes: combinedDuration,
+          order: order++,
+          label:
+            options.labels.eatAndActivity || `${options.labels.eat} & ${options.labels.activity}`,
+        });
+        currentTime = addMinutes(currentTime, combinedDuration);
+      } else {
+        // E - Eat (skip if eat = 0 or undefined)
+        if (eat > 0) {
+          items.push({
+            activityType: 'E',
+            startTime: currentTime,
+            durationMinutes: eat,
+            order: order++,
+            label: options.labels.eat,
+          });
+          currentTime = addMinutes(currentTime, eat);
+        }
 
-    // S - Sleep
-    items.push({
-      activityType: 'S',
-      startTime: currentTime,
-      durationMinutes: phase.sleep,
-      order: order++,
-      label: options.labels.sleep(napNumber),
-    });
+        // A - Activity (only if eatActivity is not used)
+        if (activity > 0) {
+          items.push({
+            activityType: 'A',
+            startTime: currentTime,
+            durationMinutes: activity,
+            order: order++,
+            label: options.labels.activity,
+          });
+          currentTime = addMinutes(currentTime, activity);
+        }
+      }
+    }
 
-    // Y - Your Time (overlaps with Sleep)
-    items.push({
-      activityType: 'Y',
-      startTime: currentTime,
-      durationMinutes: phase.sleep,
-      order: order++,
-      label: options.labels.yourTime,
-    });
+    // S - Sleep (skip if sleep = 0)
+    if (phase.sleep > 0) {
+      items.push({
+        activityType: 'S',
+        startTime: currentTime,
+        durationMinutes: phase.sleep,
+        order: order++,
+        label: options.labels.sleep(napNumber),
+      });
 
-    currentTime = addMinutes(currentTime, phase.sleep);
+      // Y - Your Time (overlaps with Sleep)
+      items.push({
+        activityType: 'Y',
+        startTime: currentTime,
+        durationMinutes: phase.sleep,
+        order: order++,
+        label: options.labels.yourTime,
+      });
+
+      currentTime = addMinutes(currentTime, phase.sleep);
+    }
   });
 
   return items;

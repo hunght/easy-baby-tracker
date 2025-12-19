@@ -288,6 +288,7 @@ export async function rescheduleEasyReminders(
         const activityEmojis: Record<string, string> = {
           E: '🍼',
           A: '🧸',
+          'E.A': '🍼🧸',
           S: '😴',
         };
         const emoji = activityEmojis[item.activityType] || '📅';

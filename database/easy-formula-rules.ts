@@ -221,7 +221,7 @@ export async function cloneFormulaRuleForDate(
   babyId: number,
   sourceRuleId: string,
   date: string, // YYYY-MM-DD format
-  phases: { eat: number; activity: number; sleep: number }[]
+  phases: EasyCyclePhase[]
 ): Promise<string> {
   // Get the source rule as raw database record
   const sourceRecords = await db

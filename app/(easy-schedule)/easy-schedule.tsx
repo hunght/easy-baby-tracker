@@ -163,7 +163,17 @@ export default function EasyScheduleScreen() {
     let currentGroup: EasyScheduleItem[] = [];
 
     scheduleItems.forEach((item) => {
-      if (item.activityType === 'E' && currentGroup.length > 0) {
+      // Start a new group when:
+      // 1. We encounter an E or E.A item and there's already a group (new cycle with eating/combined)
+      // 2. We encounter an A item and the last item is Y (previous cycle ended, this A starts a new cycle)
+      const lastItem = currentGroup[currentGroup.length - 1];
+      const cycleEnded = lastItem?.activityType === 'Y';
+
+      const shouldStartNewGroup =
+        ((item.activityType === 'E' || item.activityType === 'E.A') && currentGroup.length > 0) ||
+        (item.activityType === 'A' && currentGroup.length > 0 && cycleEnded);
+
+      if (shouldStartNewGroup) {
         groups.push({
           number: groups.length + 1,
           items: currentGroup,
@@ -229,7 +239,12 @@ export default function EasyScheduleScreen() {
         )}
 
         {groupedSchedule.map((group, _groupIndex) => {
-          const phases = group.items.filter((item) => item.activityType !== 'Y');
+          // Filter out Y items and S items with 0 duration (sleep = 0)
+          const phases = group.items.filter(
+            (item) =>
+              item.activityType !== 'Y' &&
+              !(item.activityType === 'S' && item.durationMinutes === 0)
+          );
           // Calculate baseMinutes for this group using the first phase's actual start time
           // This ensures adjusted schedules are displayed correctly
           const firstPhase = phases[0];

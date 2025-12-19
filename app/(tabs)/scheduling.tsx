@@ -45,7 +45,9 @@ export default function SchedulingScreen() {
   } = useQuery<ScheduledNotificationRecord[]>({
     queryKey: SCHEDULED_NOTIFICATIONS_QUERY_KEY,
     queryFn: () => getActiveScheduledNotifications(),
+    enabled: !!babyId,
     staleTime: 15 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch habit reminders
@@ -59,6 +61,7 @@ export default function SchedulingScreen() {
     queryFn: () => (babyId ? getBabyHabitsWithReminders(babyId) : []),
     enabled: !!babyId,
     staleTime: 15 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const isLoading = isLoadingNotifications || isLoadingHabits;

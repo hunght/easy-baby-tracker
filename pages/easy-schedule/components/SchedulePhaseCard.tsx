@@ -48,6 +48,8 @@ export function SchedulePhaseCard({
         const label = t('easySchedule.activityLabels.activity');
         return getUppercaseWord(label) || 'PLAY';
       }
+      case 'E.A':
+        return 'EAT & PLAY';
       case 'S': {
         const label = t('easySchedule.activityLabels.sleep').replace('{{number}}', '');
         return getUppercaseWord(label) || 'SLEEP';
@@ -65,6 +67,8 @@ export function SchedulePhaseCard({
         return '🍼';
       case 'A':
         return '🧸';
+      case 'E.A':
+        return '🍼🧸';
       case 'S':
         return '😴';
       case 'Y':
@@ -78,12 +82,14 @@ export function SchedulePhaseCard({
     const lightMap: Record<string, string> = {
       E: '#FFF2F6',
       A: '#EBF8F1',
+      'E.A': '#F0F9FF', // Light blue for combined
       S: '#EFF3FF',
     };
 
     const darkMap: Record<string, string> = {
       E: 'rgba(255, 138, 184, 0.15)',
       A: 'rgba(127, 227, 204, 0.15)',
+      'E.A': 'rgba(59, 130, 246, 0.15)', // Blue for combined
       S: 'rgba(91, 127, 255, 0.15)',
     };
 

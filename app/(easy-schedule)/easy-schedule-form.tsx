@@ -106,8 +106,8 @@ export default function EasyScheduleFormScreen() {
 
     // Process phases - phases are already typed as EasyCyclePhase[] from dbToFormulaRule
     const processedPhases = formulaRule.phases.map((p) => ({
-      eat: p.eat.toString(),
-      activity: p.activity.toString(),
+      eat: (p.eat ?? 0).toString(),
+      activity: (p.activity ?? 0).toString(),
       sleep: p.sleep.toString(),
     }));
     setPhases(processedPhases);

@@ -47,7 +47,7 @@ function formatDuration(minutes: number): string {
   return `${mins}m`;
 }
 
-type ActivityType = 'E' | 'A' | 'S' | 'Y';
+type ActivityType = 'E' | 'A' | 'E.A' | 'S' | 'Y';
 
 function getActivityStyle(activityType: ActivityType) {
   switch (activityType) {
@@ -55,6 +55,8 @@ function getActivityStyle(activityType: ActivityType) {
       return { icon: 'silverware-fork-knife' as const, color: '#F97316', bg: 'bg-orange-500/10' };
     case 'A':
       return { icon: 'play-circle' as const, color: '#3B82F6', bg: 'bg-blue-500/10' };
+    case 'E.A':
+      return { icon: 'food-variant' as const, color: '#3B82F6', bg: 'bg-blue-500/10' };
     case 'S':
       return { icon: 'moon-waning-crescent' as const, color: '#8B5CF6', bg: 'bg-purple-500/10' };
     default:
@@ -81,6 +83,7 @@ export default function PhaseEditScreen() {
   const activityType: ActivityType =
     activityTypeRaw === 'E' ||
     activityTypeRaw === 'A' ||
+    activityTypeRaw === 'E.A' ||
     activityTypeRaw === 'S' ||
     activityTypeRaw === 'Y'
       ? activityTypeRaw
@@ -180,9 +183,13 @@ export default function PhaseEditScreen() {
           ? t('easySchedule.activityLabels.eat')
           : activityType === 'A'
             ? t('easySchedule.activityLabels.activity')
-            : activityType === 'S'
-              ? t('easySchedule.activityLabels.sleep').replace('{{number}}', '')
-              : t('easySchedule.activityLabels.yourTime');
+            : activityType === 'E.A'
+              ? t('easySchedule.activityLabels.eatAndActivity', {
+                  defaultValue: `${t('easySchedule.activityLabels.eat')} & ${t('easySchedule.activityLabels.activity')}`,
+                })
+              : activityType === 'S'
+                ? t('easySchedule.activityLabels.sleep').replace('{{number}}', '')
+                : t('easySchedule.activityLabels.yourTime');
 
       showNotification(
         t('easySchedule.phaseModal.adjustmentSuccess', {
