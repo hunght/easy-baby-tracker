@@ -1,18 +1,20 @@
+// This file is used via React Native's platform-specific file resolution
+// When importing MigrationHandler, React Native automatically picks up .web.tsx on web
+
 import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 import { useDrizzleStudio } from 'expo-drizzle-studio-plugin';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
-import * as FileSystem from 'expo-file-system/legacy';
 
-import { db, expoDb, DATABASE_NAME } from '@/database/db';
+import { getDb, getExpoDb, DATABASE_NAME } from '@/database/db';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { MigrationCompleteHandler } from './MigrationCompleteHandler';
 import migrations from '../../drizzle/migrations';
 
-// Migration timeout in milliseconds (30 seconds for native)
-const MIGRATION_TIMEOUT = 30000;
+// Migration timeout in milliseconds (10 seconds for web)
+const MIGRATION_TIMEOUT = 10000;
 
 // Set to true to simulate migration failure for testing recovery flow
 const SIMULATE_MIGRATION_FAILURE = process.env.EXPO_PUBLIC_SIMULATE_MIGRATION_FAILURE === 'true';
@@ -20,68 +22,117 @@ const SIMULATE_MIGRATION_FAILURE = process.env.EXPO_PUBLIC_SIMULATE_MIGRATION_FA
 // Query key for migrations
 const MIGRATIONS_QUERY_KEY = ['migrations'] as const;
 
-// Database backup and recovery utilities for native platforms
+// Database backup and recovery utilities for web
 async function backupDatabase(): Promise<string | null> {
-  try {
-    const documentDir = FileSystem.documentDirectory;
-    if (!documentDir) {
-      console.error('Document directory not available');
-      return null;
-    }
-
-    const dbDir = `${documentDir}SQLite/`;
-    const dbPath = `${dbDir}${DATABASE_NAME}`;
-    const dbInfo = await FileSystem.getInfoAsync(dbPath);
-
-    if (!dbInfo.exists) {
-      console.warn('Database file does not exist, nothing to backup');
-      return null;
-    }
-
-    // Create backups directory if it doesn't exist
-    const backupsDir = `${documentDir}database-backups/`;
-    const backupsDirInfo = await FileSystem.getInfoAsync(backupsDir);
-    if (!backupsDirInfo.exists) {
-      await FileSystem.makeDirectoryAsync(backupsDir, { intermediates: true });
-    }
-
-    // Create backup with timestamp
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupPath = `${backupsDir}${DATABASE_NAME}.backup.${timestamp}`;
-    await FileSystem.copyAsync({ from: dbPath, to: backupPath });
-
-    console.log(`Database backed up to: ${backupPath}`);
-    return backupPath;
-  } catch (error) {
-    console.error('Failed to backup database:', error);
-    return null;
-  }
+  // Web uses IndexedDB, backup not supported via file system
+  console.warn('Database backup not supported on web platform');
+  return null;
 }
 
 async function resetDatabase(): Promise<void> {
-  // Native platforms: drop all tables
-  const dbInstance = expoDb;
-
+  // On web, we need to delete the IndexedDB database and reinitialize
   try {
-    console.log('Resetting database...');
+    console.log('Resetting database on web...');
 
-    // Get all table names and drop them
-    const tables = await dbInstance.getAllAsync<{ name: string }>(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
-    );
+    // First, try to drop all tables to clear data
+    try {
+      const dbInstance = getExpoDb();
 
-    for (const table of tables) {
-      if (table.name !== '__drizzle_migrations') {
-        await dbInstance.execAsync(`DROP TABLE IF EXISTS "${table.name}"`);
-        console.log(`Dropped table: ${table.name}`);
+      // Get all table names and drop them
+      const tables = await dbInstance.getAllAsync<{ name: string }>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`
+      );
+
+      for (const table of tables) {
+        try {
+          await dbInstance.execAsync(`DROP TABLE IF EXISTS "${table.name}"`);
+          console.log(`Dropped table: ${table.name}`);
+        } catch (dropError) {
+          console.warn(`Failed to drop table ${table.name}:`, dropError);
+        }
       }
+
+      // Also reset migrations table
+      try {
+        await dbInstance.execAsync(`DROP TABLE IF EXISTS __drizzle_migrations`);
+        console.log('Dropped migrations table');
+      } catch (migrationError) {
+        console.warn('Failed to drop migrations table:', migrationError);
+      }
+
+      // Close the connection
+      await dbInstance.closeAsync();
+      console.log('Database connection closed');
+    } catch (closeError) {
+      console.warn('Error closing database:', closeError);
     }
 
-    // Also reset migrations table to rerun all migrations
-    await dbInstance.execAsync(`DROP TABLE IF EXISTS __drizzle_migrations`);
-    console.log('Database reset complete');
+    // Wait a bit for connections to close
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    // Delete IndexedDB database
+    return new Promise((resolve) => {
+      if (typeof indexedDB === 'undefined') {
+        console.error('IndexedDB not available');
+        // Fallback: just reload
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        }
+        resolve();
+        return;
+      }
+
+      console.log(`Attempting to delete IndexedDB database: ${DATABASE_NAME}`);
+      const deleteRequest = indexedDB.deleteDatabase(DATABASE_NAME);
+
+      deleteRequest.onsuccess = () => {
+        console.log('IndexedDB database deleted successfully');
+        // Reload the page to reinitialize everything
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            console.log('Reloading page...');
+            window.location.reload();
+          }, 500);
+        }
+        resolve();
+      };
+
+      deleteRequest.onerror = (event) => {
+        console.error('Failed to delete IndexedDB database:', event);
+        // Still try to reload - the database might be partially cleared
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            console.log('Reloading page despite deletion error...');
+            window.location.reload();
+          }, 500);
+        }
+        resolve(); // Resolve instead of reject to allow reload
+      };
+
+      deleteRequest.onblocked = () => {
+        console.warn(
+          'IndexedDB deletion blocked - database may be in use, will retry after reload'
+        );
+        // Still try to reload - next time it should work
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            console.log('Reloading page (deletion was blocked)...');
+            window.location.reload();
+          }, 1000);
+        }
+        resolve();
+      };
+    });
   } catch (error) {
-    console.error('Failed to reset database:', error);
+    console.error('Failed to reset database on web:', error);
+    // Fallback: try to reload anyway
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
     throw error;
   }
 }
@@ -121,12 +172,12 @@ async function performDatabaseRecovery(
   }
 }
 
-// Component that handles migrations and Drizzle Studio (Native version)
+// Component that handles migrations and Drizzle Studio (Web version)
 // This component is only rendered after database is initialized
 export function MigrationHandler({ children }: { children: React.ReactNode }) {
-  // Set up Drizzle Studio
-  const dbInstance = expoDb;
-  const drizzleDb = db;
+  // Set up Drizzle Studio (use getters for web)
+  const dbInstance = getExpoDb();
+  const drizzleDb = getDb();
 
   // Always call hooks unconditionally
   useDrizzleStudio(dbInstance);
@@ -165,6 +216,21 @@ export function MigrationHandler({ children }: { children: React.ReactNode }) {
 
   const success = migrationSuccess === true;
   const error = migrationError ?? null;
+
+  // Log migration state changes for debugging
+  useEffect(() => {
+    console.log('[MigrationHandler] State:', {
+      success,
+      error: error?.message,
+      isMigrationLoading,
+      isMigrationError,
+      elapsedSeconds,
+      retryAfterRecovery,
+    });
+  }, [success, error, isMigrationLoading, isMigrationError, elapsedSeconds, retryAfterRecovery]);
+
+  // Don't reset retryAfterRecovery - it's fine to keep it true
+  // This prevents the query from re-running and simulating failure again
 
   // Detect stuck migrations with timeout and update elapsed time
   useEffect(() => {
@@ -269,6 +335,7 @@ export function MigrationHandler({ children }: { children: React.ReactNode }) {
   }
 
   // After recovery, show retry message while migrations run again
+  // Note: On web, resetDatabase() reloads the page, but this handles the case where it doesn't
   if (recoveryAttempted && retryAfterRecovery && !success) {
     return (
       <View className="flex-1 items-center justify-center gap-4 bg-background px-5">
@@ -280,6 +347,32 @@ export function MigrationHandler({ children }: { children: React.ReactNode }) {
         <Text className="text-center text-sm text-muted-foreground">
           Running migrations again...
         </Text>
+      </View>
+    );
+  }
+
+  // If recovery was attempted but page didn't reload (shouldn't happen on web, but handle it)
+  if (recoveryAttempted && !retryAfterRecovery) {
+    return (
+      <View className="flex-1 items-center justify-center gap-4 bg-background px-5">
+        <ActivityIndicator size="large" color="#7C3AED" />
+        <Text className="text-xl font-bold text-foreground">Resetting Database</Text>
+        <Text className="text-center text-base text-muted-foreground">
+          Database is being reset...
+        </Text>
+        <Text className="text-center text-sm text-muted-foreground">
+          Page will reload automatically.
+        </Text>
+        <Button
+          onPress={() => {
+            if (typeof window !== 'undefined') {
+              window.location.reload();
+            }
+          }}
+          variant="outline"
+          className="mt-4">
+          <Text>Reload Now</Text>
+        </Button>
       </View>
     );
   }

@@ -111,6 +111,9 @@ module.exports = defineConfig([
             'lib/easy-schedule-generator.ts',
             'hooks/use-color-scheme.web.ts',
             'localization/LocalizationProvider.tsx',
+            // Platform-specific files (used via React Native's platform resolution)
+            '**/*.web.tsx',
+            '**/*.web.ts',
           ],
         },
       ],

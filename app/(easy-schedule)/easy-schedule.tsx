@@ -5,8 +5,7 @@ import { useRouter } from 'expo-router';
 
 import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY, formulaRuleByIdKey } from '@/constants/query-keys';
-import { getActiveBabyProfile } from '@/database/baby-profile';
-import { updateSelectedEasyFormula } from '@/database/app-state';
+import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
 import { getFormulaRuleById, getFormulaRuleByAge } from '@/database/easy-formula-rules';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
@@ -62,13 +61,56 @@ export default function EasyScheduleScreen() {
     },
   });
 
-  // Get active formula by selected ID
+  // Get active formula by selected ID with fallback logic
   const { data: formulaRule, isLoading: isLoadingFormula } = useQuery({
     queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
-    queryFn: () => getFormulaRuleById(babyProfile!.selectedEasyFormulaId!, babyProfile?.id),
+    queryFn: async () => {
+      if (!babyProfile?.selectedEasyFormulaId || !babyProfile?.id) {
+        return null;
+      }
+
+      const rule = await getFormulaRuleById(babyProfile.selectedEasyFormulaId, babyProfile.id);
+
+      // If rule not found and it's a day-specific rule, try to get source rule or fallback
+      if (!rule && babyProfile.selectedEasyFormulaId.startsWith('day_')) {
+        // Try to get a formula by age as fallback
+        const ageWeeks = calculateAgeInWeeks(babyProfile.birthDate);
+        const fallbackRule = await getFormulaRuleByAge(ageWeeks, babyProfile.id);
+
+        if (fallbackRule) {
+          // Update selected formula to the fallback
+          await updateSelectedEasyFormula(babyProfile.id, fallbackRule.id);
+          // Invalidate queries to refresh
+          queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
+          return fallbackRule;
+        }
+      }
+
+      return rule;
+    },
     enabled: !!babyProfile?.selectedEasyFormulaId,
     staleTime: 5 * 60 * 1000,
   });
+
+  // Handle missing formula - clear invalid selection and trigger auto-select
+  useEffect(() => {
+    const handleMissingFormula = async () => {
+      // Only act if loading is complete, but formula is missing
+      if (
+        !isLoadingFormula &&
+        !formulaRule &&
+        babyProfile?.selectedEasyFormulaId &&
+        babyProfile?.id &&
+        !autoSelectMutation.isPending
+      ) {
+        // Clear the invalid selection
+        await updateSelectedEasyFormula(babyProfile.id, null);
+        queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
+      }
+    };
+
+    handleMissingFormula();
+  }, [isLoadingFormula, formulaRule, babyProfile, autoSelectMutation.isPending, queryClient]);
 
   // Auto-select formula based on baby's age if none selected
   useEffect(() => {

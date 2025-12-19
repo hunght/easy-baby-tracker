@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
-import { seedPredefinedFormulas } from '@/database/easy-formula-rules';
+import { seedPredefinedFormulas } from '@/database/predefined-formulas';
 import { seedHabitDefinitions } from '@/database/habits';
 import { cancelStoredScheduledNotification } from '@/lib/notification-scheduler';
 import {

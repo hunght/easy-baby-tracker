@@ -230,3 +230,13 @@ export async function updateBabyFirstWakeTime(
     .set({ firstWakeTime })
     .where(eq(schema.babyProfiles.id, babyId));
 }
+
+export async function updateSelectedEasyFormula(
+  babyId: number,
+  formulaId: string | null
+): Promise<void> {
+  await db
+    .update(schema.babyProfiles)
+    .set({ selectedEasyFormulaId: formulaId })
+    .where(eq(schema.babyProfiles.id, babyId));
+}

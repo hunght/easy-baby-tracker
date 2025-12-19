@@ -6,6 +6,8 @@ import {
 } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useReactQueryDevTools } from '@dev-plugins/react-query';
+import { useEffect } from 'react';
+import { LogBox } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 
@@ -23,6 +25,17 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
+  // Suppress expo-notifications Expo Go warnings (we use local notifications, not push)
+  useEffect(() => {
+    if (__DEV__) {
+      LogBox.ignoreLogs([
+        /expo-notifications.*Android Push notifications/,
+        /expo-notifications.*not fully supported in Expo Go/,
+        /expo-notifications.*Expo Go/,
+      ]);
+    }
+  }, []);
+
   return (
     <LocalizationProvider>
       <ThemeProvider>
@@ -42,15 +55,15 @@ function AppProviders() {
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <NotificationProvider>
-        <DatabaseInitializer>
-          <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <DatabaseInitializer>
             <FeatureFlagProvider>
               <NavigationThemeProvider value={navTheme}>
                 <NavigationStack colorScheme={colorScheme} />
               </NavigationThemeProvider>
             </FeatureFlagProvider>
-          </QueryClientProvider>
-        </DatabaseInitializer>
+          </DatabaseInitializer>
+        </QueryClientProvider>
       </NotificationProvider>
     </SafeAreaProvider>
   );

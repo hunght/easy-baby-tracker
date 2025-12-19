@@ -12,7 +12,7 @@ import {
   daySpecificFormulaRulesKey,
   formulaRuleByIdKey,
 } from '@/constants/query-keys';
-import { getActiveBabyProfile } from '@/database/baby-profile';
+import { getActiveBabyProfile , updateSelectedEasyFormula } from '@/database/baby-profile';
 import {
   getFormulaRuleById,
   getPredefinedFormulaRules,
@@ -23,7 +23,6 @@ import {
 import { useBrandColor } from '@/hooks/use-brand-color';
 import type { EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
 import { useLocalization } from '@/localization/LocalizationProvider';
-import { updateSelectedEasyFormula } from '@/database/app-state';
 
 export default function EasyScheduleSelectScreen() {
   const { t } = useLocalization();
