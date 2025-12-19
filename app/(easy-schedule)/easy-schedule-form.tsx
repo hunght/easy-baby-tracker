@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-  Pressable,
   ScrollView,
   View,
   Alert,
@@ -19,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useNotification } from '@/components/NotificationContext';
 import {
   BABY_PROFILE_QUERY_KEY,
@@ -327,61 +327,48 @@ export default function EasyScheduleFormScreen() {
       <View className="flex-1 bg-background">
         {/* Header */}
         <View className="flex-row items-center justify-between border-b border-border bg-card px-5 py-4">
-          <Pressable
+          <Button
+            variant="ghost"
+            size="icon"
             onPress={() => router.back()}
-            className="p-1"
-            accessibilityRole="button"
             accessibilityLabel={t('common.close')}>
-            <Ionicons name="close" size={28} color={brandColors.colors.black} />
-          </Pressable>
+            <Ionicons name="close" size={24} />
+          </Button>
           <Text className="flex-1 text-center text-lg font-semibold text-foreground">
             {isEditable ? t('easySchedule.editTitle') : t('easySchedule.infoTitle')}
           </Text>
           <View className="flex-row items-center gap-2">
             {isEditable && (
-              <TouchableOpacity
+              <Button
+                variant="ghost"
+                size="icon"
                 onPress={handleSave}
                 disabled={updateMutation.isPending}
-                accessibilityRole="button"
                 accessibilityLabel={t('common.save')}>
                 {updateMutation.isPending ? (
-                  <ActivityIndicator size="small" color={brandColors.colors.primary} />
+                  <ActivityIndicator size="small" />
                 ) : (
-                  <Ionicons name="checkmark" size={28} color={brandColors.colors.primary} />
+                  <Ionicons name="checkmark" size={24} />
                 )}
-              </TouchableOpacity>
+              </Button>
             )}
-            <TouchableOpacity
+            <Button
+              variant="ghost"
+              size="icon"
               onPress={handleClone}
               disabled={cloneMutation.isPending}
-              accessibilityRole="button"
               accessibilityLabel={t('easySchedule.cloneFormula')}>
-              <Ionicons
-                name="copy-outline"
-                size={24}
-                color={
-                  cloneMutation.isPending
-                    ? brandColors.colors.secondary
-                    : brandColors.colors.primary
-                }
-              />
-            </TouchableOpacity>
+              <Ionicons name="copy-outline" size={20} />
+            </Button>
             {isCustomFormula && (
-              <TouchableOpacity
+              <Button
+                variant="ghost"
+                size="icon"
                 onPress={handleDelete}
                 disabled={deleteMutation.isPending}
-                accessibilityRole="button"
                 accessibilityLabel={t('common.delete')}>
-                <Ionicons
-                  name="trash-outline"
-                  size={24}
-                  color={
-                    deleteMutation.isPending
-                      ? brandColors.colors.secondary
-                      : brandColors.colors.destructive
-                  }
-                />
-              </TouchableOpacity>
+                <Ionicons name="trash-outline" size={20} />
+              </Button>
             )}
           </View>
         </View>
