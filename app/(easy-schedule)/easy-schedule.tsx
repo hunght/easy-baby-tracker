@@ -5,7 +5,8 @@ import { useRouter } from 'expo-router';
 
 import { Text } from '@/components/ui/text';
 import { BABY_PROFILE_QUERY_KEY, formulaRuleByIdKey } from '@/constants/query-keys';
-import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
+import { getActiveBabyProfile } from '@/database/baby-profile';
+import { updateSelectedEasyFormula } from '@/database/app-state';
 import { getFormulaRuleById, getFormulaRuleByAge } from '@/database/easy-formula-rules';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';

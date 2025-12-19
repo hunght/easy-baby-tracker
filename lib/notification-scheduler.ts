@@ -9,8 +9,6 @@ import {
   requestNotificationPermissions,
   scheduleNotificationAsync,
   cancelScheduledNotificationAsync,
-  getAllScheduledNotificationsAsync,
-  type NotificationRequest,
 } from '@/lib/notifications-wrapper';
 
 import {
@@ -18,20 +16,14 @@ import {
   generateEasySchedule,
   type EasyScheduleItem,
 } from '@/lib/easy-schedule-generator';
-import { safeParseNotificationData, safeParseEasyScheduleNotificationData } from '@/lib/json-parse';
+import { safeParseEasyScheduleNotificationData } from '@/lib/json-parse';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 import { getFormulaRuleById } from '@/database/easy-formula-rules';
-
-interface ScheduledFeedingNotification {
-  notificationId: string;
-  scheduledTime: string; // ISO string
-  feedingType: 'breast' | 'bottle' | 'solids';
-}
 
 // Re-export requestNotificationPermissions from wrapper
 export { requestNotificationPermissions };
 
-// Helper to convert ScheduledFeedingNotification to database record
+// Helper to convert feeding notification to database record
 function convertToDbRecord(
   notificationId: string,
   scheduledTime: Date,
@@ -42,26 +34,6 @@ function convertToDbRecord(
     notificationId,
     scheduledTime: Math.floor(scheduledTime.getTime() / 1000),
     data: JSON.stringify({ feedingType }),
-  };
-}
-
-// Helper to convert database record to ScheduledFeedingNotification
-function convertFromDbRecord(record: {
-  notificationId: string;
-  scheduledTime: number;
-  data: string | null;
-}): ScheduledFeedingNotification | null {
-  if (!record.data) {
-    return null;
-  }
-  const parsed = safeParseNotificationData(record.data);
-  if (!parsed || !parsed.feedingType) {
-    return null;
-  }
-  return {
-    notificationId: record.notificationId,
-    scheduledTime: new Date(record.scheduledTime * 1000).toISOString(),
-    feedingType: parsed.feedingType,
   };
 }
 
@@ -189,42 +161,6 @@ export async function cancelStoredScheduledNotification(): Promise<void> {
     await cancelScheduledNotificationAsync(feedingNotification.notificationId);
     await deleteScheduledNotificationByNotificationId(feedingNotification.notificationId);
   }
-}
-
-// Restore and validate scheduled notifications on app startup
-// This ensures notifications persist even after app termination
-export async function restoreScheduledNotifications(): Promise<ScheduledFeedingNotification | null> {
-  // getActiveScheduledNotifications now handles the case where there's no active profile
-  const active = await getActiveScheduledNotifications();
-  const feedingNotification = active.find((n) => n.notificationType === 'feeding');
-
-  if (!feedingNotification) {
-    return null;
-  }
-
-  // Check if the notification still exists in the OS
-  const allScheduled = await getAllScheduledNotificationsAsync();
-  const notificationExists = allScheduled.some(
-    (n: NotificationRequest) => n.identifier === feedingNotification.notificationId
-  );
-
-  if (!notificationExists) {
-    // Notification was already fired or cancelled, clean up database
-    await deleteScheduledNotificationByNotificationId(feedingNotification.notificationId);
-    return null;
-  }
-
-  // Check if the scheduled time is still in the future
-  const scheduledTime = new Date(feedingNotification.scheduledTime * 1000);
-  const now = new Date();
-  if (scheduledTime <= now) {
-    // Notification time has passed, clean up
-    await cancelScheduledNotification(feedingNotification.notificationId);
-    return null;
-  }
-
-  // Convert database record to ScheduledFeedingNotification
-  return convertFromDbRecord(feedingNotification);
 }
 
 // Helper function to convert time string to date

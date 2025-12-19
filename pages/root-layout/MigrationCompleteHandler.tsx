@@ -5,10 +5,7 @@ import { Platform } from 'react-native';
 
 import { seedPredefinedFormulas } from '@/database/easy-formula-rules';
 import { seedHabitDefinitions } from '@/database/habits';
-import {
-  cancelStoredScheduledNotification,
-  restoreScheduledNotifications,
-} from '@/lib/notification-scheduler';
+import { cancelStoredScheduledNotification } from '@/lib/notification-scheduler';
 import {
   setNotificationHandler,
   addNotificationResponseReceivedListener,
@@ -56,13 +53,6 @@ export function MigrationCompleteHandler({ children }: { children: React.ReactNo
       });
     }
 
-    // Restore scheduled notifications on app startup
-    // This ensures notifications persist even after app termination
-    console.log('[MigrationCompleteHandler] Calling restoreScheduledNotifications');
-    restoreScheduledNotifications().catch((error) => {
-      console.error('[MigrationCompleteHandler] Failed to restore scheduled notifications:', error);
-    });
-
     // Handle notification tap - navigate to appropriate screen
     const handleNotificationResponse = async (
       response: Notifications.NotificationResponse | null
@@ -73,8 +63,6 @@ export function MigrationCompleteHandler({ children }: { children: React.ReactNo
       const data = response.notification.request.content.data;
 
       if (data?.type === 'feeding') {
-        // Cancel the scheduled notification since user is now logging the feeding
-        await cancelStoredScheduledNotification();
         // Navigate to feeding screen - use imperative router (doesn't require hook context)
         // Delay to ensure navigation is ready
         setTimeout(() => {
@@ -102,7 +90,7 @@ export function MigrationCompleteHandler({ children }: { children: React.ReactNo
     const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
       // If it's a feeding notification, clean up the stored state
       if (notification.request.content.data?.type === 'feeding') {
-        restoreScheduledNotifications().catch((error) => {
+        cancelStoredScheduledNotification().catch((error) => {
           console.error('Failed to clean up notification after receipt:', error);
         });
       }

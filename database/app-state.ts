@@ -40,6 +40,27 @@ export async function getEasyReminderState(): Promise<boolean> {
   const value = await getAppState(EASY_REMINDER_ENABLED_KEY);
   return value === 'true';
 }
+export async function updateSelectedEasyFormula(
+  babyId: number,
+  formulaId: string | null
+): Promise<void> {
+  // Update the selected formula in database
+  await db
+    .update(schema.babyProfiles)
+    .set({ selectedEasyFormulaId: formulaId })
+    .where(eq(schema.babyProfiles.id, babyId));
+
+  // Reschedule reminders if enabled (handled in backend for consistency)
+  if (formulaId) {
+    try {
+      await restoreEasyScheduleReminders();
+    } catch (error) {
+      console.error('Failed to reschedule reminders after formula change:', error);
+      // Don't throw - formula update succeeded, reminder update is secondary
+    }
+  }
+}
+
 /**
  * Restore and reschedule EASY schedule reminders on app startup.
  * This ensures reminders are always scheduled for the configured number of days ahead.

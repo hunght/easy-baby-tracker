@@ -195,36 +195,6 @@ export async function getActiveBabyProfile(): Promise<BabyProfileRecord | null> 
   return getBabyProfileById(activeId);
 }
 
-export async function getBabyProfile(): Promise<BabyProfileRecord | null> {
-  const profile = await db
-    .select()
-    .from(schema.babyProfiles)
-    .orderBy(desc(schema.babyProfiles.id))
-    .limit(1);
-
-  if (profile.length === 0) {
-    return null;
-  }
-
-  const concerns = await db
-    .select({ concernId: schema.concernChoices.concernId })
-    .from(schema.concernChoices)
-    .where(eq(schema.concernChoices.babyId, profile[0].id));
-
-  return {
-    id: profile[0].id,
-    nickname: profile[0].nickname,
-    gender: profile[0].gender,
-    birthDate: profile[0].birthDate,
-    dueDate: profile[0].dueDate,
-    avatarUri: profile[0].avatarUri ?? null,
-    firstWakeTime: profile[0].firstWakeTime ?? '07:00',
-    selectedEasyFormulaId: profile[0].selectedEasyFormulaId,
-    createdAt: profile[0].createdAt,
-    concerns: concerns.map((c) => c.concernId),
-  };
-}
-
 export async function setActiveBabyProfileId(babyId: number | null) {
   if (babyId == null) {
     await db.delete(schema.appState).where(eq(schema.appState.key, ACTIVE_PROFILE_KEY));
@@ -259,26 +229,4 @@ export async function updateBabyFirstWakeTime(
     .update(schema.babyProfiles)
     .set({ firstWakeTime })
     .where(eq(schema.babyProfiles.id, babyId));
-}
-
-export async function updateSelectedEasyFormula(
-  babyId: number,
-  formulaId: string | null
-): Promise<void> {
-  // Update the selected formula in database
-  await db
-    .update(schema.babyProfiles)
-    .set({ selectedEasyFormulaId: formulaId })
-    .where(eq(schema.babyProfiles.id, babyId));
-
-  // // Reschedule reminders if enabled (handled in backend for consistency)
-  // if (formulaId) {
-  //   try {
-  //     const { restoreEasyScheduleReminders } = await import('@/lib/notification-scheduler');
-  //     await restoreEasyScheduleReminders();
-  //   } catch (error) {
-  //     console.error('Failed to reschedule reminders after formula change:', error);
-  //     // Don't throw - formula update succeeded, reminder update is secondary
-  //   }
-  // }
 }

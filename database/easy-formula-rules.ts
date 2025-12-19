@@ -7,8 +7,9 @@ import type {
   EasyFormulaRuleId,
   EasyCyclePhase,
 } from '@/lib/easy-schedule-generator';
-import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
+import { getActiveBabyProfile } from '@/database/baby-profile';
 import { safeParseEasyCyclePhases } from '@/lib/json-parse';
+import { updateSelectedEasyFormula } from './app-state';
 
 export type FormulaRuleInsert = typeof schema.easyFormulaRules.$inferInsert;
 type FormulaRuleSelect = typeof schema.easyFormulaRules.$inferSelect;
@@ -201,22 +202,6 @@ export async function getFormulaRuleById(
     .limit(1);
 
   return records[0] ? dbToFormulaRule(records[0]) : null;
-}
-
-/**
- * Delete day-specific formula rule for a specific date
- * This resets the schedule to use the original formula rule
- */
-export async function deleteDaySpecificRule(babyId: number, date: string): Promise<void> {
-  await db
-    .delete(schema.easyFormulaRules)
-    .where(
-      and(
-        eq(schema.easyFormulaRules.babyId, babyId),
-        eq(schema.easyFormulaRules.validDate, date),
-        eq(schema.easyFormulaRules.isCustom, true)
-      )
-    );
 }
 
 /**
