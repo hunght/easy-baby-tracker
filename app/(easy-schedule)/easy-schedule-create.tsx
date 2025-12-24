@@ -5,7 +5,6 @@ import { useState } from 'react';
 import {
   ScrollView,
   View,
-  Pressable,
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
@@ -18,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useNotification } from '@/components/NotificationContext';
 import { BABY_PROFILE_QUERY_KEY, userCustomFormulaRulesKey } from '@/constants/query-keys';
 import { getActiveBabyProfile } from '@/database/baby-profile';
@@ -205,34 +205,9 @@ export default function EasyScheduleCreateScreen() {
       className="bg-background">
       <View className="flex-1 bg-background">
         {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-4">
-          <Pressable
-            onPress={() => router.back()}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.close')}>
-            <Text className="text-base font-semibold text-accent">{t('common.close')}</Text>
-          </Pressable>
-          <Text
-            className="mx-3 flex-1 text-center text-xl font-bold text-foreground"
-            numberOfLines={1}
-            ellipsizeMode="tail">
-            {t('easySchedule.create.title')}
-          </Text>
-          <Pressable
-            onPress={handleSave}
-            disabled={mutation.isPending}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.save')}>
-            <Text
-              className={`text-base font-semibold ${mutation.isPending ? 'text-muted-foreground' : 'text-primary'}`}>
-              {t('common.save')}
-            </Text>
-          </Pressable>
-        </View>
-
         <ScrollView
           className="flex-1"
-          contentContainerClassName="p-5 pb-10 gap-4"
+          contentContainerClassName="p-5 pb-32 gap-4"
           showsVerticalScrollIndicator={false}>
           {/* Info Card */}
           <Card className="rounded-lg border-info/20 bg-info/5">
@@ -453,6 +428,35 @@ export default function EasyScheduleCreateScreen() {
             </CardContent>
           </Card>
         </ScrollView>
+
+        {/* Sticky Bottom Bar */}
+        <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background p-4 pb-8 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <View className="flex-row gap-3">
+            <Button
+              variant="secondary"
+              size="lg"
+              onPress={() => router.back()}
+              className="flex-1 bg-muted">
+              <Ionicons name="close-outline" size={20} color="#71717a" />
+              <Text className="text-muted-foreground">{t('common.cancel')}</Text>
+            </Button>
+            <Button
+              variant="default"
+              size="lg"
+              onPress={handleSave}
+              disabled={mutation.isPending}
+              className="flex-[2]">
+              {mutation.isPending ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <>
+                  <Ionicons name="checkmark" size={20} color="white" />
+                  <Text>{t('common.save')}</Text>
+                </>
+              )}
+            </Button>
+          </View>
+        </View>
 
         {mutation.isPending && (
           <View className="absolute inset-0 items-center justify-center bg-background/80">

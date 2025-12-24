@@ -9,7 +9,6 @@ import { BabyProfileRecord } from '@/database/baby-profile';
 import { GrowthRecord } from '@/database/growth';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { formatNumber } from '@/lib/format';
-import { useRelativeTime } from '@/lib/format-date';
 import { computeMonthsOld } from '@/lib/tracking-utils';
 
 type Props = {
@@ -24,7 +23,6 @@ export function BabyInfoBanner({
   previousGrowthRecord: _previousGrowthRecord,
 }: Props) {
   const { t } = useLocalization();
-  const { formatRelative } = useRelativeTime();
   const router = useRouter();
 
   const isBoy = profile.gender === 'boy';
@@ -148,11 +146,6 @@ export function BabyInfoBanner({
                   </Text>
                 )}
               </View>
-              <Text className={`text-xs ${subtextClass} opacity-80`}>
-                {t('common.updated', {
-                  params: { time: formatRelative(latestGrowthRecord.time * 1000) },
-                })}
-              </Text>
             </View>
           ) : (
             <Text className={`text-sm italic ${subtextClass}`}>

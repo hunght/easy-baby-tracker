@@ -80,13 +80,13 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="scheduling"
+          name="reminders"
           options={{
-            title: t('tabs.schedules'),
+            title: t('tabs.reminders', { defaultValue: 'Reminders' }),
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name="calendar-outline" size={26} color={focused ? '#FF5C8D' : color} />
+              <Ionicons name="alarm-outline" size={26} color={focused ? '#FF5C8D' : color} />
             ),
-            tabBarButton: (props) => <HapticTab {...props} testID="tab-scheduling" />,
+            tabBarButton: (props) => <HapticTab {...props} testID="tab-reminders" />,
           }}
         />
 

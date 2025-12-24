@@ -325,55 +325,7 @@ export default function EasyScheduleFormScreen() {
       style={{ flex: 1 }}
       className="bg-background">
       <View className="flex-1 bg-background">
-        {/* Header */}
-        <View className="flex-row items-center justify-between border-b border-border bg-card px-5 py-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => router.back()}
-            accessibilityLabel={t('common.close')}>
-            <Ionicons name="close" size={24} />
-          </Button>
-          <Text className="flex-1 text-center text-lg font-semibold text-foreground">
-            {isEditable ? t('easySchedule.editTitle') : t('easySchedule.infoTitle')}
-          </Text>
-          <View className="flex-row items-center gap-2">
-            {isEditable && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onPress={handleSave}
-                disabled={updateMutation.isPending}
-                accessibilityLabel={t('common.save')}>
-                {updateMutation.isPending ? (
-                  <ActivityIndicator size="small" />
-                ) : (
-                  <Ionicons name="checkmark" size={24} />
-                )}
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={handleClone}
-              disabled={cloneMutation.isPending}
-              accessibilityLabel={t('easySchedule.cloneFormula')}>
-              <Ionicons name="copy-outline" size={20} />
-            </Button>
-            {isCustomFormula && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onPress={handleDelete}
-                disabled={deleteMutation.isPending}
-                accessibilityLabel={t('common.delete')}>
-                <Ionicons name="trash-outline" size={20} />
-              </Button>
-            )}
-          </View>
-        </View>
-
-        <ScrollView className="flex-1" contentContainerClassName="p-5">
+        <ScrollView className="flex-1" contentContainerClassName="p-5 pb-32">
           {/* Basic Information Card */}
           <Card className="mb-4 rounded-lg">
             <CardHeader>
@@ -550,6 +502,59 @@ export default function EasyScheduleFormScreen() {
 
           <View className="h-10" />
         </ScrollView>
+
+        {/* Sticky Bottom Bar */}
+        <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-background p-4 pb-8 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+          <View className="flex-row gap-3">
+            <Button
+              variant="secondary"
+              size="lg"
+              onPress={() => router.back()}
+              className="flex-1 bg-muted">
+              <Ionicons name="close-outline" size={20} color="#71717a" />
+              <Text className="text-muted-foreground">{t('common.close')}</Text>
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="lg"
+              className="flex-1"
+              onPress={handleClone}
+              disabled={cloneMutation.isPending}>
+              <Ionicons name="copy-outline" size={20} color={brandColors.colors.black} />
+              <Text>{t('easySchedule.clone')}</Text>
+            </Button>
+
+            {isCustomFormula && (
+              <Button
+                variant="destructive"
+                size="lg"
+                className="aspect-square bg-destructive/10 px-0"
+                onPress={handleDelete}
+                disabled={deleteMutation.isPending}>
+                <Ionicons name="trash-outline" size={24} color={brandColors.colors.destructive} />
+              </Button>
+            )}
+
+            {isEditable && (
+              <Button
+                variant="default"
+                size="lg"
+                onPress={handleSave}
+                disabled={updateMutation.isPending}
+                className="flex-[2]">
+                {updateMutation.isPending ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <>
+                    <Ionicons name="checkmark" size={20} color="white" />
+                    <Text>{t('common.save')}</Text>
+                  </>
+                )}
+              </Button>
+            )}
+          </View>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );

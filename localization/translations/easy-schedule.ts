@@ -28,6 +28,7 @@ export const easySchedule = {
     createFormula: 'Create Custom Formula',
     formulaCreated: 'Custom formula created successfully',
     cloneFormula: 'Clone Formula',
+    clone: 'Clone',
     editTitle: 'Edit Formula',
     formulaCloned: 'Formula cloned successfully',
     customScheduleNotice: '✨ Custom schedule for today - resets tomorrow',
@@ -227,6 +228,7 @@ export const easySchedule = {
     createFormula: 'Tạo công thức tùy chỉnh',
     formulaCreated: 'Đã tạo công thức tùy chỉnh thành công',
     cloneFormula: 'Sao chép công thức',
+    clone: 'Sao chép',
     editTitle: 'Chỉnh sửa Công thức',
     formulaCloned: 'Đã sao chép công thức thành công',
     currentPhase: {
