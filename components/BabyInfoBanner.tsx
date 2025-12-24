@@ -9,6 +9,7 @@ import { BabyProfileRecord } from '@/database/baby-profile';
 import { GrowthRecord } from '@/database/growth';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { formatNumber } from '@/lib/format';
+import { useRelativeTime } from '@/lib/format-date';
 import { computeMonthsOld } from '@/lib/tracking-utils';
 
 type Props = {
@@ -23,6 +24,7 @@ export function BabyInfoBanner({
   previousGrowthRecord: _previousGrowthRecord,
 }: Props) {
   const { t } = useLocalization();
+  const { formatRelative } = useRelativeTime();
   const router = useRouter();
 
   const isBoy = profile.gender === 'boy';
@@ -88,20 +90,20 @@ export function BabyInfoBanner({
             <View>
               <Text className={`text-2xl font-bold ${textClass}`}>{profile.nickname}</Text>
               <Text className={`text-base font-medium ${subtextClass}`}>
-                {currentMonths} {t('common.monthsAbbrev', { defaultValue: 'months' })} old
+                {t('common.monthsOld', { params: { count: currentMonths } })}
               </Text>
             </View>
           </View>
 
-          <View className="flex-row gap-6">
-            <View>
+          <View className="flex-row gap-4">
+            <View className="flex-1">
               <Text className={`text-xs font-medium uppercase opacity-60 ${subtextClass}`}>
                 {t('common.birthDate', { defaultValue: 'Born' })}
               </Text>
               <Text className={`font-semibold ${textClass}`}>{birthDate}</Text>
             </View>
             {profile.dueDate && (
-              <View>
+              <View className="flex-1">
                 <Text className={`text-xs font-medium uppercase opacity-60 ${subtextClass}`}>
                   {t('common.dueDate', { defaultValue: 'Due' })}
                 </Text>
@@ -133,22 +135,24 @@ export function BabyInfoBanner({
             {t('tracking.tiles.growth.label')}
           </Text>
           {latestGrowthRecord ? (
-            <View className="flex-row flex-wrap gap-x-4 gap-y-1">
-              {latestGrowthRecord.weightKg && (
-                <Text className={`text-lg font-bold ${textClass}`}>
-                  {formatNumber(latestGrowthRecord.weightKg, 2)} kg
-                </Text>
-              )}
-              {latestGrowthRecord.heightCm && (
-                <Text className={`text-lg font-bold ${textClass}`}>
-                  {formatNumber(latestGrowthRecord.heightCm, 1)} cm
-                </Text>
-              )}
-              {!latestGrowthRecord.weightKg && !latestGrowthRecord.heightCm && (
-                <Text className={`text-sm italic ${subtextClass}`}>
-                  {t('tracking.tiles.growth.sublabel', { defaultValue: 'No recent data' })}
-                </Text>
-              )}
+            <View className="gap-0.5">
+              <View className="flex-row items-baseline gap-2">
+                {latestGrowthRecord.weightKg && (
+                  <Text className={`text-lg font-bold ${textClass}`}>
+                    {formatNumber(latestGrowthRecord.weightKg, 2)} kg
+                  </Text>
+                )}
+                {latestGrowthRecord.heightCm && (
+                  <Text className={`text-lg font-bold ${textClass}`}>
+                    {formatNumber(latestGrowthRecord.heightCm, 1)} cm
+                  </Text>
+                )}
+              </View>
+              <Text className={`text-xs ${subtextClass} opacity-80`}>
+                {t('common.updated', {
+                  params: { time: formatRelative(latestGrowthRecord.time * 1000) },
+                })}
+              </Text>
             </View>
           ) : (
             <Text className={`text-sm italic ${subtextClass}`}>

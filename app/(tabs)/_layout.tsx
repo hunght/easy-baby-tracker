@@ -73,7 +73,7 @@ export default function TabLayout() {
                   shadowRadius: 4,
                   elevation: focused ? 5 : 0,
                 }}>
-                <Ionicons name="add" size={32} color={focused ? 'white' : 'white'} />
+                <Ionicons name="add" size={32} color="white" />
               </View>
             ),
             tabBarButton: (props) => <HapticTab {...props} testID="tab-tracking" />,

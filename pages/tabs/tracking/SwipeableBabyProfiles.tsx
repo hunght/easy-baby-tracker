@@ -19,10 +19,9 @@ import {
 import { getActiveBabyProfile, getBabyProfiles } from '@/database/baby-profile';
 import { getGrowthRecords } from '@/database/growth';
 import { useSetActiveBabyProfile } from '@/hooks/use-set-active-baby-profile';
-import { computeTodayRange, computeYesterdayRange, latestGrowth } from '@/lib/tracking-utils';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const CARD_WIDTH = SCREEN_WIDTH - 64; // Main card width - leaves 32px on each side for peek
+const CARD_WIDTH = SCREEN_WIDTH - 0; // Main card width - leaves 32px on each side for peek
 const CARD_GAP = 10; // Gap between cards
 const SIDE_CARD_SCALE = 0.92; // Scale for adjacent cards
 const SIDE_CARD_OPACITY = 0.7; // Opacity for adjacent cards
@@ -34,13 +33,6 @@ export function SwipeableBabyProfiles() {
   const scrollX = useRef(new Animated.Value(0)).current;
   const [activeBabyIndex, setActiveBabyIndex] = useState<number>(0);
   const setActiveBabyMutation = useSetActiveBabyProfile();
-
-  // Date ranges for growth queries
-  const { startOfToday, endOfToday } = useMemo(() => computeTodayRange(), []);
-  const { startOfYesterday, endOfYesterday } = useMemo(
-    () => computeYesterdayRange(startOfToday),
-    [startOfToday]
-  );
 
   // Queries
   const { data: profile } = useQuery({
@@ -55,23 +47,15 @@ export function SwipeableBabyProfiles() {
     staleTime: 30 * 1000,
   });
 
-  const { data: growthToday = [] } = useQuery({
-    queryKey: [...GROWTH_RECORDS_QUERY_KEY, 'today', startOfToday, endOfToday],
+  // Growth query - fetch latest 2 records
+  const { data: latestGrowthRecords = [] } = useQuery({
+    queryKey: [...GROWTH_RECORDS_QUERY_KEY, 'latest', profile?.id],
     queryFn: () =>
       getGrowthRecords({
-        startDate: startOfToday,
-        endDate: endOfToday,
+        limit: 2,
+        babyId: profile?.id,
       }),
-    staleTime: 30 * 1000,
-  });
-
-  const { data: growthYesterday = [] } = useQuery({
-    queryKey: [...GROWTH_RECORDS_QUERY_KEY, 'yesterday', startOfYesterday, endOfYesterday],
-    queryFn: () =>
-      getGrowthRecords({
-        startDate: startOfYesterday,
-        endDate: endOfYesterday,
-      }),
+    enabled: !!profile?.id,
     staleTime: 30 * 1000,
   });
 
@@ -116,9 +100,9 @@ export function SwipeableBabyProfiles() {
     }
   };
 
-  // Get latest growth records
-  const latestGrowthRecord = latestGrowth(growthToday);
-  const previousGrowthRecord = latestGrowth(growthYesterday);
+  // Extract latest and previous records
+  const latestGrowthRecord = latestGrowthRecords[0];
+  const previousGrowthRecord = latestGrowthRecords[1];
 
   if (displayBabies.length === 0) {
     return null;

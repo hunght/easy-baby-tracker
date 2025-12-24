@@ -134,10 +134,10 @@ export function SchedulePhaseCard({
         </Text>
       </View>
       <View className="relative w-full" style={{ zIndex: 1 }}>
-        <Text className="text-sm font-semibold text-foreground">
-          {item.startTime} → {endTime}
+        <Text className="text-xl font-bold text-foreground">{duration}</Text>
+        <Text className="mt-0.5 text-xs font-semibold text-muted-foreground opacity-80">
+          {item.startTime} - {endTime}
         </Text>
-        <Text className="mt-0.5 text-xs text-muted-foreground">{duration}</Text>
       </View>
     </Pressable>
   );

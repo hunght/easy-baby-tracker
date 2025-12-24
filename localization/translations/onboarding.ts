@@ -4,7 +4,7 @@ export const onboarding = {
       welcome: 'Welcome to\nEasy Baby Tracker',
       concerns: 'What are your\nParenting Concerns?',
       features: 'Parenting is hard.\nWe make your life easier',
-      profile: 'Baby',
+      profile: 'Baby Profile',
     },
     welcome: {
       privacy: 'Privacy policy',

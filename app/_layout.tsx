@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import { LogBox } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { NotificationProvider } from '@/components/NotificationContext';
 import { FeatureFlagProvider } from '@/context/FeatureFlagContext';
@@ -24,6 +25,9 @@ export const unstable_settings = {
   anchor: '(tabs)/tracking',
 };
 
+// Prevent the splash screen from auto-hiding before asset loading is complete.
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
   // Suppress expo-notifications Expo Go warnings (we use local notifications, not push)
   useEffect(() => {
@@ -34,6 +38,13 @@ export default function RootLayout() {
         /expo-notifications.*Expo Go/,
       ]);
     }
+  }, []);
+
+  useEffect(() => {
+    // Hide splash screen once we are ready to render
+    // In this app, we want to show the MigrationHandler UI if database setup takes time,
+    // so we hide the native splash screen as soon as React mounts.
+    SplashScreen.hideAsync();
   }, []);
 
   return (

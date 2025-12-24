@@ -24,18 +24,18 @@ export function WelcomeStep({ headerText, onContinue }: WelcomeStepProps) {
         </Text>
       </View>
 
-      <View className="items-center gap-4">
+      <View className="items-center gap-6">
         <Image
           source={require('@/assets/images/icon.png')}
-          style={{ width: 120, height: 120 }}
+          style={{ width: 160, height: 160 }}
           contentFit="contain"
           transition={200}
         />
-        <Text className="text-center text-2xl font-semibold text-foreground">{headerText}</Text>
-        <Text className="text-center text-lg font-medium text-accent">
+        <Text className="text-center text-3xl font-bold text-foreground">{headerText}</Text>
+        <Text className="text-center text-xl font-medium italic text-accent/80">
           {t('onboarding.welcome.quote')}
         </Text>
-        <Text className="text-center text-base leading-6 text-foreground">
+        <Text className="px-4 text-center text-base leading-7 text-muted-foreground">
           {t('onboarding.welcome.description')}
         </Text>
         <View className="w-full gap-3 pt-2">
