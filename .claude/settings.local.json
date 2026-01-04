@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(npm run db:generate:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx expo install:*)"
+    ]
+  }
+}

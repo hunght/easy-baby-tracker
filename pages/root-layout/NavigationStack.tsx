@@ -30,28 +30,21 @@ export function NavigationStack({ colorScheme }: NavigationStackProps) {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
-          name="(habit)"
+          name="(quiz)"
           options={{
             presentation: 'modal',
             headerShown: false,
           }}
         />
         <Stack.Screen
-          name="(tracking)"
+          name="(word)"
           options={{
             presentation: 'modal',
             headerShown: false,
           }}
         />
         <Stack.Screen
-          name="(easy-schedule)"
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="(profiles)"
+          name="(onboarding)"
           options={{
             presentation: 'modal',
             headerShown: false,

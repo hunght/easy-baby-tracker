@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0b2e2fcc-898e-428d-9e59-51d254f8dd15",
-  "prevId": "cef8ece3-fd8b-4dc2-9bb1-7defebfa7d3e",
+  "id": "99d9653a-e14d-4734-b52f-bcf7d6c3230b",
+  "prevId": "f12dff47-d1a1-4c50-b8d7-07f87dff803c",
   "tables": {
     "app_state": {
       "name": "app_state",
@@ -28,8 +28,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "baby_habits": {
-      "name": "baby_habits",
+    "card_progress": {
+      "name": "card_progress",
       "columns": {
         "id": {
           "name": "id",
@@ -38,464 +38,113 @@
           "notNull": true,
           "autoincrement": true
         },
-        "baby_id": {
-          "name": "baby_id",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "habit_definition_id": {
-          "name": "habit_definition_id",
-          "type": "text",
+        "word_id": {
+          "name": "word_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "is_active": {
-          "name": "is_active",
-          "type": "integer",
+        "stability": {
+          "name": "stability",
+          "type": "real",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false,
-          "default": true
+          "default": 0
         },
-        "target_frequency": {
-          "name": "target_frequency",
-          "type": "text",
+        "difficulty": {
+          "name": "difficulty",
+          "type": "real",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0.3
         },
-        "reminder_time": {
-          "name": "reminder_time",
-          "type": "text",
+        "elapsed_days": {
+          "name": "elapsed_days",
+          "type": "real",
           "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         },
-        "created_at": {
-          "name": "created_at",
+        "scheduled_days": {
+          "name": "scheduled_days",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "reps": {
+          "name": "reps",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_baby_habits_baby_id": {
-          "name": "idx_baby_habits_baby_id",
-          "columns": ["baby_id"],
-          "isUnique": false
+          "autoincrement": false,
+          "default": 0
         },
-        "idx_baby_habits_definition": {
-          "name": "idx_baby_habits_definition",
-          "columns": ["habit_definition_id"],
-          "isUnique": false
-        },
-        "idx_baby_habits_unique": {
-          "name": "idx_baby_habits_unique",
-          "columns": ["baby_id", "habit_definition_id"],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "baby_habits_baby_id_baby_profiles_id_fk": {
-          "name": "baby_habits_baby_id_baby_profiles_id_fk",
-          "tableFrom": "baby_habits",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "baby_habits_habit_definition_id_habit_definitions_id_fk": {
-          "name": "baby_habits_habit_definition_id_habit_definitions_id_fk",
-          "tableFrom": "baby_habits",
-          "tableTo": "habit_definitions",
-          "columnsFrom": ["habit_definition_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "baby_profiles": {
-      "name": "baby_profiles",
-      "columns": {
-        "id": {
-          "name": "id",
+        "lapses": {
+          "name": "lapses",
           "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "nickname": {
-          "name": "nickname",
-          "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
-        "gender": {
-          "name": "gender",
-          "type": "text",
+        "state": {
+          "name": "state",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "birth_date": {
-          "name": "birth_date",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
         "due_date": {
           "name": "due_date",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "first_wake_time": {
-          "name": "first_wake_time",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'07:00'"
-        },
-        "selected_easy_formula_id": {
-          "name": "selected_easy_formula_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "concern_choices": {
-      "name": "concern_choices",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "baby_id": {
-          "name": "baby_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "concern_id": {
-          "name": "concern_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_concern_choices_baby_id": {
-          "name": "idx_concern_choices_baby_id",
-          "columns": ["baby_id"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "concern_choices_baby_id_baby_profiles_id_fk": {
-          "name": "concern_choices_baby_id_baby_profiles_id_fk",
-          "tableFrom": "concern_choices",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "diaper_changes": {
-      "name": "diaper_changes",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "baby_id": {
-          "name": "baby_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "time": {
-          "name": "time",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "wetness": {
-          "name": "wetness",
+        "last_reviewed_at": {
+          "name": "last_reviewed_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "color": {
-          "name": "color",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "recordedAt": {
-          "name": "recordedAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_diaper_changes_baby_id": {
-          "name": "idx_diaper_changes_baby_id",
-          "columns": ["baby_id"],
-          "isUnique": false
-        },
-        "idx_diaper_changes_recorded_at": {
-          "name": "idx_diaper_changes_recorded_at",
-          "columns": ["recordedAt"],
-          "isUnique": false
-        },
-        "idx_diaper_changes_time": {
-          "name": "idx_diaper_changes_time",
-          "columns": ["time"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "diaper_changes_baby_id_baby_profiles_id_fk": {
-          "name": "diaper_changes_baby_id_baby_profiles_id_fk",
-          "tableFrom": "diaper_changes",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "diary_entries": {
-      "name": "diary_entries",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "baby_id": {
-          "name": "baby_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "photoUri": {
-          "name": "photoUri",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_diary_entries_baby_id": {
-          "name": "idx_diary_entries_baby_id",
-          "columns": ["baby_id"],
-          "isUnique": false
-        },
-        "idx_diary_entries_created_at": {
-          "name": "idx_diary_entries_created_at",
-          "columns": ["createdAt"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "diary_entries_baby_id_baby_profiles_id_fk": {
-          "name": "diary_entries_baby_id_baby_profiles_id_fk",
-          "tableFrom": "diary_entries",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "easy_formula_rules": {
-      "name": "easy_formula_rules",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "baby_id": {
-          "name": "baby_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "is_custom": {
-          "name": "is_custom",
+        "total_attempts": {
+          "name": "total_attempts",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": false
+          "default": 0
         },
-        "valid_date": {
-          "name": "valid_date",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "source_rule_id": {
-          "name": "source_rule_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "min_weeks": {
-          "name": "min_weeks",
+        "correct_attempts": {
+          "name": "correct_attempts",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
-        "max_weeks": {
-          "name": "max_weeks",
-          "type": "integer",
+        "average_levenshtein": {
+          "name": "average_levenshtein",
+          "type": "real",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false
-        },
-        "label_key": {
-          "name": "label_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "label_text": {
-          "name": "label_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "age_range_key": {
-          "name": "age_range_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "age_range_text": {
-          "name": "age_range_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "phases": {
-          "name": "phases",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
         "created_at": {
           "name": "created_at",
@@ -513,39 +162,60 @@
         }
       },
       "indexes": {
-        "idx_formula_rules_baby_id": {
-          "name": "idx_formula_rules_baby_id",
-          "columns": ["baby_id"],
+        "card_progress_due_date_idx": {
+          "name": "card_progress_due_date_idx",
+          "columns": [
+            "due_date"
+          ],
           "isUnique": false
         },
-        "idx_formula_rules_custom": {
-          "name": "idx_formula_rules_custom",
-          "columns": ["is_custom"],
+        "card_progress_state_idx": {
+          "name": "card_progress_state_idx",
+          "columns": [
+            "state"
+          ],
           "isUnique": false
         },
-        "idx_formula_rules_weeks": {
-          "name": "idx_formula_rules_weeks",
-          "columns": ["min_weeks", "max_weeks"],
+        "card_progress_user_id_idx": {
+          "name": "card_progress_user_id_idx",
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         },
-        "idx_formula_rules_valid_date": {
-          "name": "idx_formula_rules_valid_date",
-          "columns": ["valid_date"],
-          "isUnique": false
-        },
-        "idx_formula_rules_baby_date_unique": {
-          "name": "idx_formula_rules_baby_date_unique",
-          "columns": ["baby_id", "valid_date"],
+        "card_progress_user_word_unique": {
+          "name": "card_progress_user_word_unique",
+          "columns": [
+            "user_id",
+            "word_id"
+          ],
           "isUnique": true
         }
       },
       "foreignKeys": {
-        "easy_formula_rules_baby_id_baby_profiles_id_fk": {
-          "name": "easy_formula_rules_baby_id_baby_profiles_id_fk",
-          "tableFrom": "easy_formula_rules",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
+        "card_progress_user_id_user_profile_id_fk": {
+          "name": "card_progress_user_id_user_profile_id_fk",
+          "tableFrom": "card_progress",
+          "tableTo": "user_profile",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "card_progress_word_id_words_id_fk": {
+          "name": "card_progress_word_id_words_id_fk",
+          "tableFrom": "card_progress",
+          "tableTo": "words",
+          "columnsFrom": [
+            "word_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -554,8 +224,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "feedings": {
-      "name": "feedings",
+    "daily_progress": {
+      "name": "daily_progress",
       "columns": {
         "id": {
           "name": "id",
@@ -564,115 +234,81 @@
           "notNull": true,
           "autoincrement": true
         },
-        "baby_id": {
-          "name": "baby_id",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "startTime": {
-          "name": "startTime",
+        "date": {
+          "name": "date",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "duration": {
-          "name": "duration",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "leftDuration": {
-          "name": "leftDuration",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "rightDuration": {
-          "name": "rightDuration",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ingredientType": {
-          "name": "ingredientType",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "amountMl": {
-          "name": "amountMl",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ingredient": {
-          "name": "ingredient",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "amountGrams": {
-          "name": "amountGrams",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "recordedAt": {
-          "name": "recordedAt",
+        "words_reviewed": {
+          "name": "words_reviewed",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
+        },
+        "words_learned": {
+          "name": "words_learned",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "minutes_practiced": {
+          "name": "minutes_practiced",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "goal_met": {
+          "name": "goal_met",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         }
       },
       "indexes": {
-        "idx_feedings_baby_id": {
-          "name": "idx_feedings_baby_id",
-          "columns": ["baby_id"],
+        "daily_progress_date_idx": {
+          "name": "daily_progress_date_idx",
+          "columns": [
+            "date"
+          ],
           "isUnique": false
         },
-        "idx_feedings_recorded_at": {
-          "name": "idx_feedings_recorded_at",
-          "columns": ["recordedAt"],
-          "isUnique": false
-        },
-        "idx_feedings_start_time": {
-          "name": "idx_feedings_start_time",
-          "columns": ["startTime"],
-          "isUnique": false
+        "daily_progress_user_date_unique": {
+          "name": "daily_progress_user_date_unique",
+          "columns": [
+            "user_id",
+            "date"
+          ],
+          "isUnique": true
         }
       },
       "foreignKeys": {
-        "feedings_baby_id_baby_profiles_id_fk": {
-          "name": "feedings_baby_id_baby_profiles_id_fk",
-          "tableFrom": "feedings",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
+        "daily_progress_user_id_user_profile_id_fk": {
+          "name": "daily_progress_user_id_user_profile_id_fk",
+          "tableFrom": "daily_progress",
+          "tableTo": "user_profile",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -681,8 +317,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "growth_records": {
-      "name": "growth_records",
+    "quiz_attempts": {
+      "name": "quiz_attempts",
       "columns": {
         "id": {
           "name": "id",
@@ -691,50 +327,71 @@
           "notNull": true,
           "autoincrement": true
         },
-        "baby_id": {
-          "name": "baby_id",
+        "session_id": {
+          "name": "session_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "time": {
-          "name": "time",
+        "card_progress_id": {
+          "name": "card_progress_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "weightKg": {
-          "name": "weightKg",
-          "type": "real",
+        "word_id": {
+          "name": "word_id",
+          "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
-        "heightCm": {
-          "name": "heightCm",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "headCircumferenceCm": {
-          "name": "headCircumferenceCm",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
+        "user_input": {
+          "name": "user_input",
           "type": "text",
           "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_correct": {
+          "name": "is_correct",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "levenshtein_distance": {
+          "name": "levenshtein_distance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "normalized_error": {
+          "name": "normalized_error",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "fsrs_rating": {
+          "name": "fsrs_rating",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "response_time_ms": {
+          "name": "response_time_ms",
+          "type": "integer",
+          "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "recordedAt": {
-          "name": "recordedAt",
+        "attempted_at": {
+          "name": "attempted_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -742,30 +399,59 @@
         }
       },
       "indexes": {
-        "idx_growth_records_baby_id": {
-          "name": "idx_growth_records_baby_id",
-          "columns": ["baby_id"],
+        "quiz_attempts_session_idx": {
+          "name": "quiz_attempts_session_idx",
+          "columns": [
+            "session_id"
+          ],
           "isUnique": false
         },
-        "idx_growth_records_recorded_at": {
-          "name": "idx_growth_records_recorded_at",
-          "columns": ["recordedAt"],
-          "isUnique": false
-        },
-        "idx_growth_records_time": {
-          "name": "idx_growth_records_time",
-          "columns": ["time"],
+        "quiz_attempts_card_progress_idx": {
+          "name": "quiz_attempts_card_progress_idx",
+          "columns": [
+            "card_progress_id"
+          ],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "growth_records_baby_id_baby_profiles_id_fk": {
-          "name": "growth_records_baby_id_baby_profiles_id_fk",
-          "tableFrom": "growth_records",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
+        "quiz_attempts_session_id_quiz_sessions_id_fk": {
+          "name": "quiz_attempts_session_id_quiz_sessions_id_fk",
+          "tableFrom": "quiz_attempts",
+          "tableTo": "quiz_sessions",
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "quiz_attempts_card_progress_id_card_progress_id_fk": {
+          "name": "quiz_attempts_card_progress_id_card_progress_id_fk",
+          "tableFrom": "quiz_attempts",
+          "tableTo": "card_progress",
+          "columnsFrom": [
+            "card_progress_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "quiz_attempts_word_id_words_id_fk": {
+          "name": "quiz_attempts_word_id_words_id_fk",
+          "tableFrom": "quiz_attempts",
+          "tableTo": "words",
+          "columnsFrom": [
+            "word_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -773,81 +459,141 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "habit_definitions": {
-      "name": "habit_definitions",
+    "quiz_sessions": {
+      "name": "quiz_sessions",
       "columns": {
         "id": {
           "name": "id",
-          "type": "text",
+          "type": "integer",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": true
         },
-        "category": {
-          "name": "category",
-          "type": "text",
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "icon_name": {
-          "name": "icon_name",
-          "type": "text",
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "label_key": {
-          "name": "label_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "description_key": {
-          "name": "description_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "min_age_months": {
-          "name": "min_age_months",
+        "ended_at": {
+          "name": "ended_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
+          "autoincrement": false
+        },
+        "words_attempted": {
+          "name": "words_attempted",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
           "autoincrement": false,
           "default": 0
         },
-        "max_age_months": {
-          "name": "max_age_months",
+        "words_correct": {
+          "name": "words_correct",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "session_type": {
+          "name": "session_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'practice'"
+        },
+        "category_id": {
+          "name": "category_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        }
+      },
+      "indexes": {
+        "quiz_sessions_user_id_idx": {
+          "name": "quiz_sessions_user_id_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "quiz_sessions_user_id_user_profile_id_fk": {
+          "name": "quiz_sessions_user_id_user_profile_id_fk",
+          "tableFrom": "quiz_sessions",
+          "tableTo": "user_profile",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
-        "default_frequency": {
-          "name": "default_frequency",
+        "quiz_sessions_category_id_word_categories_id_fk": {
+          "name": "quiz_sessions_category_id_word_categories_id_fk",
+          "tableFrom": "quiz_sessions",
+          "tableTo": "word_categories",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "user_profile": {
+      "name": "user_profile",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
           "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'Player'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "sort_order": {
-          "name": "sort_order",
-          "type": "integer",
+        "settings": {
+          "name": "settings",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
-          "autoincrement": false,
-          "default": 0
-        },
-        "is_active": {
-          "name": "is_active",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": true
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -856,92 +602,100 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "habit_logs": {
-      "name": "habit_logs",
+    "user_stats": {
+      "name": "user_stats",
       "columns": {
-        "id": {
-          "name": "id",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": true
+          "autoincrement": false
         },
-        "baby_id": {
-          "name": "baby_id",
+        "current_streak": {
+          "name": "current_streak",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
-        "baby_habit_id": {
-          "name": "baby_habit_id",
+        "longest_streak": {
+          "name": "longest_streak",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
         },
-        "completed_at": {
-          "name": "completed_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "duration": {
-          "name": "duration",
+        "last_practice_date": {
+          "name": "last_practice_date",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "recorded_at": {
-          "name": "recorded_at",
+        "total_words_learned": {
+          "name": "total_words_learned",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
+          "autoincrement": false,
+          "default": 0
+        },
+        "total_quizzes": {
+          "name": "total_quizzes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "total_correct": {
+          "name": "total_correct",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "total_attempts": {
+          "name": "total_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "xp_points": {
+          "name": "xp_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
         }
       },
-      "indexes": {
-        "idx_habit_logs_baby_id": {
-          "name": "idx_habit_logs_baby_id",
-          "columns": ["baby_id"],
-          "isUnique": false
-        },
-        "idx_habit_logs_baby_habit_id": {
-          "name": "idx_habit_logs_baby_habit_id",
-          "columns": ["baby_habit_id"],
-          "isUnique": false
-        },
-        "idx_habit_logs_completed_at": {
-          "name": "idx_habit_logs_completed_at",
-          "columns": ["completed_at"],
-          "isUnique": false
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
-        "habit_logs_baby_id_baby_profiles_id_fk": {
-          "name": "habit_logs_baby_id_baby_profiles_id_fk",
-          "tableFrom": "habit_logs",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "habit_logs_baby_habit_id_baby_habits_id_fk": {
-          "name": "habit_logs_baby_habit_id_baby_habits_id_fk",
-          "tableFrom": "habit_logs",
-          "tableTo": "baby_habits",
-          "columnsFrom": ["baby_habit_id"],
-          "columnsTo": ["id"],
+        "user_stats_user_id_user_profile_id_fk": {
+          "name": "user_stats_user_id_user_profile_id_fk",
+          "tableFrom": "user_stats",
+          "tableTo": "user_profile",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -950,8 +704,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "health_records": {
-      "name": "health_records",
+    "word_categories": {
+      "name": "word_categories",
       "columns": {
         "id": {
           "name": "id",
@@ -960,64 +714,47 @@
           "notNull": true,
           "autoincrement": true
         },
-        "baby_id": {
-          "name": "baby_id",
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "word_categories_name_unique": {
+          "name": "word_categories_name_unique",
+          "columns": [
+            "name"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "word_category_mapping": {
+      "name": "word_category_mapping",
+      "columns": {
+        "word_id": {
+          "name": "word_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "time": {
-          "name": "time",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "temperature": {
-          "name": "temperature",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "medicineType": {
-          "name": "medicineType",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "medication": {
-          "name": "medication",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "symptoms": {
-          "name": "symptoms",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "recordedAt": {
-          "name": "recordedAt",
+        "category_id": {
+          "name": "category_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1025,34 +762,39 @@
         }
       },
       "indexes": {
-        "idx_health_records_baby_id": {
-          "name": "idx_health_records_baby_id",
-          "columns": ["baby_id"],
-          "isUnique": false
-        },
-        "idx_health_records_recorded_at": {
-          "name": "idx_health_records_recorded_at",
-          "columns": ["recordedAt"],
-          "isUnique": false
-        },
-        "idx_health_records_time": {
-          "name": "idx_health_records_time",
-          "columns": ["time"],
-          "isUnique": false
-        },
-        "idx_health_records_type": {
-          "name": "idx_health_records_type",
-          "columns": ["type"],
-          "isUnique": false
+        "word_category_unique": {
+          "name": "word_category_unique",
+          "columns": [
+            "word_id",
+            "category_id"
+          ],
+          "isUnique": true
         }
       },
       "foreignKeys": {
-        "health_records_baby_id_baby_profiles_id_fk": {
-          "name": "health_records_baby_id_baby_profiles_id_fk",
-          "tableFrom": "health_records",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
+        "word_category_mapping_word_id_words_id_fk": {
+          "name": "word_category_mapping_word_id_words_id_fk",
+          "tableFrom": "word_category_mapping",
+          "tableTo": "words",
+          "columnsFrom": [
+            "word_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "word_category_mapping_category_id_word_categories_id_fk": {
+          "name": "word_category_mapping_category_id_word_categories_id_fk",
+          "tableFrom": "word_category_mapping",
+          "tableTo": "word_categories",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1061,8 +803,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "pumpings": {
-      "name": "pumpings",
+    "words": {
+      "name": "words",
       "columns": {
         "id": {
           "name": "id",
@@ -1071,71 +813,80 @@
           "notNull": true,
           "autoincrement": true
         },
-        "baby_id": {
-          "name": "baby_id",
-          "type": "integer",
+        "word": {
+          "name": "word",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "startTime": {
-          "name": "startTime",
-          "type": "integer",
+        "definition": {
+          "name": "definition",
+          "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "amountMl": {
-          "name": "amountMl",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "leftAmountMl": {
-          "name": "leftAmountMl",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "rightAmountMl": {
-          "name": "rightAmountMl",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "leftDuration": {
-          "name": "leftDuration",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "rightDuration": {
-          "name": "rightDuration",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "duration": {
-          "name": "duration",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
+        "part_of_speech": {
+          "name": "part_of_speech",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
         },
-        "recordedAt": {
-          "name": "recordedAt",
+        "pronunciation": {
+          "name": "pronunciation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "audio_url": {
+          "name": "audio_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "etymology": {
+          "name": "etymology",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "example_sentence": {
+          "name": "example_sentence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "difficulty": {
+          "name": "difficulty",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1000
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'en'"
+        },
+        "syllable_count": {
+          "name": "syllable_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "imported_at": {
+          "name": "imported_at",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -1143,215 +894,29 @@
         }
       },
       "indexes": {
-        "idx_pumpings_baby_id": {
-          "name": "idx_pumpings_baby_id",
-          "columns": ["baby_id"],
+        "words_word_unique": {
+          "name": "words_word_unique",
+          "columns": [
+            "word"
+          ],
+          "isUnique": true
+        },
+        "words_word_idx": {
+          "name": "words_word_idx",
+          "columns": [
+            "word"
+          ],
           "isUnique": false
         },
-        "idx_pumpings_recorded_at": {
-          "name": "idx_pumpings_recorded_at",
-          "columns": ["recordedAt"],
-          "isUnique": false
-        },
-        "idx_pumpings_start_time": {
-          "name": "idx_pumpings_start_time",
-          "columns": ["startTime"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "pumpings_baby_id_baby_profiles_id_fk": {
-          "name": "pumpings_baby_id_baby_profiles_id_fk",
-          "tableFrom": "pumpings",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "scheduled_notifications": {
-      "name": "scheduled_notifications",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "baby_id": {
-          "name": "baby_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "notification_type": {
-          "name": "notification_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "notification_id": {
-          "name": "notification_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "scheduled_time": {
-          "name": "scheduled_time",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "data": {
-          "name": "data",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_scheduled_notifications_baby_id": {
-          "name": "idx_scheduled_notifications_baby_id",
-          "columns": ["baby_id"],
-          "isUnique": false
-        },
-        "idx_scheduled_notifications_type": {
-          "name": "idx_scheduled_notifications_type",
-          "columns": ["notification_type"],
-          "isUnique": false
-        },
-        "idx_scheduled_notifications_notification_id": {
-          "name": "idx_scheduled_notifications_notification_id",
-          "columns": ["notification_id"],
-          "isUnique": false
-        },
-        "idx_scheduled_notifications_scheduled_time": {
-          "name": "idx_scheduled_notifications_scheduled_time",
-          "columns": ["scheduled_time"],
+        "words_difficulty_idx": {
+          "name": "words_difficulty_idx",
+          "columns": [
+            "difficulty"
+          ],
           "isUnique": false
         }
       },
-      "foreignKeys": {
-        "scheduled_notifications_baby_id_baby_profiles_id_fk": {
-          "name": "scheduled_notifications_baby_id_baby_profiles_id_fk",
-          "tableFrom": "scheduled_notifications",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "sleep_sessions": {
-      "name": "sleep_sessions",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "baby_id": {
-          "name": "baby_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "startTime": {
-          "name": "startTime",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "endTime": {
-          "name": "endTime",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "duration": {
-          "name": "duration",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "recordedAt": {
-          "name": "recordedAt",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "idx_sleep_sessions_baby_id": {
-          "name": "idx_sleep_sessions_baby_id",
-          "columns": ["baby_id"],
-          "isUnique": false
-        },
-        "idx_sleep_sessions_recorded_at": {
-          "name": "idx_sleep_sessions_recorded_at",
-          "columns": ["recordedAt"],
-          "isUnique": false
-        },
-        "idx_sleep_sessions_start_time": {
-          "name": "idx_sleep_sessions_start_time",
-          "columns": ["startTime"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "sleep_sessions_baby_id_baby_profiles_id_fk": {
-          "name": "sleep_sessions_baby_id_baby_profiles_id_fk",
-          "tableFrom": "sleep_sessions",
-          "tableTo": "baby_profiles",
-          "columnsFrom": ["baby_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

@@ -30,6 +30,7 @@ export function useBrandColor() {
      * All colors come from THEME - single source of truth
      */
     colors: {
+      // Brand colors
       primary: theme.primary,
       secondary: theme.secondary,
       accent: theme.accent,
@@ -37,7 +38,18 @@ export function useBrandColor() {
       mint: theme.mint,
       info: theme.info,
       lavender: theme.lavender,
-      // Common semantic colors (not in THEME, but commonly needed)
+      // Semantic colors
+      background: theme.background,
+      foreground: theme.foreground,
+      card: theme.card,
+      cardForeground: theme.cardForeground,
+      muted: theme.muted,
+      mutedForeground: theme.mutedForeground,
+      border: theme.border,
+      input: theme.input,
+      ring: theme.ring,
+      primaryForeground: theme.primaryForeground,
+      // Common utility colors
       white: '#FFFFFF',
       black: '#000000',
     },

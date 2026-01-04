@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "EasyBaby+",
-    "slug": "BabyEase",
-    "version": "1.0.17",
-    "orientation": "default",
+    "name": "Spelling Bee",
+    "slug": "spelling-bee",
+    "version": "1.0.0",
+    "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "easybabytracker",
+    "scheme": "spellingbee",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "jsEngine": "hermes",
@@ -17,8 +17,8 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.hunght.BabyEase",
-      "buildNumber": "18",
+      "bundleIdentifier": "com.hunght.spellingbee",
+      "buildNumber": "1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -30,8 +30,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.hunght.BabyEase",
-      "versionCode": 18
+      "package": "com.hunght.spellingbee",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -41,16 +41,14 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-web-browser",
       "expo-sqlite",
+      "expo-localization",
       [
-        "expo-image-picker",
+        "expo-av",
         {
-          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos to add baby pictures.",
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take baby photos."
+          "microphonePermission": false
         }
-      ],
-      "expo-localization"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

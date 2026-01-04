@@ -1,393 +1,234 @@
 import { index, integer, real, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 
-export const feedings = sqliteTable(
-  'feedings',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    type: text('type').notNull().$type<'breast' | 'bottle' | 'solids'>(),
-    // Start time (timestamp in seconds)
-    startTime: integer('startTime', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-    // Duration in seconds (optional)
-    duration: integer('duration', { mode: 'number' }),
-    // Breast feeding specific: left and right side durations
-    leftDuration: integer('leftDuration', { mode: 'number' }),
-    rightDuration: integer('rightDuration', { mode: 'number' }),
-    // Bottle feeding specific: ingredient type and amount
-    ingredientType: text('ingredientType').$type<'breast_milk' | 'formula' | 'others'>(),
-    amountMl: real('amountMl'),
-    // Solids specific: ingredient name and amount
-    ingredient: text('ingredient'),
-    amountGrams: real('amountGrams'),
-    // Common fields
-    notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_feedings_baby_id').on(table.babyId),
-    index('idx_feedings_recorded_at').on(table.recordedAt),
-    index('idx_feedings_start_time').on(table.startTime),
-  ]
-);
-
-export const sleepSessions = sqliteTable(
-  'sleep_sessions',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    kind: text('kind').notNull().$type<'nap' | 'night'>(),
-    // Start time (timestamp in seconds)
-    startTime: integer('startTime', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-    // End time (timestamp in seconds, optional)
-    endTime: integer('endTime', { mode: 'number' }),
-    // Total duration in seconds (optional)
-    duration: integer('duration', { mode: 'number' }),
-    notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_sleep_sessions_baby_id').on(table.babyId),
-    index('idx_sleep_sessions_recorded_at').on(table.recordedAt),
-    index('idx_sleep_sessions_start_time').on(table.startTime),
-  ]
-);
-
-export const diaryEntries = sqliteTable(
-  'diary_entries',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    title: text('title'),
-    content: text('content'),
-    photoUri: text('photoUri'),
-    createdAt: integer('createdAt', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_diary_entries_baby_id').on(table.babyId),
-    index('idx_diary_entries_created_at').on(table.createdAt),
-  ]
-);
-
-export const diaperChanges = sqliteTable(
-  'diaper_changes',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    kind: text('kind').notNull().$type<'wet' | 'soiled' | 'mixed' | 'dry'>(),
-    // Time of diaper change (timestamp in seconds)
-    time: integer('time', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-    // Wetness level (1-3, optional)
-    wetness: integer('wetness', { mode: 'number' }),
-    // Color of poop (optional)
-    color: text('color'),
-    notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_diaper_changes_baby_id').on(table.babyId),
-    index('idx_diaper_changes_recorded_at').on(table.recordedAt),
-    index('idx_diaper_changes_time').on(table.time),
-  ]
-);
-
-export const babyProfiles = sqliteTable('baby_profiles', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  nickname: text('nickname').notNull(),
-  gender: text('gender').notNull().$type<'unknown' | 'boy' | 'girl'>(),
-  birthDate: text('birth_date').notNull(),
-  dueDate: text('due_date').notNull(),
-  avatarUri: text('avatar_uri'), // Local file path for baby profile photo
-  firstWakeTime: text('first_wake_time').default('07:00').notNull(),
-  selectedEasyFormulaId: text('selected_easy_formula_id'),
-  createdAt: integer('created_at', { mode: 'number' })
-    .notNull()
-    .$defaultFn(() => Math.floor(Date.now() / 1000)),
-});
-
-export const concernChoices = sqliteTable(
-  'concern_choices',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    concernId: text('concern_id').notNull(),
-  },
-  (table) => [index('idx_concern_choices_baby_id').on(table.babyId)]
-);
-
-export const pumpings = sqliteTable(
-  'pumpings',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    // Start time (timestamp in seconds)
-    startTime: integer('startTime', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-    // Total amount pumped in ml
-    amountMl: real('amountMl').notNull(),
-    // Left and right side amounts
-    leftAmountMl: real('leftAmountMl'),
-    rightAmountMl: real('rightAmountMl'),
-    // Left and right side durations in seconds
-    leftDuration: integer('leftDuration', { mode: 'number' }),
-    rightDuration: integer('rightDuration', { mode: 'number' }),
-    // Total duration in seconds (optional)
-    duration: integer('duration', { mode: 'number' }),
-    // Common fields
-    notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_pumpings_baby_id').on(table.babyId),
-    index('idx_pumpings_recorded_at').on(table.recordedAt),
-    index('idx_pumpings_start_time').on(table.startTime),
-  ]
-);
-
-export const healthRecords = sqliteTable(
-  'health_records',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    type: text('type').notNull().$type<'temperature' | 'medicine' | 'symptoms'>(),
-    // Time of the health record (timestamp in seconds)
-    time: integer('time', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-    // Temperature specific: temperature in Celsius
-    temperature: real('temperature'),
-    // Medicine specific: medicine type and name
-    medicineType: text('medicineType').$type<'medication' | 'vaccine'>(),
-    medication: text('medication'),
-    // Symptoms specific: symptoms description
-    symptoms: text('symptoms'),
-    // Common fields
-    notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_health_records_baby_id').on(table.babyId),
-    index('idx_health_records_recorded_at').on(table.recordedAt),
-    index('idx_health_records_time').on(table.time),
-    index('idx_health_records_type').on(table.type),
-  ]
-);
-
-export const growthRecords = sqliteTable(
-  'growth_records',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    // Time of the growth measurement (timestamp in seconds)
-    time: integer('time', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-    // Weight in kg
-    weightKg: real('weightKg'),
-    // Height in cm
-    heightCm: real('heightCm'),
-    // Head circumference in cm
-    headCircumferenceCm: real('headCircumferenceCm'),
-    // Common fields
-    notes: text('notes'),
-    recordedAt: integer('recordedAt', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_growth_records_baby_id').on(table.babyId),
-    index('idx_growth_records_recorded_at').on(table.recordedAt),
-    index('idx_growth_records_time').on(table.time),
-  ]
-);
-
+// General app state (key-value store)
 export const appState = sqliteTable('app_state', {
   key: text('key').primaryKey().notNull(),
   value: text('value'),
 });
 
-export const scheduledNotifications = sqliteTable(
-  'scheduled_notifications',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    // Notification type (e.g., 'feeding', 'pumping', etc.)
-    notificationType: text('notification_type')
-      .notNull()
-      .$type<'feeding' | 'pumping' | 'sleep' | 'diaper'>(),
-    // OS notification identifier
-    notificationId: text('notification_id').notNull(),
-    // Scheduled time (timestamp in seconds)
-    scheduledTime: integer('scheduled_time', { mode: 'number' }).notNull(),
-    // Additional data stored as JSON (e.g., feedingType for feeding notifications)
-    data: text('data'),
-    // Created timestamp
-    createdAt: integer('created_at', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_scheduled_notifications_baby_id').on(table.babyId),
-    index('idx_scheduled_notifications_type').on(table.notificationType),
-    index('idx_scheduled_notifications_notification_id').on(table.notificationId),
-    index('idx_scheduled_notifications_scheduled_time').on(table.scheduledTime),
-  ]
-);
-
-export const easyFormulaRules = sqliteTable(
-  'easy_formula_rules',
-  {
-    id: text('id').primaryKey().notNull(), // 'newborn', 'fourToSixMonths', etc. or 'custom_<babyId>_<timestamp>'
-    babyId: integer('baby_id').references(() => babyProfiles.id, { onDelete: 'cascade' }), // NULL for predefined, set for user-created
-    isCustom: integer('is_custom', { mode: 'boolean' }).notNull().default(false),
-    // Date-specific rule: if set, this rule only applies to this date (YYYY-MM-DD format)
-    // NULL means the rule applies to all dates (or based on age range)
-    validDate: text('valid_date'),
-    // Source rule ID: for day-specific rules, stores the ID of the original rule it was cloned from
-    // NULL for regular rules, set for day-specific custom rules
-    sourceRuleId: text('source_rule_id'),
-    minWeeks: integer('min_weeks').notNull(),
-    maxWeeks: integer('max_weeks'), // NULL for open-ended (toddler+)
-
-    // Translation keys for predefined, or direct text for custom
-    labelKey: text('label_key'),
-    labelText: text('label_text'),
-    ageRangeKey: text('age_range_key'),
-    ageRangeText: text('age_range_text'),
-    // HTML description for custom formulas
-    description: text('description'),
-
-    // Schedule phases - JSON array of cycles, each cycle contains durations in minutes
-    // Format: [{ eat: 35, activity: 55, sleep: 120 }, { eat: 30, activity: 60, sleep: 90 }, ...]
-    // Each cycle represents: Eat -> Activity -> Sleep -> Your Time (Y overlaps with S)
-    phases: text('phases').notNull(),
-
-    createdAt: integer('created_at', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-    updatedAt: integer('updated_at', { mode: 'number' })
-      .notNull()
-      .$defaultFn(() => Math.floor(Date.now() / 1000)),
-  },
-  (table) => [
-    index('idx_formula_rules_baby_id').on(table.babyId),
-    index('idx_formula_rules_custom').on(table.isCustom),
-    index('idx_formula_rules_weeks').on(table.minWeeks, table.maxWeeks),
-    index('idx_formula_rules_valid_date').on(table.validDate),
-    // Unique constraint: one day-specific rule per baby per date
-    unique('idx_formula_rules_baby_date_unique').on(table.babyId, table.validDate),
-  ]
-);
-
-// ============================================
-// HABIT TRACKING TABLES
-// ============================================
-
-// Predefined habit definitions
-export const habitDefinitions = sqliteTable('habit_definitions', {
-  id: text('id').primaryKey().notNull(), // e.g., 'tummy_time', 'brushing_teeth'
-  category: text('category')
+// User profile (for future multi-user support)
+export const userProfile = sqliteTable('user_profile', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().default('Player'),
+  createdAt: integer('created_at')
     .notNull()
-    .$type<'health' | 'learning' | 'physical' | 'sleep' | 'social' | 'nutrition'>(),
-  iconName: text('icon_name').notNull(), // Lucide icon name
-  labelKey: text('label_key').notNull(), // Translation key for habit name
-  descriptionKey: text('description_key').notNull(), // Translation key for description
-  minAgeMonths: integer('min_age_months').default(0),
-  maxAgeMonths: integer('max_age_months'), // NULL for no upper limit
-  defaultFrequency: text('default_frequency')
-    .notNull()
-    .$type<'daily' | 'twice_daily' | 'multiple_daily' | 'weekly'>(),
-  sortOrder: integer('sort_order').default(0), // For ordering within category
-  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+    .$defaultFn(() => Math.floor(Date.now() / 1000)),
+  settings: text('settings'), // JSON: { dailyGoal, preferredDifficulty, soundEnabled }
 });
 
-// User's selected habits for each baby
-export const babyHabits = sqliteTable(
-  'baby_habits',
+// Word dictionary (imported from Wiktionary)
+export const words = sqliteTable(
+  'words',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
-      .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    habitDefinitionId: text('habit_definition_id')
-      .notNull()
-      .references(() => habitDefinitions.id),
-    isActive: integer('is_active', { mode: 'boolean' }).default(true),
-    targetFrequency: text('target_frequency').$type<
-      'daily' | 'twice_daily' | 'multiple_daily' | 'weekly'
-    >(), // Override default frequency
-    reminderTime: text('reminder_time'), // Optional reminder HH:MM
-    reminderDays: text('reminder_days'), // JSON array of days: [0,1,2,3,4,5,6] for Sun-Sat, or preset like "daily", "weekdays", "weekends"
-    createdAt: integer('created_at', { mode: 'number' })
+    word: text('word').notNull().unique(),
+    definition: text('definition').notNull(),
+    partOfSpeech: text('part_of_speech'), // noun, verb, adjective, etc.
+    pronunciation: text('pronunciation'), // IPA notation
+    audioUrl: text('audio_url'), // URL or local path to audio file
+    etymology: text('etymology'),
+    exampleSentence: text('example_sentence'),
+    difficulty: integer('difficulty').notNull().default(1000), // Elo-style rating (1000 = average)
+    language: text('language').notNull().default('en'),
+    syllableCount: integer('syllable_count'),
+    importedAt: integer('imported_at')
       .notNull()
       .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
-    index('idx_baby_habits_baby_id').on(table.babyId),
-    index('idx_baby_habits_definition').on(table.habitDefinitionId),
-    unique('idx_baby_habits_unique').on(table.babyId, table.habitDefinitionId),
+    index('words_word_idx').on(table.word),
+    index('words_difficulty_idx').on(table.difficulty),
   ]
 );
 
-// Individual habit log entries
-export const habitLogs = sqliteTable(
-  'habit_logs',
+// Word categories/tags (many-to-many)
+export const wordCategories = sqliteTable('word_categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(), // e.g., "Science", "History", "SAT", "GRE"
+  description: text('description'),
+});
+
+export const wordCategoryMapping = sqliteTable(
+  'word_category_mapping',
+  {
+    wordId: integer('word_id')
+      .notNull()
+      .references(() => words.id, { onDelete: 'cascade' }),
+    categoryId: integer('category_id')
+      .notNull()
+      .references(() => wordCategories.id, { onDelete: 'cascade' }),
+  },
+  (table) => [unique('word_category_unique').on(table.wordId, table.categoryId)]
+);
+
+// FSRS State enum values
+export const FSRSState = {
+  New: 0,
+  Learning: 1,
+  Review: 2,
+  Relearning: 3,
+} as const;
+
+// FSRS card state - tracks learning progress per word
+export const cardProgress = sqliteTable(
+  'card_progress',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    babyId: integer('baby_id')
+    userId: integer('user_id')
       .notNull()
-      .references(() => babyProfiles.id, { onDelete: 'cascade' }),
-    babyHabitId: integer('baby_habit_id')
+      .references(() => userProfile.id, { onDelete: 'cascade' }),
+    wordId: integer('word_id')
       .notNull()
-      .references(() => babyHabits.id, { onDelete: 'cascade' }),
-    completedAt: integer('completed_at', { mode: 'number' })
+      .references(() => words.id, { onDelete: 'cascade' }),
+
+    // FSRS-4.5 core parameters
+    stability: real('stability').notNull().default(0), // Memory stability (days)
+    difficulty: real('difficulty').notNull().default(0.3), // Item difficulty (0-1)
+    elapsedDays: real('elapsed_days').notNull().default(0), // Days since last review
+    scheduledDays: real('scheduled_days').notNull().default(0), // Days until next review
+    reps: integer('reps').notNull().default(0), // Number of reviews
+    lapses: integer('lapses').notNull().default(0), // Number of times forgotten
+    state: integer('state').notNull().default(0), // 0=New, 1=Learning, 2=Review, 3=Relearning
+
+    // Scheduling
+    dueDate: integer('due_date').notNull(), // Unix seconds - when card is due
+    lastReviewedAt: integer('last_reviewed_at'), // Unix seconds
+
+    // Statistics
+    totalAttempts: integer('total_attempts').notNull().default(0),
+    correctAttempts: integer('correct_attempts').notNull().default(0),
+    averageLevenshtein: real('average_levenshtein').default(0), // Average error rate
+
+    createdAt: integer('created_at')
       .notNull()
       .$defaultFn(() => Math.floor(Date.now() / 1000)),
-    duration: integer('duration', { mode: 'number' }), // Optional duration in seconds
-    notes: text('notes'),
-    recordedAt: integer('recorded_at', { mode: 'number' })
+    updatedAt: integer('updated_at')
       .notNull()
       .$defaultFn(() => Math.floor(Date.now() / 1000)),
   },
   (table) => [
-    index('idx_habit_logs_baby_id').on(table.babyId),
-    index('idx_habit_logs_baby_habit_id').on(table.babyHabitId),
-    index('idx_habit_logs_completed_at').on(table.completedAt),
+    unique('card_progress_user_word_unique').on(table.userId, table.wordId),
+    index('card_progress_due_date_idx').on(table.dueDate),
+    index('card_progress_state_idx').on(table.state),
+    index('card_progress_user_id_idx').on(table.userId),
   ]
 );
+
+// Quiz sessions - tracks individual study sessions
+export const quizSessions = sqliteTable(
+  'quiz_sessions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => userProfile.id, { onDelete: 'cascade' }),
+    startedAt: integer('started_at')
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
+    endedAt: integer('ended_at'), // Unix seconds
+    wordsAttempted: integer('words_attempted').notNull().default(0),
+    wordsCorrect: integer('words_correct').notNull().default(0),
+    sessionType: text('session_type').notNull().default('practice'), // practice, daily, category
+    categoryId: integer('category_id').references(() => wordCategories.id),
+  },
+  (table) => [index('quiz_sessions_user_id_idx').on(table.userId)]
+);
+
+// Individual quiz attempts - detailed logs
+export const quizAttempts = sqliteTable(
+  'quiz_attempts',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    sessionId: integer('session_id')
+      .notNull()
+      .references(() => quizSessions.id, { onDelete: 'cascade' }),
+    cardProgressId: integer('card_progress_id')
+      .notNull()
+      .references(() => cardProgress.id),
+    wordId: integer('word_id')
+      .notNull()
+      .references(() => words.id),
+
+    userInput: text('user_input').notNull(),
+    isCorrect: integer('is_correct').notNull(), // 0 or 1
+    levenshteinDistance: integer('levenshtein_distance').notNull(),
+    normalizedError: real('normalized_error').notNull(), // levenshtein / word.length
+
+    // FSRS rating derived from Levenshtein
+    fsrsRating: integer('fsrs_rating').notNull(), // 1=Again, 2=Hard, 3=Good, 4=Easy
+
+    // Timing
+    responseTimeMs: integer('response_time_ms'),
+    attemptedAt: integer('attempted_at')
+      .notNull()
+      .$defaultFn(() => Math.floor(Date.now() / 1000)),
+  },
+  (table) => [
+    index('quiz_attempts_session_idx').on(table.sessionId),
+    index('quiz_attempts_card_progress_idx').on(table.cardProgressId),
+  ]
+);
+
+// User stats and gamification
+export const userStats = sqliteTable('user_stats', {
+  userId: integer('user_id')
+    .primaryKey()
+    .references(() => userProfile.id, { onDelete: 'cascade' }),
+  currentStreak: integer('current_streak').notNull().default(0),
+  longestStreak: integer('longest_streak').notNull().default(0),
+  lastPracticeDate: integer('last_practice_date'), // Unix seconds (date only, midnight UTC)
+  totalWordsLearned: integer('total_words_learned').notNull().default(0),
+  totalQuizzes: integer('total_quizzes').notNull().default(0),
+  totalCorrect: integer('total_correct').notNull().default(0),
+  totalAttempts: integer('total_attempts').notNull().default(0),
+  xpPoints: integer('xp_points').notNull().default(0),
+  level: integer('level').notNull().default(1),
+});
+
+// Daily goals tracking
+export const dailyProgress = sqliteTable(
+  'daily_progress',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => userProfile.id, { onDelete: 'cascade' }),
+    date: integer('date').notNull(), // Unix seconds (midnight UTC)
+    wordsReviewed: integer('words_reviewed').notNull().default(0),
+    wordsLearned: integer('words_learned').notNull().default(0),
+    minutesPracticed: integer('minutes_practiced').notNull().default(0),
+    goalMet: integer('goal_met').notNull().default(0), // 0 or 1
+  },
+  (table) => [
+    unique('daily_progress_user_date_unique').on(table.userId, table.date),
+    index('daily_progress_date_idx').on(table.date),
+  ]
+);
+
+// Type exports using Drizzle's $inferSelect and $inferInsert
+export type AppState = typeof appState.$inferSelect;
+export type InsertAppState = typeof appState.$inferInsert;
+
+export type UserProfile = typeof userProfile.$inferSelect;
+export type InsertUserProfile = typeof userProfile.$inferInsert;
+
+export type Word = typeof words.$inferSelect;
+export type InsertWord = typeof words.$inferInsert;
+
+export type WordCategory = typeof wordCategories.$inferSelect;
+export type InsertWordCategory = typeof wordCategories.$inferInsert;
+
+export type CardProgress = typeof cardProgress.$inferSelect;
+export type InsertCardProgress = typeof cardProgress.$inferInsert;
+
+export type QuizSession = typeof quizSessions.$inferSelect;
+export type InsertQuizSession = typeof quizSessions.$inferInsert;
+
+export type QuizAttempt = typeof quizAttempts.$inferSelect;
+export type InsertQuizAttempt = typeof quizAttempts.$inferInsert;
+
+export type UserStats = typeof userStats.$inferSelect;
+export type InsertUserStats = typeof userStats.$inferInsert;
+
+export type DailyProgress = typeof dailyProgress.$inferSelect;
+export type InsertDailyProgress = typeof dailyProgress.$inferInsert;

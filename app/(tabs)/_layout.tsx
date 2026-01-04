@@ -1,106 +1,57 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import React from 'react';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { View } from 'react-native';
+import { BookOpen, ChartBar, Settings, Trophy } from 'lucide-react-native';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { useTheme } from '@/lib/ThemeContext';
-import { NAV_THEME } from '@/lib/theme';
-import { useLocalization } from '@/localization/LocalizationProvider';
+import { useBrandColor } from '@/hooks/use-brand-color';
 
 export default function TabLayout() {
-  const { colorScheme } = useTheme();
-  const { t } = useLocalization();
-  const insets = useSafeAreaInsets();
+  const brandColors = useBrandColor();
+  const primaryColor = brandColors.colors.primary;
+  const mutedColor = brandColors.colors.mutedForeground;
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <Tabs
-        initialRouteName="tracking"
-        screenOptions={{
-          tabBarActiveTintColor: NAV_THEME[colorScheme].colors.text,
-          headerShown: false,
-          tabBarButton: HapticTab,
-          tabBarHideOnKeyboard: true,
-          tabBarStyle: {
-            height: 60 + insets.bottom,
-            paddingBottom: 10 + insets.bottom,
-            paddingTop: 10,
-          },
-        }}>
-        <Tabs.Screen
-          name="easy-schedule"
-          options={{
-            title: t('tabs.easySchedule'),
-            tabBarIcon: ({ color, focused }) => (
-              <Ionicons
-                name="calendar-number-outline"
-                size={26}
-                color={focused ? '#FF5C8D' : color}
-              />
-            ),
-            tabBarButton: (props) => <HapticTab {...props} testID="tab-easy-schedule" />,
-          }}
-        />
-        <Tabs.Screen
-          name="charts"
-          options={{
-            title: t('tabs.charts'),
-            tabBarIcon: ({ color, focused }) => (
-              <Ionicons name="stats-chart" size={30} color={focused ? '#FF5C8D' : color} />
-            ),
-            tabBarButton: (props) => <HapticTab {...props} testID="tab-charts" />,
-          }}
-        />
-        <Tabs.Screen
-          name="tracking"
-          options={{
-            title: t('tabs.tracking'),
-            tabBarLabel: () => null, // Hide label for the FAB look
-            tabBarIcon: ({ focused, color }) => (
-              <View
-                className="elevation-lg items-center justify-center shadow-lg"
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  marginBottom: 0,
-                  backgroundColor: focused ? '#FF5C8D' : color,
-                  shadowColor: focused ? '#FF5C8D' : 'transparent',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: focused ? 0.3 : 0,
-                  shadowRadius: 4,
-                  elevation: focused ? 5 : 0,
-                }}>
-                <Ionicons name="add" size={32} color="white" />
-              </View>
-            ),
-            tabBarButton: (props) => <HapticTab {...props} testID="tab-tracking" />,
-          }}
-        />
-        <Tabs.Screen
-          name="reminders"
-          options={{
-            title: t('tabs.reminders', { defaultValue: 'Reminders' }),
-            tabBarIcon: ({ color, focused }) => (
-              <Ionicons name="alarm-outline" size={26} color={focused ? '#FF5C8D' : color} />
-            ),
-            tabBarButton: (props) => <HapticTab {...props} testID="tab-reminders" />,
-          }}
-        />
-
-        <Tabs.Screen
-          name="settings"
-          options={{
-            title: t('tabs.settings'),
-            tabBarIcon: ({ color, focused }) => (
-              <Ionicons name="settings-outline" size={26} color={focused ? '#FF5C8D' : color} />
-            ),
-            tabBarButton: (props) => <HapticTab {...props} testID="tab-settings" />,
-          }}
-        />
-      </Tabs>
-    </SafeAreaView>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: primaryColor,
+        tabBarInactiveTintColor: mutedColor,
+        tabBarStyle: {
+          borderTopWidth: 1,
+          borderTopColor: brandColors.colors.border,
+          backgroundColor: brandColors.colors.background,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+        },
+      }}>
+      <Tabs.Screen
+        name="quiz"
+        options={{
+          title: 'Practice',
+          tabBarIcon: ({ color, size }) => <Trophy size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="progress"
+        options={{
+          title: 'Progress',
+          tabBarIcon: ({ color, size }) => <ChartBar size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="words"
+        options={{
+          title: 'Words',
+          tabBarIcon: ({ color, size }) => <BookOpen size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size }) => <Settings size={size} color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }

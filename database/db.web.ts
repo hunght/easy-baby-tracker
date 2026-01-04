@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
 
-export const DATABASE_NAME = 'babyease.db';
+export const DATABASE_NAME = 'spellingbee.db';
 
 // Database instances
 let _expoDb: SQLiteDatabase | null = null;

@@ -22,7 +22,7 @@ import { NavigationStack } from '@/pages/root-layout/NavigationStack';
 const queryClient = new QueryClient({});
 
 export const unstable_settings = {
-  anchor: '(tabs)/tracking',
+  anchor: '(tabs)/quiz',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.

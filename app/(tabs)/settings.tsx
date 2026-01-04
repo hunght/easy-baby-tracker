@@ -1,336 +1,233 @@
-import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Switch, View } from 'react-native';
-import { z } from 'zod';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ChevronRight, Moon, Sun, Volume2, Vibrate, Target, Info } from 'lucide-react-native';
+import { ScrollView, View, Pressable, Switch } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { TabPageHeader } from '@/components/TabPageHeader';
-import { useNotification } from '@/components/NotificationContext';
+import { USER_PROFILE_QUERY_KEY } from '@/constants/query-keys';
+import {
+  getActiveUserProfile,
+  getUserSettings,
+  updateUserSettings,
+  type UserSettings,
+} from '@/database/user-profile';
 import { useTheme } from '@/lib/ThemeContext';
-
-import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
-import { getBabyProfiles, getActiveBabyProfile } from '@/database/baby-profile';
-import type { Locale } from '@/localization/translations';
-import { useLocalization } from '@/localization/LocalizationProvider';
-import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
-import { useSetActiveBabyProfile } from '@/hooks/use-set-active-baby-profile';
-
-// Theme mode options
-const themeModes: readonly ('system' | 'light' | 'dark')[] = ['system', 'light', 'dark'];
-
-// Zod schema for theme mode validation
-const themeModeSchema = z.enum(['system', 'light', 'dark']);
-
-// Type guard using Zod validation
-function isThemeMode(value: unknown): value is 'system' | 'light' | 'dark' {
-  return themeModeSchema.safeParse(value).success;
-}
-
-// Zod schema for Locale validation
-const localeSchema = z.enum(['en', 'vi']);
-
-// Type guard using Zod validation
-function isLocale(value: unknown): value is Locale {
-  return localeSchema.safeParse(value).success;
-}
-
-function computeMonthsOld(birthDateIso: string) {
-  const birth = new Date(birthDateIso);
-  const now = new Date();
-  const months =
-    (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-  return Math.max(months, 0);
-}
+import { useBrandColor } from '@/hooks/use-brand-color';
 
 export default function SettingsScreen() {
-  const { t, locale, setLocale, availableLocales } = useLocalization();
+  const brandColors = useBrandColor();
+  const queryClient = useQueryClient();
   const { themeMode, setThemeMode } = useTheme();
-  const router = useRouter();
-  const { showNotification } = useNotification();
 
-  const { data: profiles = [], isLoading } = useQuery({
-    queryKey: BABY_PROFILES_QUERY_KEY,
-    queryFn: getBabyProfiles,
+  // Get active user profile
+  const { data: profile } = useQuery({
+    queryKey: ['activeUserProfile'],
+    queryFn: getActiveUserProfile,
   });
 
-  const { data: currentProfile } = useQuery({
-    queryKey: BABY_PROFILE_QUERY_KEY,
-    queryFn: getActiveBabyProfile,
+  const userId = profile?.id;
+
+  // Get user settings
+  const { data: settings } = useQuery({
+    queryKey: ['userSettings', userId],
+    queryFn: () => (userId ? getUserSettings(userId) : null),
+    enabled: !!userId,
   });
 
-  const { features, toggleFeature } = useFeatureFlags();
+  // Update settings mutation
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (newSettings: Partial<UserSettings>) => {
+      if (!userId) return;
+      await updateUserSettings(userId, newSettings);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userSettings', userId] });
+    },
+  });
 
-  const setActiveBabyMutation = useSetActiveBabyProfile();
-
-  const handleSetActiveBaby = (babyId: number) => {
-    setActiveBabyMutation.mutate(babyId, {
-      onSuccess: () => {
-        const profile = profiles.find((p) => p.id === babyId);
-        showNotification(
-          profile
-            ? `${profile.nickname} is now active`
-            : t('settings.profileUpdated', { defaultValue: 'Profile updated' }),
-          'success'
-        );
-      },
-    });
+  const handleToggleSetting = (key: keyof UserSettings, value: boolean) => {
+    updateSettingsMutation.mutate({ [key]: value });
   };
 
-  const [activeTab, setActiveTab] = useState<'baby' | 'features' | 'system'>('baby');
-
-  const tabs: { key: typeof activeTab; label: string }[] = [
-    { key: 'baby', label: t('settings.tabs.baby', { defaultValue: 'Baby' }) },
-    { key: 'features', label: t('settings.tabs.features', { defaultValue: 'Features' }) },
-    { key: 'system', label: t('settings.tabs.system', { defaultValue: 'System' }) },
-  ];
-
-  const handleTabChange = (value: string) => {
-    if (value === 'baby' || value === 'features' || value === 'system') {
-      Haptics.selectionAsync();
-      setActiveTab(value);
-    }
+  const handleDailyGoalChange = (goal: number) => {
+    updateSettingsMutation.mutate({ dailyGoal: goal });
   };
 
-  if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center gap-3 bg-background">
-        <ActivityIndicator size="large" />
-        <Text className="font-semibold text-primary">{t('common.loadingProfiles')}</Text>
-      </View>
-    );
-  }
+  const dailyGoalOptions = [5, 10, 15, 20, 30];
 
   return (
-    <View className="flex-1 bg-background">
-      <TabPageHeader title={t('settings.title')} subtitle={t('settings.description')} />
-
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1">
-        <View className="px-6 py-4">
-          <TabsList className="w-full">
-            {tabs.map((tab) => (
-              <TabsTrigger key={tab.key} value={tab.key} className="flex-1">
-                <Text>{tab.label}</Text>
-              </TabsTrigger>
-            ))}
-          </TabsList>
+    <SafeAreaView className="flex-1 bg-background">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="p-4 gap-4"
+        showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View className="py-2">
+          <Text className="text-2xl font-bold text-foreground">Settings</Text>
+          <Text className="text-muted-foreground">Customize your experience</Text>
         </View>
 
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-6 pb-10 gap-6"
-          showsVerticalScrollIndicator={false}>
-          {/* Baby Tab */}
-          <TabsContent value="baby" className="gap-4">
-            <View className="gap-4">
-              {profiles.map((profile) => {
-                const monthsOld = computeMonthsOld(profile.birthDate);
-                const isActive = currentProfile?.id === profile.id;
-                return (
-                  <View
-                    key={profile.id}
-                    className="rounded-2xl bg-card p-5"
-                    style={{
-                      shadowColor: 'rgba(0, 0, 0, 0.05)',
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 1,
-                      shadowRadius: 2,
-                      elevation: 1,
-                    }}>
-                    <Pressable
-                      className="flex-row items-center justify-between active:opacity-90"
-                      onPress={() =>
-                        router.push({
-                          pathname: '/profile-edit',
-                          params: { babyId: profile.id.toString() },
-                        })
-                      }>
-                      <View className="flex-1 gap-1">
-                        <Text className="text-xl font-extrabold text-foreground">
-                          {profile.nickname}
-                        </Text>
-                        <Text className="text-base text-muted-foreground">
-                          {t('common.monthsOld', { params: { count: monthsOld } })}
-                        </Text>
-                      </View>
-                      <View className="h-10 w-10 items-center justify-center rounded-full bg-secondary/10">
-                        <Text className="text-xl text-primary">
-                          {/* Chevron right character or icon */}
-                          {`\u203A`}
-                        </Text>
-                      </View>
-                    </Pressable>
-                    <Button
-                      variant={isActive ? 'default' : 'outline'}
-                      size="sm"
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        handleSetActiveBaby(profile.id);
-                      }}
-                      disabled={isActive || setActiveBabyMutation.isPending}
-                      className="mt-3">
-                      <Text className={isActive ? 'text-primary-foreground' : 'text-foreground'}>
-                        {isActive
-                          ? t('settings.activeProfile', { defaultValue: 'Active' })
-                          : t('settings.setAsActive', { defaultValue: 'Set as Active' })}
-                      </Text>
-                    </Button>
-                  </View>
-                );
-              })}
-
-              {/* Sticky-like Add Button at bottom of list */}
-              <Pressable
-                className="mt-2 flex-row items-center justify-center gap-2 rounded-full bg-primary py-4 active:opacity-90"
-                onPress={() => router.push({ pathname: '/(profiles)/profile-edit', params: {} })}>
-                <Text className="text-lg font-bold text-primary-foreground">
-                  {t('common.addNewBaby')}
-                </Text>
-              </Pressable>
+        {/* Profile Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Profile</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-foreground">Name</Text>
+              <Text className="text-muted-foreground">{profile?.name ?? 'Player'}</Text>
             </View>
-          </TabsContent>
+          </CardContent>
+        </Card>
 
-          {/* Features Tab */}
-          <TabsContent value="features">
-            <View className="gap-3 rounded-2xl bg-card p-5 shadow-sm">
-              <View className="mb-2">
-                <Text className="text-lg font-extrabold text-foreground">
-                  {t('settings.featuresTitle')}
-                </Text>
-                <Text className="text-sm text-muted-foreground">
-                  {t('settings.featuresSubtitle')}
-                </Text>
+        {/* Learning Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex-row items-center gap-2">
+              <Target size={20} color={brandColors.colors.foreground} />
+              <Text className="text-lg font-semibold">Learning</Text>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="gap-4">
+            {/* Daily Goal */}
+            <View>
+              <Text className="mb-2 font-medium text-foreground">Daily Goal</Text>
+              <View className="flex-row gap-2">
+                {dailyGoalOptions.map((goal) => (
+                  <Pressable
+                    key={goal}
+                    onPress={() => handleDailyGoalChange(goal)}
+                    className={`flex-1 items-center rounded-lg border py-2 ${
+                      settings?.dailyGoal === goal
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-card'
+                    }`}>
+                    <Text
+                      className={`font-medium ${
+                        settings?.dailyGoal === goal ? 'text-primary' : 'text-foreground'
+                      }`}>
+                      {goal}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
-              <View className="gap-1">
-                {Object.keys(features)
-                  .filter((k): k is FeatureKey => k in features)
-                  .map((key) => (
-                    <Pressable
-                      key={key}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        toggleFeature(key);
-                      }}
-                      className="flex-row items-center justify-between py-3 active:opacity-70">
-                      <View className="flex-row items-center gap-3">
-                        {/* Checkbox-like indicator on left? Or just text. Guidelines say toggle on right, label left. */}
-                        <Text className="text-lg font-medium capitalize text-foreground">
-                          {t(`tracking.tiles.${key}.label`, { defaultValue: key })}
-                        </Text>
-                      </View>
-                      <Switch
-                        value={features[key]}
-                        onValueChange={() => {
-                          Haptics.selectionAsync();
-                          toggleFeature(key);
-                        }}
-                        trackColor={{ false: '#767577', true: '#FF5C8D' }}
-                        thumbColor={'#f4f3f4'}
-                        // Make switch ignore touches so the row handles it?
-                        // Actually better to let switch handle its own interaction for a11y,
-                        // but user asked for "Make entire row tappable" in guidelines.
-                        pointerEvents="none"
-                      />
-                    </Pressable>
-                  ))}
+              <Text className="mt-1 text-xs text-muted-foreground">Words per day</Text>
+            </View>
+
+            {/* Difficulty Preference */}
+            <View>
+              <Text className="mb-2 font-medium text-foreground">Preferred Difficulty</Text>
+              <View className="flex-row gap-2">
+                {(['beginner', 'intermediate', 'advanced'] as const).map((level) => (
+                  <Pressable
+                    key={level}
+                    onPress={() => updateSettingsMutation.mutate({ preferredDifficulty: level })}
+                    className={`flex-1 items-center rounded-lg border py-2 ${
+                      settings?.preferredDifficulty === level
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-card'
+                    }`}>
+                    <Text
+                      className={`text-sm font-medium capitalize ${
+                        settings?.preferredDifficulty === level ? 'text-primary' : 'text-foreground'
+                      }`}>
+                      {level}
+                    </Text>
+                  </Pressable>
+                ))}
               </View>
             </View>
-          </TabsContent>
+          </CardContent>
+        </Card>
 
-          {/* System Tab */}
-          <TabsContent value="system">
-            <View className="gap-6">
-              {/* Theme Section */}
-              <View className="gap-3 rounded-2xl bg-card p-5 shadow-sm">
-                <View className="mb-2">
-                  <Text className="text-lg font-extrabold text-foreground">
-                    {t('settings.themeTitle')}
+        {/* Appearance */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex-row items-center gap-2">
+              {themeMode === 'dark' ? (
+                <Moon size={20} color={brandColors.colors.foreground} />
+              ) : (
+                <Sun size={20} color={brandColors.colors.foreground} />
+              )}
+              <Text className="text-lg font-semibold">Appearance</Text>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <View className="flex-row gap-2">
+              {(['light', 'dark', 'system'] as const).map((mode) => (
+                <Pressable
+                  key={mode}
+                  onPress={() => setThemeMode(mode)}
+                  className={`flex-1 items-center rounded-lg border py-2 ${
+                    themeMode === mode ? 'border-primary bg-primary/10' : 'border-border bg-card'
+                  }`}>
+                  <Text
+                    className={`text-sm font-medium capitalize ${
+                      themeMode === mode ? 'text-primary' : 'text-foreground'
+                    }`}>
+                    {mode}
                   </Text>
-                  <Text className="text-sm text-muted-foreground">
-                    {t('settings.themeSubtitle')}
-                  </Text>
-                </View>
-                <ToggleGroup
-                  type="single"
-                  value={themeMode}
-                  onValueChange={(value) => {
-                    if (value && isThemeMode(value)) {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setThemeMode(value);
-                    }
-                  }}
-                  variant="outline"
-                  className="w-full">
-                  {themeModes.map((mode, index) => (
-                    <ToggleGroupItem
-                      key={mode}
-                      value={mode}
-                      isFirst={index === 0}
-                      isLast={index === themeModes.length - 1}
-                      className="flex-1"
-                      aria-label={
-                        mode === 'system'
-                          ? t('settings.themeSystem')
-                          : mode === 'light'
-                            ? t('settings.themeLight')
-                            : t('settings.themeDark')
-                      }>
-                      <Text className="font-semibold">
-                        {mode === 'system'
-                          ? t('settings.themeSystem')
-                          : mode === 'light'
-                            ? t('settings.themeLight')
-                            : t('settings.themeDark')}
-                      </Text>
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </View>
-
-              {/* Language Section */}
-              <View className="gap-3 rounded-2xl bg-card p-5 shadow-sm">
-                <View className="mb-2">
-                  <Text className="text-lg font-extrabold text-foreground">
-                    {t('settings.languageTitle')}
-                  </Text>
-                  <Text className="text-sm text-muted-foreground">
-                    {t('settings.languageSubtitle')}
-                  </Text>
-                </View>
-                <ToggleGroup
-                  type="single"
-                  value={locale}
-                  onValueChange={(value) => {
-                    if (value && isLocale(value)) {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setLocale(value);
-                    }
-                  }}
-                  variant="outline"
-                  className="w-full">
-                  {availableLocales.map((language, index) => (
-                    <ToggleGroupItem
-                      key={language.code}
-                      value={language.code}
-                      isFirst={index === 0}
-                      isLast={index === availableLocales.length - 1}
-                      className="flex-1"
-                      aria-label={language.label}>
-                      <Text className="font-semibold">
-                        {language.code === 'en' ? t('settings.english') : t('settings.vietnamese')}
-                      </Text>
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-              </View>
+                </Pressable>
+              ))}
             </View>
-          </TabsContent>
-        </ScrollView>
-      </Tabs>
-    </View>
+          </CardContent>
+        </Card>
+
+        {/* Sound & Haptics */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex-row items-center gap-2">
+              <Volume2 size={20} color={brandColors.colors.foreground} />
+              <Text className="text-lg font-semibold">Sound & Haptics</Text>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="gap-4">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-2">
+                <Volume2 size={18} color={brandColors.colors.mutedForeground} />
+                <Text className="text-foreground">Sound Effects</Text>
+              </View>
+              <Switch
+                value={settings?.soundEnabled ?? true}
+                onValueChange={(value) => handleToggleSetting('soundEnabled', value)}
+                trackColor={{ false: brandColors.colors.muted, true: brandColors.colors.primary }}
+              />
+            </View>
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-2">
+                <Vibrate size={18} color={brandColors.colors.mutedForeground} />
+                <Text className="text-foreground">Haptic Feedback</Text>
+              </View>
+              <Switch
+                value={settings?.hapticEnabled ?? true}
+                onValueChange={(value) => handleToggleSetting('hapticEnabled', value)}
+                trackColor={{ false: brandColors.colors.muted, true: brandColors.colors.primary }}
+              />
+            </View>
+          </CardContent>
+        </Card>
+
+        {/* About */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex-row items-center gap-2">
+              <Info size={20} color={brandColors.colors.foreground} />
+              <Text className="text-lg font-semibold">About</Text>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="gap-2">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-foreground">Version</Text>
+              <Text className="text-muted-foreground">1.0.0</Text>
+            </View>
+            <View className="flex-row items-center justify-between">
+              <Text className="text-foreground">Algorithm</Text>
+              <Text className="text-muted-foreground">FSRS-4.5</Text>
+            </View>
+          </CardContent>
+        </Card>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

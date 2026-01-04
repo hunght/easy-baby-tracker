@@ -1,106 +1,44 @@
-import * as Notifications from 'expo-notifications';
-import { router } from 'expo-router';
-import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
-import { seedPredefinedFormulas } from '@/database/predefined-formulas';
-import { seedHabitDefinitions } from '@/database/habits';
-import { cancelStoredScheduledNotification } from '@/lib/notification-scheduler';
-import {
-  setNotificationHandler,
-  addNotificationResponseReceivedListener,
-  getLastNotificationResponse,
-} from '@/lib/notifications-wrapper';
+import { Text } from '@/components/ui/text';
+import { seedWords, hasWords } from '@/database/seed-words';
 
 // Component that runs after migrations are complete
 export function MigrationCompleteHandler({ children }: { children: React.ReactNode }) {
-  console.log('[MigrationCompleteHandler] Component rendering');
+  const [isSeeding, setIsSeeding] = useState(true);
 
-  // Initialize notification handler and restore scheduled notifications
-  // This runs only after migrations are complete
   useEffect(() => {
-    console.log('[MigrationCompleteHandler] useEffect running');
+    const seedIfNeeded = async () => {
+      try {
+        // Check if database already has words
+        const wordsExist = await hasWords();
 
-    // Skip notifications setup on web (not fully supported)
-    if (Platform.OS === 'web') {
-      console.log('[MigrationCompleteHandler] Skipping on web platform');
-      return;
-    }
-
-    // Seed predefined formulas if not already present
-    console.log('[MigrationCompleteHandler] Seeding predefined formulas');
-    seedPredefinedFormulas().catch((error) => {
-      console.error('[MigrationCompleteHandler] Failed to seed formulas:', error);
-    });
-
-    // Seed habit definitions if not already present
-    console.log('[MigrationCompleteHandler] Seeding habit definitions');
-    seedHabitDefinitions().catch((error) => {
-      console.error('[MigrationCompleteHandler] Failed to seed habits:', error);
-    });
-
-    // Set up notification handler (only available on native)
-    if (setNotificationHandler) {
-      console.log('[MigrationCompleteHandler] Setting up notification handler');
-      setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-          shouldShowBanner: true,
-          shouldShowList: true,
-        }),
-      });
-    }
-
-    // Handle notification tap - navigate to appropriate screen
-    const handleNotificationResponse = async (
-      response: Notifications.NotificationResponse | null
-    ) => {
-      if (!response) {
-        return;
+        if (!wordsExist) {
+          console.log('No words found, seeding database...');
+          const insertedCount = await seedWords();
+          console.log(`Seeded ${insertedCount} words`);
+        } else {
+          console.log('Words already exist, skipping seed');
+        }
+      } catch (error) {
+        console.error('Failed to seed words:', error);
+      } finally {
+        setIsSeeding(false);
       }
-      const data = response.notification.request.content.data;
-
-      if (data?.type === 'feeding') {
-        // Navigate to feeding screen - use imperative router (doesn't require hook context)
-        // Delay to ensure navigation is ready
-        setTimeout(() => {
-          router.push('/(tracking)/feeding');
-        }, 100);
-      }
-      // Add other notification types here as needed
     };
 
-    // Listen for notification taps when app is in foreground/background
-    let responseSubscription: Notifications.Subscription | undefined;
-    if (addNotificationResponseReceivedListener) {
-      responseSubscription = addNotificationResponseReceivedListener(handleNotificationResponse);
-    }
-
-    // Check if app was opened from a notification (when app was closed)
-    if (getLastNotificationResponse) {
-      const response = getLastNotificationResponse();
-      if (response) {
-        handleNotificationResponse(response);
-      }
-    }
-
-    // Listen for notification received events to clean up stored notifications
-    const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
-      // If it's a feeding notification, clean up the stored state
-      if (notification.request.content.data?.type === 'feeding') {
-        cancelStoredScheduledNotification().catch((error) => {
-          console.error('Failed to clean up notification after receipt:', error);
-        });
-      }
-    });
-
-    return () => {
-      responseSubscription?.remove();
-      receivedSubscription.remove();
-    };
+    seedIfNeeded();
   }, []);
+
+  if (isSeeding) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="large" color="#5B7FFF" />
+        <Text className="mt-4 text-muted-foreground">Setting up word database...</Text>
+      </View>
+    );
+  }
 
   return <>{children}</>;
 }
