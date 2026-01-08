@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/supabase-types';
-import { PREDEFINED_HABITS } from './predefined-habits';
+
 
 // ============================================
 // TYPES

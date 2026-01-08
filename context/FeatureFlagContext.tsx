@@ -1,8 +1,7 @@
-import { eq } from 'drizzle-orm';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { db } from '@/database/db';
-import { appState } from '@/db/schema';
+import { getAppState, setAppState } from '@/database/app-state';
 
 export type FeatureKey =
   | 'feeding'
@@ -39,43 +38,32 @@ const APP_STATE_KEY = 'enabled_features';
 
 export function FeatureFlagProvider({ children }: { children: React.ReactNode }) {
   const [features, setFeatures] = useState<FeatureFlags>(DEFAULT_FLAGS);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Load flags on mount
-  useEffect(() => {
-    async function loadFlags() {
-      try {
-        const [result] = await db.select().from(appState).where(eq(appState.key, APP_STATE_KEY));
-
-        if (result && result.value) {
-          const savedFlags = JSON.parse(result.value);
-          setFeatures({ ...DEFAULT_FLAGS, ...savedFlags });
-        }
-      } catch (error) {
-        console.error('Failed to load feature flags:', error);
-      } finally {
-        setIsLoading(false);
+  // Load flags with useQuery
+  const { data: savedFeatures, isLoading } = useQuery({
+    queryKey: [APP_STATE_KEY],
+    queryFn: async () => {
+      const value = await getAppState(APP_STATE_KEY);
+      if (value) {
+        return JSON.parse(value) as FeatureFlags;
       }
-    }
+      return null;
+    },
+  });
 
-    loadFlags();
-  }, []);
+  // Sync state with query data
+  useEffect(() => {
+    if (savedFeatures) {
+      setFeatures((prev) => ({ ...prev, ...savedFeatures }));
+    }
+  }, [savedFeatures]);
 
   const toggleFeature = async (key: FeatureKey) => {
     const newFeatures = { ...features, [key]: !features[key] };
     setFeatures(newFeatures);
 
     try {
-      await db
-        .insert(appState)
-        .values({
-          key: APP_STATE_KEY,
-          value: JSON.stringify(newFeatures),
-        })
-        .onConflictDoUpdate({
-          target: appState.key,
-          set: { value: JSON.stringify(newFeatures) },
-        });
+      await setAppState(APP_STATE_KEY, JSON.stringify(newFeatures));
     } catch (error) {
       console.error('Failed to save feature flags:', error);
       // Revert on error? For now, we trust local state is optimistically updated

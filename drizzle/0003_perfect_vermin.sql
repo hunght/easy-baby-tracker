@@ -1,1 +1,0 @@
-ALTER TABLE `baby_profiles` ADD `avatar_uri` text;

@@ -99,21 +99,14 @@ module.exports = defineConfig([
             // Config files
             '*.config.js',
             '*.config.ts',
-            'drizzle.config.ts',
             // Database migrations/seeding (used programmatically)
             'database/easy-formula-rules.ts',
-            // Type definitions and utilities that might be imported dynamically
-            'database/db.web.ts',
             // Internal types that might be used in same module
             'components/TimeField.tsx',
             // Types/interfaces exported for external use
             'lib/notifications-wrapper.ts',
             'lib/easy-schedule-generator.ts',
-            'hooks/use-color-scheme.web.ts',
             'localization/LocalizationProvider.tsx',
-            // Platform-specific files (used via React Native's platform resolution)
-            '**/*.web.tsx',
-            '**/*.web.ts',
           ],
         },
       ],
@@ -148,26 +141,11 @@ module.exports = defineConfig([
     files: [
       'app/**/*.tsx',
       'app/**/*.ts',
-      'drizzle.config.ts',
       '*.config.js',
       '*.config.ts',
     ],
     rules: {
       'unused-imports/no-unused-vars': 'off', // Allow unused exports in route/config files
-    },
-  },
-  // Database initialization - allow Proxy type assertions
-  {
-    files: ['database/db.web.ts'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: 'ClassDeclaration',
-          message: 'Classes are not allowed. Please use functional programming patterns instead.',
-        },
-        // Allow all type assertions in db.ts for Proxy pattern
-      ],
     },
   },
   // Node.js scripts configuration
