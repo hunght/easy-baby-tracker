@@ -1,9 +1,6 @@
-import { eq } from 'drizzle-orm';
 import { getLocales } from 'expo-localization';
 
-import { db } from '@/database/db';
-import * as schema from '@/db/schema';
-
+import { supabase, requireCurrentUserId } from '@/lib/supabase';
 import { safeParseEasyScheduleNotificationData } from '@/lib/json-parse';
 import {
   getScheduledNotifications,
@@ -20,20 +17,36 @@ import { translationObject } from '@/localization/translations';
 const EASY_REMINDER_ENABLED_KEY = 'easyScheduleReminderEnabled';
 
 export async function getAppState(key: string): Promise<string | null> {
-  const result = await db
-    .select({ value: schema.appState.value })
-    .from(schema.appState)
-    .where(eq(schema.appState.key, key))
-    .limit(1);
+  try {
+    const userId = await requireCurrentUserId();
 
-  return result[0]?.value ?? null;
+    const { data, error } = await supabase
+      .from('app_state')
+      .select('value')
+      .eq('user_id', userId)
+      .eq('key', key)
+      .single();
+
+    if (error || !data) return null;
+    return data.value;
+  } catch {
+    return null;
+  }
 }
 
 export async function setAppState(key: string, value: string): Promise<void> {
-  await db.insert(schema.appState).values({ key, value }).onConflictDoUpdate({
-    target: schema.appState.key,
-    set: { value },
-  });
+  const userId = await requireCurrentUserId();
+
+  const { error } = await supabase.from('app_state').upsert(
+    {
+      user_id: userId,
+      key,
+      value,
+    },
+    { onConflict: 'user_id,key' }
+  );
+
+  if (error) throw error;
 }
 
 export async function getEasyReminderState(): Promise<boolean> {
@@ -43,8 +56,6 @@ export async function getEasyReminderState(): Promise<boolean> {
 
 /**
  * Restore and reschedule EASY schedule reminders on app startup.
- * This ensures reminders are always scheduled for the configured number of days ahead.
- * Should be called after app initialization and migrations are complete.
  */
 async function restoreEasyScheduleReminders(): Promise<void> {
   console.log('[restoreEasyScheduleReminders] Starting');
@@ -69,12 +80,10 @@ async function restoreEasyScheduleReminders(): Promise<void> {
       return;
     }
 
-    // Get reminder settings
     const advanceMinutesValue = await getAppState('easyScheduleReminderAdvanceMinutes');
     const reminderAdvanceMinutes = advanceMinutesValue ? parseInt(advanceMinutesValue, 10) : 5;
     const firstWakeTime = babyProfile.firstWakeTime || '07:00';
 
-    // Get current locale for translations
     const locales = getLocales();
     const detectedLocale = locales[0]?.languageCode?.toLowerCase() || 'en';
     const locale: 'en' | 'vi' = detectedLocale === 'vi' ? 'vi' : 'en';
@@ -91,7 +100,6 @@ async function restoreEasyScheduleReminders(): Promise<void> {
         if (isRecord(value) && k in value) {
           value = value[k];
         } else {
-          // Fallback to English
           value = translationObject.en;
           for (const k2 of keys) {
             if (isRecord(value) && k2 in value) {
@@ -118,7 +126,6 @@ async function restoreEasyScheduleReminders(): Promise<void> {
       return value;
     };
 
-    // Build labels
     const labels: EasyScheduleReminderLabels = {
       eat: t('easySchedule.activityLabels.eat'),
       activity: t('easySchedule.activityLabels.activity'),
@@ -139,13 +146,12 @@ async function restoreEasyScheduleReminders(): Promise<void> {
         }),
     };
 
-    // Reschedule reminders
     await rescheduleEasyReminders(babyProfile, firstWakeTime, reminderAdvanceMinutes, labels);
   } catch (error) {
     console.error('Failed to restore EASY schedule reminders:', error);
-    // Don't throw - this is a background operation that shouldn't block app startup
   }
 }
+
 export async function setEasyReminderState(enabled: boolean): Promise<void> {
   await setAppState(EASY_REMINDER_ENABLED_KEY, enabled ? 'true' : 'false');
 
@@ -170,6 +176,5 @@ export async function setEasyReminderState(enabled: boolean): Promise<void> {
     }
   } catch (error) {
     console.error('Failed to handle EASY reminder state change:', error);
-    // Don't throw - this is a background operation that shouldn't block the state update
   }
 }

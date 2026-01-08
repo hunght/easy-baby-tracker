@@ -1,33 +1,69 @@
-import { and, desc, eq, gte, lte, type SQLWrapper } from 'drizzle-orm';
-
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/supabase-types';
 import { requireActiveBabyProfileId } from '@/database/baby-profile';
-import { db } from '@/database/db';
-import * as schema from '@/db/schema';
 
-type DiaryEntrySelect = typeof schema.diaryEntries.$inferSelect;
-type DiaryEntryInsert = typeof schema.diaryEntries.$inferInsert;
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
 
-export type DiaryEntryRecord = DiaryEntrySelect;
-export type DiaryEntryPayload = Omit<DiaryEntryInsert, 'id' | 'createdAt' | 'babyId'> & {
+type DiaryEntryRow = Database['public']['Tables']['diary_entries']['Row'];
+
+export type DiaryEntryPayload = {
   babyId?: number;
+  title?: string | null;
+  content?: string | null;
+  photoUri?: string | null;
 };
 
+export type DiaryEntryRecord = {
+  id: number;
+  babyId: number;
+  title: string | null;
+  content: string | null;
+  photoUri: string | null;
+  createdAt: number;
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+function rowToRecord(row: DiaryEntryRow): DiaryEntryRecord {
+  return {
+    id: row.id,
+    babyId: row.baby_id,
+    title: row.title,
+    content: row.content,
+    photoUri: row.photo_uri,
+    createdAt: row.created_at,
+  };
+}
+
 async function resolveBabyId(provided?: number): Promise<number> {
-  if (provided != null) {
-    return provided;
-  }
+  if (provided != null) return provided;
   return requireActiveBabyProfileId();
 }
 
-export async function saveDiaryEntry(payload: DiaryEntryPayload): Promise<number> {
-  const { babyId: providedBabyId, ...rest } = payload;
-  const babyId = await resolveBabyId(providedBabyId);
-  const result = await db
-    .insert(schema.diaryEntries)
-    .values({ ...rest, babyId })
-    .returning({ id: schema.diaryEntries.id });
+// ============================================
+// CRUD OPERATIONS
+// ============================================
 
-  return result[0]?.id ?? 0;
+export async function saveDiaryEntry(payload: DiaryEntryPayload): Promise<number> {
+  const babyId = await resolveBabyId(payload.babyId);
+
+  const { data, error } = await supabase
+    .from('diary_entries')
+    .insert({
+      baby_id: babyId,
+      title: payload.title,
+      content: payload.content,
+      photo_uri: payload.photoUri,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id;
 }
 
 export async function getDiaryEntries(options?: {
@@ -40,29 +76,21 @@ export async function getDiaryEntries(options?: {
   const { limit, offset, startDate, endDate, babyId: providedBabyId } = options ?? {};
   const babyId = await resolveBabyId(providedBabyId);
 
-  const conditions: SQLWrapper[] = [eq(schema.diaryEntries.babyId, babyId)];
-  if (startDate) {
-    conditions.push(gte(schema.diaryEntries.createdAt, startDate));
-  }
-  if (endDate) {
-    conditions.push(lte(schema.diaryEntries.createdAt, endDate));
-  }
+  let query = supabase
+    .from('diary_entries')
+    .select('*')
+    .eq('baby_id', babyId)
+    .order('created_at', { ascending: false });
 
-  let query = db.select().from(schema.diaryEntries).$dynamic();
-  if (conditions.length > 0) {
-    query = query.where(and(...conditions));
-  }
+  if (startDate) query = query.gte('created_at', startDate);
+  if (endDate) query = query.lte('created_at', endDate);
+  if (limit) query = query.limit(limit);
+  if (offset) query = query.range(offset, offset + (limit ?? 50) - 1);
 
-  query = query.orderBy(desc(schema.diaryEntries.createdAt));
+  const { data, error } = await query;
 
-  if (limit !== undefined) {
-    query = query.limit(limit);
-  }
-  if (offset !== undefined) {
-    query = query.offset(offset);
-  }
-
-  return await query;
+  if (error) throw error;
+  return (data ?? []).map(rowToRecord);
 }
 
 export async function getDiaryEntryById(
@@ -70,27 +98,42 @@ export async function getDiaryEntryById(
   babyId?: number
 ): Promise<DiaryEntryRecord | null> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  const result = await db
-    .select()
-    .from(schema.diaryEntries)
-    .where(and(eq(schema.diaryEntries.id, entryId), eq(schema.diaryEntries.babyId, resolvedBabyId)))
-    .limit(1);
 
-  return result[0] ?? null;
+  const { data, error } = await supabase
+    .from('diary_entries')
+    .select('*')
+    .eq('id', entryId)
+    .eq('baby_id', resolvedBabyId)
+    .single();
+
+  if (error || !data) return null;
+  return rowToRecord(data);
 }
 
 export async function updateDiaryEntry(id: number, payload: DiaryEntryPayload): Promise<void> {
-  const { babyId: providedBabyId, ...rest } = payload;
-  const babyId = await resolveBabyId(providedBabyId);
-  await db
-    .update(schema.diaryEntries)
-    .set({ ...rest, babyId })
-    .where(and(eq(schema.diaryEntries.id, id), eq(schema.diaryEntries.babyId, babyId)));
+  const babyId = await resolveBabyId(payload.babyId);
+
+  const { error } = await supabase
+    .from('diary_entries')
+    .update({
+      title: payload.title,
+      content: payload.content,
+      photo_uri: payload.photoUri,
+    })
+    .eq('id', id)
+    .eq('baby_id', babyId);
+
+  if (error) throw error;
 }
 
 export async function deleteDiaryEntry(id: number, babyId?: number): Promise<void> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  await db
-    .delete(schema.diaryEntries)
-    .where(and(eq(schema.diaryEntries.id, id), eq(schema.diaryEntries.babyId, resolvedBabyId)));
+
+  const { error } = await supabase
+    .from('diary_entries')
+    .delete()
+    .eq('id', id)
+    .eq('baby_id', resolvedBabyId);
+
+  if (error) throw error;
 }

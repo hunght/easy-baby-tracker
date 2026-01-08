@@ -1,17 +1,15 @@
-import { and, desc, eq, gte, lte, type SQLWrapper } from 'drizzle-orm';
-
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/supabase-types';
 import { requireActiveBabyProfileId } from '@/database/baby-profile';
-import { db } from '@/database/db';
-import * as schema from '@/db/schema';
 
-// Use Drizzle's inferred types from schema
-type DiaperChangeSelect = typeof schema.diaperChanges.$inferSelect;
-type DiaperChangeInsert = typeof schema.diaperChanges.$inferInsert;
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
 
-// Re-export specific types from schema
-export type DiaperKind = DiaperChangeSelect['kind'];
+type DiaperChangeRow = Database['public']['Tables']['diaper_changes']['Row'];
 
-// Custom type for poop color (not defined in schema)
+export type DiaperKind = DiaperChangeRow['kind'];
+
 export type PoopColor =
   | 'yellow'
   | 'brown'
@@ -21,66 +19,97 @@ export type PoopColor =
   | 'black'
   | 'white';
 
-// Payload for creating/updating diaper changes
-export type DiaperChangePayload = Omit<DiaperChangeInsert, 'id' | 'recordedAt' | 'babyId'> & {
+export type DiaperChangePayload = {
   babyId?: number;
+  kind: DiaperKind;
+  time?: number;
+  wetness?: number | null;
+  color?: string | null;
+  notes?: string | null;
 };
 
-// Return type for diaper change records
-export type DiaperChangeRecord = DiaperChangeSelect;
+export type DiaperChangeRecord = {
+  id: number;
+  babyId: number;
+  kind: DiaperKind;
+  time: number;
+  wetness: number | null;
+  color: string | null;
+  notes: string | null;
+  recordedAt: number;
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+function rowToRecord(row: DiaperChangeRow): DiaperChangeRecord {
+  return {
+    id: row.id,
+    babyId: row.baby_id,
+    kind: row.kind,
+    time: row.time,
+    wetness: row.wetness,
+    color: row.color,
+    notes: row.notes,
+    recordedAt: row.recorded_at,
+  };
+}
 
 async function resolveBabyId(provided?: number): Promise<number> {
-  if (provided != null) {
-    return provided;
-  }
+  if (provided != null) return provided;
   return requireActiveBabyProfileId();
 }
 
+// ============================================
+// CRUD OPERATIONS
+// ============================================
+
 export async function saveDiaperChange(payload: DiaperChangePayload): Promise<number> {
   const babyId = await resolveBabyId(payload.babyId);
-  const result = await db
-    .insert(schema.diaperChanges)
-    .values({ ...payload, babyId })
-    .returning({ id: schema.diaperChanges.id });
 
-  return result[0]?.id ?? 0;
+  const { data, error } = await supabase
+    .from('diaper_changes')
+    .insert({
+      baby_id: babyId,
+      kind: payload.kind,
+      time: payload.time ?? Math.floor(Date.now() / 1000),
+      wetness: payload.wetness,
+      color: payload.color,
+      notes: payload.notes,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id;
 }
 
 export async function getDiaperChanges(options?: {
   limit?: number;
   offset?: number;
-  startDate?: number; // Unix timestamp in seconds
-  endDate?: number; // Unix timestamp in seconds
+  startDate?: number;
+  endDate?: number;
   babyId?: number;
 }): Promise<DiaperChangeRecord[]> {
   const { limit, offset, startDate, endDate, babyId: providedBabyId } = options ?? {};
   const babyId = await resolveBabyId(providedBabyId);
 
-  const conditions: SQLWrapper[] = [];
-  conditions.push(eq(schema.diaperChanges.babyId, babyId));
-  if (startDate) {
-    conditions.push(gte(schema.diaperChanges.time, startDate));
-  }
-  if (endDate) {
-    conditions.push(lte(schema.diaperChanges.time, endDate));
-  }
+  let query = supabase
+    .from('diaper_changes')
+    .select('*')
+    .eq('baby_id', babyId)
+    .order('time', { ascending: false });
 
-  let query = db.select().from(schema.diaperChanges).$dynamic();
+  if (startDate) query = query.gte('time', startDate);
+  if (endDate) query = query.lte('time', endDate);
+  if (limit) query = query.limit(limit);
+  if (offset) query = query.range(offset, offset + (limit ?? 50) - 1);
 
-  if (conditions.length > 0) {
-    query = query.where(and(...conditions));
-  }
+  const { data, error } = await query;
 
-  query = query.orderBy(desc(schema.diaperChanges.time));
-
-  if (limit !== undefined) {
-    query = query.limit(limit);
-  }
-  if (offset !== undefined) {
-    query = query.offset(offset);
-  }
-
-  return await query;
+  if (error) throw error;
+  return (data ?? []).map(rowToRecord);
 }
 
 export async function getDiaperChangeById(
@@ -88,28 +117,44 @@ export async function getDiaperChangeById(
   babyId?: number
 ): Promise<DiaperChangeRecord | null> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  const result = await db
-    .select()
-    .from(schema.diaperChanges)
-    .where(
-      and(eq(schema.diaperChanges.id, changeId), eq(schema.diaperChanges.babyId, resolvedBabyId))
-    )
-    .limit(1);
 
-  return result[0] ?? null;
+  const { data, error } = await supabase
+    .from('diaper_changes')
+    .select('*')
+    .eq('id', changeId)
+    .eq('baby_id', resolvedBabyId)
+    .single();
+
+  if (error || !data) return null;
+  return rowToRecord(data);
 }
 
 export async function updateDiaperChange(id: number, payload: DiaperChangePayload): Promise<void> {
   const babyId = await resolveBabyId(payload.babyId);
-  await db
-    .update(schema.diaperChanges)
-    .set({ ...payload, babyId })
-    .where(and(eq(schema.diaperChanges.id, id), eq(schema.diaperChanges.babyId, babyId)));
+
+  const { error } = await supabase
+    .from('diaper_changes')
+    .update({
+      kind: payload.kind,
+      time: payload.time,
+      wetness: payload.wetness,
+      color: payload.color,
+      notes: payload.notes,
+    })
+    .eq('id', id)
+    .eq('baby_id', babyId);
+
+  if (error) throw error;
 }
 
 export async function deleteDiaperChange(id: number, babyId?: number): Promise<void> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  await db
-    .delete(schema.diaperChanges)
-    .where(and(eq(schema.diaperChanges.id, id), eq(schema.diaperChanges.babyId, resolvedBabyId)));
+
+  const { error } = await supabase
+    .from('diaper_changes')
+    .delete()
+    .eq('id', id)
+    .eq('baby_id', resolvedBabyId);
+
+  if (error) throw error;
 }

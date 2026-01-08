@@ -1,28 +1,71 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { supabase, requireCurrentUserId } from '@/lib/supabase';
+import type { Database } from '@/lib/supabase-types';
 
-import { db } from '@/database/db';
-import * as schema from '@/db/schema';
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
 
-// Use Drizzle's inferred types from schema
-type BabyProfileSelect = typeof schema.babyProfiles.$inferSelect;
-type BabyProfileInsert = typeof schema.babyProfiles.$inferInsert;
+type BabyProfileRow = Database['public']['Tables']['baby_profiles']['Row'];
 
-// Re-export specific types from schema
-export type Gender = BabyProfileSelect['gender'];
+export type Gender = 'boy' | 'girl' | 'unknown';
 
-// Payload for creating/updating baby profiles (includes concerns and avatarUri)
-export type BabyProfilePayload = Omit<BabyProfileInsert, 'id' | 'createdAt'> & {
-  concerns: string[];
+// Payload for creating/updating baby profiles (includes concerns)
+// explicitly define camelCase properties that the app uses
+export type BabyProfilePayload = {
+  nickname: string;
+  gender: Gender;
+  birthDate: string;
+  dueDate: string;
   avatarUri?: string | null;
+  firstWakeTime?: string;
+  selectedEasyFormulaId?: string | null;
+  concerns: string[];
 };
 
-// Return type for baby profile records (includes concerns and avatarUri)
-export type BabyProfileRecord = BabyProfileSelect & {
+// Return type for baby profile records (includes concerns)
+export type BabyProfileRecord = Omit<BabyProfileRow, 'user_id' | 'gender'> & {
+  gender: Gender;
   concerns: string[];
-  avatarUri?: string | null;
+  // Compatibility with old schema field names
+  birthDate: string;
+  dueDate: string;
+  avatarUri: string | null;
+  firstWakeTime: string;
+  selectedEasyFormulaId: string | null;
+  createdAt: number;
 };
 
 const ACTIVE_PROFILE_KEY = 'activeProfileId';
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+function rowToRecord(row: BabyProfileRow, concerns: string[]): BabyProfileRecord {
+  return {
+    id: row.id,
+    nickname: row.nickname,
+    gender: row.gender as Gender,
+    birth_date: row.birth_date,
+    due_date: row.due_date,
+    avatar_uri: row.avatar_uri,
+    first_wake_time: row.first_wake_time,
+    selected_easy_formula_id: row.selected_easy_formula_id,
+    created_at: row.created_at,
+    concerns,
+    // Camel case aliases for compatibility
+    birthDate: row.birth_date,
+    dueDate: row.due_date,
+    avatarUri: row.avatar_uri,
+    firstWakeTime: row.first_wake_time,
+    selectedEasyFormulaId: row.selected_easy_formula_id,
+    createdAt: row.created_at,
+  };
+}
+
+// ============================================
+// CRUD OPERATIONS
+// ============================================
 
 type SaveBabyProfileOptions = {
   babyId?: number;
@@ -33,147 +76,132 @@ export async function saveBabyProfile(
   options: SaveBabyProfileOptions = {}
 ): Promise<number> {
   const { babyId } = options;
+  const userId = await requireCurrentUserId();
 
-  return await db.transaction(async (tx) => {
-    let targetId = babyId;
-
-    if (babyId) {
-      await tx
-        .update(schema.babyProfiles)
-        .set({
-          nickname: payload.nickname,
-          gender: payload.gender,
-          birthDate: payload.birthDate,
-          dueDate: payload.dueDate,
-          avatarUri: payload.avatarUri,
-        })
-        .where(eq(schema.babyProfiles.id, babyId));
-
-      await tx.delete(schema.concernChoices).where(eq(schema.concernChoices.babyId, babyId));
-    } else {
-      await tx.insert(schema.babyProfiles).values({
+  if (babyId) {
+    // Update existing profile
+    const { error: updateError } = await supabase
+      .from('baby_profiles')
+      .update({
         nickname: payload.nickname,
         gender: payload.gender,
-        birthDate: payload.birthDate,
-        dueDate: payload.dueDate,
-        avatarUri: payload.avatarUri,
-      });
-      // Query for the row we just inserted to get the ID
-      const inserted = await tx
-        .select({ id: schema.babyProfiles.id })
-        .from(schema.babyProfiles)
-        .where(eq(schema.babyProfiles.nickname, payload.nickname))
-        .orderBy(desc(schema.babyProfiles.id))
-        .limit(1);
-      targetId = inserted[0]?.id;
-    }
+        birth_date: payload.birthDate,
+        due_date: payload.dueDate,
+        avatar_uri: payload.avatarUri,
+        first_wake_time: payload.firstWakeTime,
+        selected_easy_formula_id: payload.selectedEasyFormulaId,
+      })
+      .eq('id', babyId);
 
-    if (payload.concerns.length > 0 && targetId != null) {
-      await tx.insert(schema.concernChoices).values(
+    if (updateError) throw updateError;
+
+    // Delete existing concerns
+    await supabase.from('concern_choices').delete().eq('baby_id', babyId);
+
+    // Insert new concerns
+    if (payload.concerns.length > 0) {
+      const { error: concernError } = await supabase.from('concern_choices').insert(
         payload.concerns.map((concernId) => ({
-          babyId: targetId!,
-          concernId,
+          baby_id: babyId,
+          concern_id: concernId,
         }))
       );
+      if (concernError) throw concernError;
     }
 
-    return targetId!;
-  });
+    return babyId;
+  } else {
+    // Create new profile
+    const { data, error } = await supabase
+      .from('baby_profiles')
+      .insert({
+        user_id: userId,
+        nickname: payload.nickname,
+        gender: payload.gender,
+        birth_date: payload.birthDate,
+        due_date: payload.dueDate,
+        avatar_uri: payload.avatarUri,
+        first_wake_time: payload.firstWakeTime ?? '07:00',
+        selected_easy_formula_id: payload.selectedEasyFormulaId,
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    const newId = data.id;
+
+    // Insert concerns
+    if (payload.concerns.length > 0) {
+      const { error: concernError } = await supabase.from('concern_choices').insert(
+        payload.concerns.map((concernId) => ({
+          baby_id: newId,
+          concern_id: concernId,
+        }))
+      );
+      if (concernError) throw concernError;
+    }
+
+    return newId;
+  }
 }
 
 export async function getBabyProfiles(): Promise<BabyProfileRecord[]> {
-  const profiles = await db
-    .select({
-      id: schema.babyProfiles.id,
-      nickname: schema.babyProfiles.nickname,
-      gender: schema.babyProfiles.gender,
-      birthDate: schema.babyProfiles.birthDate,
-      dueDate: schema.babyProfiles.dueDate,
-      avatarUri: schema.babyProfiles.avatarUri,
-      firstWakeTime: schema.babyProfiles.firstWakeTime,
-      selectedEasyFormulaId: schema.babyProfiles.selectedEasyFormulaId,
-      createdAt: schema.babyProfiles.createdAt,
-      concerns: sql<string | null>`GROUP_CONCAT(${schema.concernChoices.concernId})`.as(
-        'concerns_csv'
-      ),
-    })
-    .from(schema.babyProfiles)
-    .leftJoin(schema.concernChoices, eq(schema.babyProfiles.id, schema.concernChoices.babyId))
-    .groupBy(schema.babyProfiles.id)
-    .orderBy(schema.babyProfiles.createdAt);
+  const { data: profiles, error } = await supabase
+    .from('baby_profiles')
+    .select('*')
+    .order('created_at', { ascending: true });
 
-  return profiles.map((profile) => ({
-    id: profile.id,
-    nickname: profile.nickname,
-    gender: profile.gender,
-    birthDate: profile.birthDate,
-    dueDate: profile.dueDate,
-    avatarUri: profile.avatarUri ?? null,
-    firstWakeTime: profile.firstWakeTime ?? '07:00',
-    selectedEasyFormulaId: profile.selectedEasyFormulaId ?? null,
-    createdAt: profile.createdAt,
-    concerns: profile.concerns ? profile.concerns.split(',') : [],
-  }));
+  if (error) throw error;
+  if (!profiles) return [];
+
+  // Fetch all concerns for these profiles
+  const babyIds = profiles.map((p) => p.id);
+  const { data: concerns } = await supabase.from('concern_choices').select('*').in('baby_id', babyIds);
+
+  const concernsByBabyId = new Map<number, string[]>();
+  concerns?.forEach((c) => {
+    const list = concernsByBabyId.get(c.baby_id) ?? [];
+    list.push(c.concern_id);
+    concernsByBabyId.set(c.baby_id, list);
+  });
+
+  return profiles.map((profile) => rowToRecord(profile, concernsByBabyId.get(profile.id) ?? []));
 }
 
 export async function getBabyProfileById(babyId: number): Promise<BabyProfileRecord | null> {
-  const result = await db
-    .select({
-      id: schema.babyProfiles.id,
-      nickname: schema.babyProfiles.nickname,
-      gender: schema.babyProfiles.gender,
-      birthDate: schema.babyProfiles.birthDate,
-      dueDate: schema.babyProfiles.dueDate,
-      avatarUri: schema.babyProfiles.avatarUri,
-      firstWakeTime: schema.babyProfiles.firstWakeTime,
-      selectedEasyFormulaId: schema.babyProfiles.selectedEasyFormulaId,
-      createdAt: schema.babyProfiles.createdAt,
-      concerns: sql<string | null>`GROUP_CONCAT(${schema.concernChoices.concernId})`.as(
-        'concerns_csv'
-      ),
-    })
-    .from(schema.babyProfiles)
-    .leftJoin(schema.concernChoices, eq(schema.babyProfiles.id, schema.concernChoices.babyId))
-    .where(eq(schema.babyProfiles.id, babyId))
-    .groupBy(schema.babyProfiles.id)
-    .limit(1);
+  const { data: profile, error } = await supabase
+    .from('baby_profiles')
+    .select('*')
+    .eq('id', babyId)
+    .single();
 
-  if (result.length === 0) {
-    return null;
-  }
+  if (error || !profile) return null;
 
-  const profile = result[0];
-  return {
-    id: profile.id,
-    nickname: profile.nickname,
-    gender: profile.gender,
-    birthDate: profile.birthDate,
-    dueDate: profile.dueDate,
-    avatarUri: profile.avatarUri ?? null,
-    firstWakeTime: profile.firstWakeTime ?? '07:00',
-    selectedEasyFormulaId: profile.selectedEasyFormulaId ?? null,
-    createdAt: profile.createdAt,
-    concerns: profile.concerns ? profile.concerns.split(',') : [],
-  };
+  const { data: concerns } = await supabase
+    .from('concern_choices')
+    .select('concern_id')
+    .eq('baby_id', babyId);
+
+  return rowToRecord(profile, concerns?.map((c) => c.concern_id) ?? []);
 }
 
 export async function getActiveBabyProfileId(): Promise<number | null> {
   try {
-    const result = await db
-      .select({ value: schema.appState.value })
-      .from(schema.appState)
-      .where(eq(schema.appState.key, ACTIVE_PROFILE_KEY))
-      .limit(1);
+    const userId = await requireCurrentUserId();
 
-    if (result.length === 0 || result[0].value == null) {
-      return null;
-    }
+    const { data, error } = await supabase
+      .from('app_state')
+      .select('value')
+      .eq('user_id', userId)
+      .eq('key', ACTIVE_PROFILE_KEY)
+      .single();
 
-    const parsed = Number(result[0].value);
+    if (error || !data?.value) return null;
+
+    const parsed = Number(data.value);
     return Number.isFinite(parsed) ? parsed : null;
-  } catch (error) {
-    // Handle case where table doesn't exist yet (e.g., during migrations)
-    console.warn('Error getting active baby profile ID:', error);
+  } catch {
     return null;
   }
 }
@@ -188,31 +216,29 @@ export async function requireActiveBabyProfileId(): Promise<number> {
 
 export async function getActiveBabyProfile(): Promise<BabyProfileRecord | null> {
   const activeId = await getActiveBabyProfileId();
-  if (activeId == null) {
-    return null;
-  }
-
+  if (activeId == null) return null;
   return getBabyProfileById(activeId);
 }
 
 export async function setActiveBabyProfileId(babyId: number | null) {
+  const userId = await requireCurrentUserId();
+
   if (babyId == null) {
-    await db.delete(schema.appState).where(eq(schema.appState.key, ACTIVE_PROFILE_KEY));
+    await supabase.from('app_state').delete().eq('user_id', userId).eq('key', ACTIVE_PROFILE_KEY);
     return;
   }
 
-  await db
-    .insert(schema.appState)
-    .values({
+  // Upsert the active profile ID
+  const { error } = await supabase.from('app_state').upsert(
+    {
+      user_id: userId,
       key: ACTIVE_PROFILE_KEY,
       value: String(babyId),
-    })
-    .onConflictDoUpdate({
-      target: schema.appState.key,
-      set: {
-        value: String(babyId),
-      },
-    });
+    },
+    { onConflict: 'user_id,key' }
+  );
+
+  if (error) throw error;
 }
 
 export async function saveOnboardingProfile(payload: BabyProfilePayload) {
@@ -221,22 +247,23 @@ export async function saveOnboardingProfile(payload: BabyProfilePayload) {
   return babyId;
 }
 
-export async function updateBabyFirstWakeTime(
-  babyId: number,
-  firstWakeTime: string
-): Promise<void> {
-  await db
-    .update(schema.babyProfiles)
-    .set({ firstWakeTime })
-    .where(eq(schema.babyProfiles.id, babyId));
+export async function updateBabyFirstWakeTime(babyId: number, firstWakeTime: string): Promise<void> {
+  const { error } = await supabase
+    .from('baby_profiles')
+    .update({ first_wake_time: firstWakeTime })
+    .eq('id', babyId);
+
+  if (error) throw error;
 }
 
 export async function updateSelectedEasyFormula(
   babyId: number,
   formulaId: string | null
 ): Promise<void> {
-  await db
-    .update(schema.babyProfiles)
-    .set({ selectedEasyFormulaId: formulaId })
-    .where(eq(schema.babyProfiles.id, babyId));
+  const { error } = await supabase
+    .from('baby_profiles')
+    .update({ selected_easy_formula_id: formulaId })
+    .eq('id', babyId);
+
+  if (error) throw error;
 }

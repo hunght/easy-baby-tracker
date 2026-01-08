@@ -1,24 +1,54 @@
-import { and, desc, eq, gte, lte, type SQLWrapper } from 'drizzle-orm';
-
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/supabase-types';
 import { requireActiveBabyProfileId } from '@/database/baby-profile';
-import { db } from '@/database/db';
-import * as schema from '@/db/schema';
 
-type SleepSessionSelect = typeof schema.sleepSessions.$inferSelect;
-type SleepSessionInsert = typeof schema.sleepSessions.$inferInsert;
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
 
-export type SleepSessionKind = SleepSessionSelect['kind'];
+type SleepSessionRow = Database['public']['Tables']['sleep_sessions']['Row'];
 
-export type SleepSessionPayload = Omit<SleepSessionInsert, 'id' | 'recordedAt' | 'babyId'> & {
+export type SleepSessionKind = SleepSessionRow['kind'];
+
+export type SleepSessionPayload = {
   babyId?: number;
+  kind: SleepSessionKind;
+  startTime?: number;
+  endTime?: number | null;
+  duration?: number | null;
+  notes?: string | null;
 };
 
-export type SleepSessionRecord = SleepSessionSelect;
+export type SleepSessionRecord = {
+  id: number;
+  babyId: number;
+  kind: SleepSessionKind;
+  startTime: number;
+  endTime: number | null;
+  duration: number | null;
+  notes: string | null;
+  recordedAt: number;
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+function rowToRecord(row: SleepSessionRow): SleepSessionRecord {
+  return {
+    id: row.id,
+    babyId: row.baby_id,
+    kind: row.kind,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    duration: row.duration,
+    notes: row.notes,
+    recordedAt: row.recorded_at,
+  };
+}
 
 async function resolveBabyId(provided?: number): Promise<number> {
-  if (provided != null) {
-    return provided;
-  }
+  if (provided != null) return provided;
   return requireActiveBabyProfileId();
 }
 
@@ -27,9 +57,7 @@ function computeDurationSeconds(
   endTime?: number | null,
   duration?: number | null
 ) {
-  if (duration != null) {
-    return duration;
-  }
+  if (duration != null) return duration;
   if (startTime != null && endTime != null) {
     const diff = Math.floor(endTime - startTime);
     return Number.isFinite(diff) && diff > 0 ? diff : 0;
@@ -37,21 +65,29 @@ function computeDurationSeconds(
   return undefined;
 }
 
+// ============================================
+// CRUD OPERATIONS
+// ============================================
+
 export async function saveSleepSession(payload: SleepSessionPayload): Promise<number> {
-  const { babyId: providedBabyId, ...rest } = payload;
-  const babyId = await resolveBabyId(providedBabyId);
-  const normalizedDuration = computeDurationSeconds(rest.startTime, rest.endTime, rest.duration);
+  const babyId = await resolveBabyId(payload.babyId);
+  const normalizedDuration = computeDurationSeconds(payload.startTime, payload.endTime, payload.duration);
 
-  const result = await db
-    .insert(schema.sleepSessions)
-    .values({
-      ...rest,
+  const { data, error } = await supabase
+    .from('sleep_sessions')
+    .insert({
+      baby_id: babyId,
+      kind: payload.kind,
+      start_time: payload.startTime ?? Math.floor(Date.now() / 1000),
+      end_time: payload.endTime,
       duration: normalizedDuration,
-      babyId,
+      notes: payload.notes,
     })
-    .returning({ id: schema.sleepSessions.id });
+    .select('id')
+    .single();
 
-  return result[0]?.id ?? 0;
+  if (error) throw error;
+  return data.id;
 }
 
 export async function getSleepSessions(options?: {
@@ -65,32 +101,22 @@ export async function getSleepSessions(options?: {
   const { limit, offset, startDate, endDate, kind, babyId: providedBabyId } = options ?? {};
   const babyId = await resolveBabyId(providedBabyId);
 
-  const conditions: SQLWrapper[] = [eq(schema.sleepSessions.babyId, babyId)];
-  if (startDate) {
-    conditions.push(gte(schema.sleepSessions.startTime, startDate));
-  }
-  if (endDate) {
-    conditions.push(lte(schema.sleepSessions.startTime, endDate));
-  }
-  if (kind) {
-    conditions.push(eq(schema.sleepSessions.kind, kind));
-  }
+  let query = supabase
+    .from('sleep_sessions')
+    .select('*')
+    .eq('baby_id', babyId)
+    .order('start_time', { ascending: false });
 
-  let query = db.select().from(schema.sleepSessions).$dynamic();
-  if (conditions.length > 0) {
-    query = query.where(and(...conditions));
-  }
+  if (startDate) query = query.gte('start_time', startDate);
+  if (endDate) query = query.lte('start_time', endDate);
+  if (kind) query = query.eq('kind', kind);
+  if (limit) query = query.limit(limit);
+  if (offset) query = query.range(offset, offset + (limit ?? 50) - 1);
 
-  query = query.orderBy(desc(schema.sleepSessions.startTime));
+  const { data, error } = await query;
 
-  if (limit !== undefined) {
-    query = query.limit(limit);
-  }
-  if (offset !== undefined) {
-    query = query.offset(offset);
-  }
-
-  return await query;
+  if (error) throw error;
+  return (data ?? []).map(rowToRecord);
 }
 
 export async function getSleepSessionById(
@@ -99,35 +125,44 @@ export async function getSleepSessionById(
 ): Promise<SleepSessionRecord | null> {
   const resolvedBabyId = await resolveBabyId(babyId);
 
-  const result = await db
-    .select()
-    .from(schema.sleepSessions)
-    .where(
-      and(eq(schema.sleepSessions.id, sessionId), eq(schema.sleepSessions.babyId, resolvedBabyId))
-    )
-    .limit(1);
+  const { data, error } = await supabase
+    .from('sleep_sessions')
+    .select('*')
+    .eq('id', sessionId)
+    .eq('baby_id', resolvedBabyId)
+    .single();
 
-  return result[0] ?? null;
+  if (error || !data) return null;
+  return rowToRecord(data);
 }
 
 export async function updateSleepSession(id: number, payload: SleepSessionPayload): Promise<void> {
-  const { babyId: providedBabyId, ...rest } = payload;
-  const babyId = await resolveBabyId(providedBabyId);
-  const normalizedDuration = computeDurationSeconds(rest.startTime, rest.endTime, rest.duration);
+  const babyId = await resolveBabyId(payload.babyId);
+  const normalizedDuration = computeDurationSeconds(payload.startTime, payload.endTime, payload.duration);
 
-  await db
-    .update(schema.sleepSessions)
-    .set({
-      ...rest,
+  const { error } = await supabase
+    .from('sleep_sessions')
+    .update({
+      kind: payload.kind,
+      start_time: payload.startTime,
+      end_time: payload.endTime,
       duration: normalizedDuration,
-      babyId,
+      notes: payload.notes,
     })
-    .where(and(eq(schema.sleepSessions.id, id), eq(schema.sleepSessions.babyId, babyId)));
+    .eq('id', id)
+    .eq('baby_id', babyId);
+
+  if (error) throw error;
 }
 
 export async function deleteSleepSession(id: number, babyId?: number): Promise<void> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  await db
-    .delete(schema.sleepSessions)
-    .where(and(eq(schema.sleepSessions.id, id), eq(schema.sleepSessions.babyId, resolvedBabyId)));
+
+  const { error } = await supabase
+    .from('sleep_sessions')
+    .delete()
+    .eq('id', id)
+    .eq('baby_id', resolvedBabyId);
+
+  if (error) throw error;
 }

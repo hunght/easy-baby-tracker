@@ -1,77 +1,130 @@
-import { and, desc, eq, gte, lte, type SQLWrapper } from 'drizzle-orm';
-
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/supabase-types';
 import { requireActiveBabyProfileId } from '@/database/baby-profile';
-import { db } from '@/database/db';
-import * as schema from '@/db/schema';
 
-// Use Drizzle's inferred types from schema
-type FeedingSelect = typeof schema.feedings.$inferSelect;
-type FeedingInsert = typeof schema.feedings.$inferInsert;
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
 
-// Re-export specific types from schema
-export type FeedingType = FeedingSelect['type'];
-export type IngredientType = NonNullable<FeedingSelect['ingredientType']>;
+type FeedingRow = Database['public']['Tables']['feedings']['Row'];
+type FeedingInsert = Database['public']['Tables']['feedings']['Insert'];
 
-// Payload for creating/updating feedings
-export type FeedingPayload = Omit<FeedingInsert, 'id' | 'recordedAt' | 'babyId'> & {
+export type FeedingType = 'breast' | 'bottle' | 'solids';
+export type IngredientType = 'breast_milk' | 'formula' | 'others';
+
+// Payload for creating/updating feedings (camelCase for API compatibility)
+export type FeedingPayload = {
   babyId?: number;
+  type: FeedingType;
+  startTime?: number;
+  duration?: number | null;
+  leftDuration?: number | null;
+  rightDuration?: number | null;
+  ingredientType?: IngredientType | null;
+  amountMl?: number | null;
+  ingredient?: string | null;
+  amountGrams?: number | null;
+  notes?: string | null;
 };
 
-// Return type for feeding records
-export type FeedingRecord = FeedingSelect;
+// Return type for feeding records (camelCase for API compatibility)
+export type FeedingRecord = {
+  id: number;
+  babyId: number;
+  type: FeedingType;
+  startTime: number;
+  duration: number | null;
+  leftDuration: number | null;
+  rightDuration: number | null;
+  ingredientType: IngredientType | null;
+  amountMl: number | null;
+  ingredient: string | null;
+  amountGrams: number | null;
+  notes: string | null;
+  recordedAt: number;
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+function rowToRecord(row: FeedingRow): FeedingRecord {
+  return {
+    id: row.id,
+    babyId: row.baby_id,
+    type: row.type as FeedingType,
+    startTime: row.start_time,
+    duration: row.duration,
+    leftDuration: row.left_duration,
+    rightDuration: row.right_duration,
+    ingredientType: row.ingredient_type as IngredientType | null,
+    amountMl: row.amount_ml,
+    ingredient: row.ingredient,
+    amountGrams: row.amount_grams,
+    notes: row.notes,
+    recordedAt: row.recorded_at,
+  };
+}
 
 async function resolveBabyId(provided?: number): Promise<number> {
-  if (provided != null) {
-    return provided;
-  }
+  if (provided != null) return provided;
   return requireActiveBabyProfileId();
 }
 
+// ============================================
+// CRUD OPERATIONS
+// ============================================
+
 export async function saveFeeding(payload: FeedingPayload): Promise<number> {
   const babyId = await resolveBabyId(payload.babyId);
-  const result = await db
-    .insert(schema.feedings)
-    .values({ ...payload, babyId })
-    .returning({ id: schema.feedings.id });
 
-  return result[0]?.id ?? 0;
+  const { data, error } = await supabase
+    .from('feedings')
+    .insert({
+      baby_id: babyId,
+      type: payload.type,
+      start_time: payload.startTime ?? Math.floor(Date.now() / 1000),
+      duration: payload.duration,
+      left_duration: payload.leftDuration,
+      right_duration: payload.rightDuration,
+      ingredient_type: payload.ingredientType,
+      amount_ml: payload.amountMl,
+      ingredient: payload.ingredient,
+      amount_grams: payload.amountGrams,
+      notes: payload.notes,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id;
 }
 
 export async function getFeedings(options?: {
   limit?: number;
   offset?: number;
-  startDate?: number; // Unix timestamp in seconds
-  endDate?: number; // Unix timestamp in seconds
+  startDate?: number;
+  endDate?: number;
   babyId?: number;
 }): Promise<FeedingRecord[]> {
   const { limit, offset, startDate, endDate, babyId: providedBabyId } = options ?? {};
   const babyId = await resolveBabyId(providedBabyId);
 
-  const conditions: SQLWrapper[] = [];
-  conditions.push(eq(schema.feedings.babyId, babyId));
-  if (startDate) {
-    conditions.push(gte(schema.feedings.startTime, startDate));
-  }
-  if (endDate) {
-    conditions.push(lte(schema.feedings.startTime, endDate));
-  }
+  let query = supabase
+    .from('feedings')
+    .select('*')
+    .eq('baby_id', babyId)
+    .order('start_time', { ascending: false });
 
-  let query = db.select().from(schema.feedings).$dynamic();
+  if (startDate) query = query.gte('start_time', startDate);
+  if (endDate) query = query.lte('start_time', endDate);
+  if (limit) query = query.limit(limit);
+  if (offset) query = query.range(offset, offset + (limit ?? 50) - 1);
 
-  if (conditions.length > 0) {
-    query = query.where(and(...conditions));
-  }
+  const { data, error } = await query;
 
-  query = query.orderBy(desc(schema.feedings.startTime));
-
-  if (limit !== undefined) {
-    query = query.limit(limit);
-  }
-  if (offset !== undefined) {
-    query = query.offset(offset);
-  }
-
-  return await query;
+  if (error) throw error;
+  return (data ?? []).map(rowToRecord);
 }
 
 export async function getFeedingById(
@@ -79,26 +132,49 @@ export async function getFeedingById(
   babyId?: number
 ): Promise<FeedingRecord | null> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  const result = await db
-    .select()
-    .from(schema.feedings)
-    .where(and(eq(schema.feedings.id, feedingId), eq(schema.feedings.babyId, resolvedBabyId)))
-    .limit(1);
 
-  return result[0] ?? null;
+  const { data, error } = await supabase
+    .from('feedings')
+    .select('*')
+    .eq('id', feedingId)
+    .eq('baby_id', resolvedBabyId)
+    .single();
+
+  if (error || !data) return null;
+  return rowToRecord(data);
 }
 
 export async function updateFeeding(id: number, payload: FeedingPayload): Promise<void> {
   const babyId = await resolveBabyId(payload.babyId);
-  await db
-    .update(schema.feedings)
-    .set({ ...payload, babyId })
-    .where(and(eq(schema.feedings.id, id), eq(schema.feedings.babyId, babyId)));
+
+  const { error } = await supabase
+    .from('feedings')
+    .update({
+      type: payload.type,
+      start_time: payload.startTime,
+      duration: payload.duration,
+      left_duration: payload.leftDuration,
+      right_duration: payload.rightDuration,
+      ingredient_type: payload.ingredientType,
+      amount_ml: payload.amountMl,
+      ingredient: payload.ingredient,
+      amount_grams: payload.amountGrams,
+      notes: payload.notes,
+    })
+    .eq('id', id)
+    .eq('baby_id', babyId);
+
+  if (error) throw error;
 }
 
 export async function deleteFeeding(id: number, babyId?: number): Promise<void> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  await db
-    .delete(schema.feedings)
-    .where(and(eq(schema.feedings.id, id), eq(schema.feedings.babyId, resolvedBabyId)));
+
+  const { error } = await supabase
+    .from('feedings')
+    .delete()
+    .eq('id', id)
+    .eq('baby_id', resolvedBabyId);
+
+  if (error) throw error;
 }

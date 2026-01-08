@@ -1,22 +1,52 @@
-import { and, eq, gte } from 'drizzle-orm';
-
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/supabase-types';
 import { getActiveBabyProfileId, requireActiveBabyProfileId } from '@/database/baby-profile';
-import { db } from '@/database/db';
-import * as schema from '@/db/schema';
 
-// Use Drizzle's inferred types from schema
-type ScheduledNotificationSelect = typeof schema.scheduledNotifications.$inferSelect;
-type ScheduledNotificationInsert = typeof schema.scheduledNotifications.$inferInsert;
+// ============================================
+// TYPES
+// ============================================
+
+type ScheduledNotificationRow = Database['public']['Tables']['scheduled_notifications']['Row'];
+type ScheduledNotificationInsert = Database['public']['Tables']['scheduled_notifications']['Insert'];
+
+export type ScheduledNotificationRecord = {
+  id: number;
+  babyId: number;
+  notificationType: string;
+  notificationId: string;
+  scheduledTime: number;
+  data: string | null;
+  createdAt: number;
+}; // Matching inferred type structure roughly, but explicitly defined
 
 // Re-export specific types
-type ScheduledNotificationType = ScheduledNotificationSelect['notificationType'];
-export type ScheduledNotificationRecord = ScheduledNotificationSelect;
+// Note: Types from Supabase are strings, we might want to cast them to union if used as such elsewhere
+export type ScheduledNotificationType = 'feeding' | 'pumping' | 'sleep' | 'diaper';
 
 // Payload for creating scheduled notifications
-export type ScheduledNotificationPayload = Omit<
-  ScheduledNotificationInsert,
-  'id' | 'createdAt' | 'babyId'
-> & { babyId?: number };
+export type ScheduledNotificationPayload = {
+  babyId?: number;
+  notificationType: ScheduledNotificationType;
+  notificationId: string;
+  scheduledTime: number;
+  data?: string | null;
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+function rowToRecord(row: ScheduledNotificationRow): ScheduledNotificationRecord {
+  return {
+    id: row.id,
+    babyId: row.baby_id,
+    notificationType: row.notification_type,
+    notificationId: row.notification_id,
+    scheduledTime: row.scheduled_time,
+    data: row.data,
+    createdAt: row.created_at,
+  };
+}
 
 async function resolveBabyId(provided?: number): Promise<number> {
   if (provided != null) {
@@ -32,17 +62,30 @@ async function resolveBabyIdOrNull(provided?: number): Promise<number | null> {
   return getActiveBabyProfileId();
 }
 
+// ============================================
+// CRUD OPERATIONS
+// ============================================
+
 // Save a scheduled notification
 export async function saveScheduledNotification(
   payload: ScheduledNotificationPayload
 ): Promise<number> {
   const babyId = await resolveBabyId(payload.babyId);
-  const result = await db
-    .insert(schema.scheduledNotifications)
-    .values({ ...payload, babyId })
-    .returning({ id: schema.scheduledNotifications.id });
 
-  return result[0]?.id ?? 0;
+  const { data, error } = await supabase
+    .from('scheduled_notifications')
+    .insert({
+      baby_id: babyId,
+      notification_type: payload.notificationType,
+      notification_id: payload.notificationId,
+      scheduled_time: payload.scheduledTime,
+      data: payload.data,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id;
 }
 
 // Get all scheduled notifications for a baby
@@ -54,21 +97,24 @@ export async function getScheduledNotifications(options?: {
   const { babyId: providedBabyId, notificationType, includeExpired = true } = options ?? {};
   const babyId = await resolveBabyId(providedBabyId);
 
-  const conditions = [eq(schema.scheduledNotifications.babyId, babyId)];
+  let query = supabase
+    .from('scheduled_notifications')
+    .select('*')
+    .eq('baby_id', babyId);
 
   if (notificationType) {
-    conditions.push(eq(schema.scheduledNotifications.notificationType, notificationType));
+    query = query.eq('notification_type', notificationType);
   }
 
   if (!includeExpired) {
     const now = Math.floor(Date.now() / 1000);
-    conditions.push(gte(schema.scheduledNotifications.scheduledTime, now)); // scheduledTime >= now (future)
+    query = query.gte('scheduled_time', now); // scheduledTime >= now (future)
   }
 
-  return await db
-    .select()
-    .from(schema.scheduledNotifications)
-    .where(and(...conditions));
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data ?? []).map(rowToRecord);
 }
 
 // Get active (non-expired) scheduled notifications
@@ -82,15 +128,15 @@ export async function getActiveScheduledNotifications(
   }
   const now = Math.floor(Date.now() / 1000);
 
-  return await db
-    .select()
-    .from(schema.scheduledNotifications)
-    .where(
-      and(
-        eq(schema.scheduledNotifications.babyId, resolvedBabyId),
-        gte(schema.scheduledNotifications.scheduledTime, now) // scheduledTime >= now (future)
-      )
-    );
+  const { data, error } = await supabase
+    .from('scheduled_notifications')
+    .select('*')
+    .eq('baby_id', resolvedBabyId)
+    .gte('scheduled_time', now);
+
+  if (error) throw error;
+
+  return (data ?? []).map(rowToRecord);
 }
 
 // Delete a scheduled notification by notification ID
@@ -99,12 +145,12 @@ export async function deleteScheduledNotificationByNotificationId(
   babyId?: number
 ): Promise<void> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  await db
-    .delete(schema.scheduledNotifications)
-    .where(
-      and(
-        eq(schema.scheduledNotifications.notificationId, notificationId),
-        eq(schema.scheduledNotifications.babyId, resolvedBabyId)
-      )
-    );
+
+  const { error } = await supabase
+    .from('scheduled_notifications')
+    .delete()
+    .eq('notification_id', notificationId)
+    .eq('baby_id', resolvedBabyId);
+
+  if (error) throw error;
 }

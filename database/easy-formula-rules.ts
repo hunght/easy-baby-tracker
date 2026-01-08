@@ -1,7 +1,5 @@
-import { and, eq, gte, isNotNull, isNull, lte, or, type SQLWrapper } from 'drizzle-orm';
-
-import { db } from '@/database/db';
-import * as schema from '@/db/schema';
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/supabase-types';
 import type {
   EasyFormulaRule,
   EasyFormulaRuleId,
@@ -10,28 +8,31 @@ import type {
 import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
 import { safeParseEasyCyclePhases } from '@/lib/json-parse';
 
-export type FormulaRuleInsert = typeof schema.easyFormulaRules.$inferInsert;
-type FormulaRuleSelect = typeof schema.easyFormulaRules.$inferSelect;
+// ============================================
+// TYPES
+// ============================================
+
+type FormulaRuleRow = Database['public']['Tables']['easy_formula_rules']['Row'];
+type FormulaRuleInsert = Database['public']['Tables']['easy_formula_rules']['Insert'];
+
+export { FormulaRuleInsert };
 
 /**
  * Convert DB record to EasyFormulaRule
  */
-function dbToFormulaRule(record: FormulaRuleSelect): EasyFormulaRule {
-  // record.id is already a string, EasyFormulaRuleId is a string type alias
-  // TypeScript accepts this assignment without assertion since both are strings
-  const id: EasyFormulaRuleId = record.id;
+function dbToFormulaRule(record: FormulaRuleRow): EasyFormulaRule {
   return {
-    id,
-    minWeeks: record.minWeeks,
-    maxWeeks: record.maxWeeks,
-    labelKey: record.labelKey ?? record.labelText ?? '',
-    labelText: record.labelText ?? null,
-    ageRangeKey: record.ageRangeKey ?? record.ageRangeText ?? '',
-    ageRangeText: record.ageRangeText ?? null,
+    id: record.id,
+    minWeeks: record.min_weeks,
+    maxWeeks: record.max_weeks,
+    labelKey: record.label_key ?? record.label_text ?? '',
+    labelText: record.label_text ?? null,
+    ageRangeKey: record.age_range_key ?? record.age_range_text ?? '',
+    ageRangeText: record.age_range_text ?? null,
     description: record.description ?? null,
-    // Parse phases from JSON, default to empty array if missing (old data)
+    // Parse phases from JSON string
     phases: safeParseEasyCyclePhases(record.phases),
-    validDate: record.validDate ?? null,
+    validDate: record.valid_date ?? null,
   };
 }
 
@@ -40,27 +41,26 @@ function dbToFormulaRule(record: FormulaRuleSelect): EasyFormulaRule {
  * Excludes day-specific rules (validDate is set)
  */
 export async function getFormulaRules(babyId?: number): Promise<EasyFormulaRule[]> {
-  const conditions: SQLWrapper[] = [
-    // Exclude day-specific rules
-    isNull(schema.easyFormulaRules.validDate),
-  ];
+  let query = supabase
+    .from('easy_formula_rules')
+    .select('*')
+    .is('valid_date', null);
 
-  // Get predefined rules OR rules created by this baby
   if (babyId) {
-    conditions.push(
-      or(eq(schema.easyFormulaRules.isCustom, false), eq(schema.easyFormulaRules.babyId, babyId))!
-    );
+    // (is_custom = false) OR (baby_id = babyId)
+    // Postgrest syntax: or=(is_custom.eq.false,baby_id.eq.123)
+    query = query.or(`is_custom.eq.false,baby_id.eq.${babyId}`);
   } else {
-    conditions.push(eq(schema.easyFormulaRules.isCustom, false));
+    query = query.eq('is_custom', false);
   }
 
-  const records = await db
-    .select()
-    .from(schema.easyFormulaRules)
-    .where(and(...conditions))
-    .orderBy(schema.easyFormulaRules.minWeeks);
+  // Sort by min_weeks
+  query = query.order('min_weeks', { ascending: true });
 
-  return records.map(dbToFormulaRule);
+  const { data, error } = await query;
+  if (error) throw error;
+
+  return (data ?? []).map(dbToFormulaRule);
 }
 
 /**
@@ -71,23 +71,21 @@ export async function getFormulaRuleById(
   ruleId: string,
   babyId?: number
 ): Promise<EasyFormulaRule | null> {
-  const conditions: SQLWrapper[] = [eq(schema.easyFormulaRules.id, ruleId)];
+  let query = supabase
+    .from('easy_formula_rules')
+    .select('*')
+    .eq('id', ruleId);
 
   if (babyId) {
-    conditions.push(
-      or(eq(schema.easyFormulaRules.isCustom, false), eq(schema.easyFormulaRules.babyId, babyId))!
-    );
+    query = query.or(`is_custom.eq.false,baby_id.eq.${babyId}`);
   } else {
-    conditions.push(eq(schema.easyFormulaRules.isCustom, false));
+    query = query.eq('is_custom', false);
   }
 
-  const records = await db
-    .select()
-    .from(schema.easyFormulaRules)
-    .where(and(...conditions))
-    .limit(1);
+  const { data, error } = await query.single();
+  if (error || !data) return null;
 
-  return records[0] ? dbToFormulaRule(records[0]) : null;
+  return dbToFormulaRule(data);
 }
 
 /**
@@ -97,35 +95,44 @@ export async function getFormulaRuleByAge(
   ageWeeks: number,
   babyId?: number
 ): Promise<EasyFormulaRule | null> {
-  const conditions: SQLWrapper[] = [
-    gte(schema.easyFormulaRules.minWeeks, 0),
-    or(
-      and(
-        lte(schema.easyFormulaRules.minWeeks, ageWeeks),
-        gte(schema.easyFormulaRules.maxWeeks, ageWeeks)
-      ),
-      and(lte(schema.easyFormulaRules.minWeeks, ageWeeks), isNull(schema.easyFormulaRules.maxWeeks))
-    )!,
-    // Exclude day-specific rules (validDate is set)
-    isNull(schema.easyFormulaRules.validDate),
-  ];
+  // Logic:
+  // min_weeks >= 0
+  // AND (
+  //   (min_weeks <= ageWeeks AND max_weeks >= ageWeeks)
+  //   OR
+  //   (min_weeks <= ageWeeks AND max_weeks IS NULL)
+  // )
+  // AND valid_date IS NULL
+  // AND (is_custom = false OR baby_id = babyId)
+
+  // This complex filtering is hard in single Postgrest call if not carefully constructed.
+  // We can fetch candidates (based on simple filters) and filter in JS, typically dataset is small (<20 rules).
+  // Or construct complex Postgrest query.
+
+  // Let's try to filter by min_weeks <= ageWeeks in DB, and filter the rest in JS as it's easier and specific enough.
+  let query = supabase
+    .from('easy_formula_rules')
+    .select('*')
+    .gte('min_weeks', 0)
+    .lte('min_weeks', ageWeeks)
+    .is('valid_date', null);
 
   if (babyId) {
-    conditions.push(
-      or(eq(schema.easyFormulaRules.isCustom, false), eq(schema.easyFormulaRules.babyId, babyId))!
-    );
+    query = query.or(`is_custom.eq.false,baby_id.eq.${babyId}`);
   } else {
-    conditions.push(eq(schema.easyFormulaRules.isCustom, false));
+    query = query.eq('is_custom', false);
   }
 
-  const records = await db
-    .select()
-    .from(schema.easyFormulaRules)
-    .where(and(...conditions))
-    .orderBy(schema.easyFormulaRules.minWeeks)
-    .limit(1);
+  const { data, error } = await query.order('min_weeks', { ascending: true });
+  if (error) throw error;
 
-  return records[0] ? dbToFormulaRule(records[0]) : null;
+  // Filter in JS for max_weeks logic
+  const match = (data ?? []).find(rule => {
+    if (rule.max_weeks === null) return true;
+    return rule.max_weeks >= ageWeeks;
+  });
+
+  return match ? dbToFormulaRule(match) : null;
 }
 
 /**
@@ -136,53 +143,47 @@ export async function getFormulaRuleByDate(
   babyId: number,
   date: string // YYYY-MM-DD format
 ): Promise<EasyFormulaRule | null> {
-  const records = await db
-    .select()
-    .from(schema.easyFormulaRules)
-    .where(
-      and(
-        eq(schema.easyFormulaRules.babyId, babyId),
-        eq(schema.easyFormulaRules.validDate, date),
-        eq(schema.easyFormulaRules.isCustom, true)
-      )
-    )
-    .limit(1);
+  const { data, error } = await supabase
+    .from('easy_formula_rules')
+    .select('*')
+    .eq('baby_id', babyId)
+    .eq('valid_date', date)
+    .eq('is_custom', true)
+    .single();
 
-  return records[0] ? dbToFormulaRule(records[0]) : null;
+  if (error || !data) return null;
+  return dbToFormulaRule(data);
 }
 
 /**
  * Get predefined formula rules (not custom, not day-specific)
  */
 export async function getPredefinedFormulaRules(): Promise<EasyFormulaRule[]> {
-  const records = await db
-    .select()
-    .from(schema.easyFormulaRules)
-    .where(
-      and(eq(schema.easyFormulaRules.isCustom, false), isNull(schema.easyFormulaRules.validDate))
-    )
-    .orderBy(schema.easyFormulaRules.minWeeks);
+  const { data, error } = await supabase
+    .from('easy_formula_rules')
+    .select('*')
+    .eq('is_custom', false)
+    .is('valid_date', null)
+    .order('min_weeks', { ascending: true });
 
-  return records.map(dbToFormulaRule);
+  if (error) throw error;
+  return (data ?? []).map(dbToFormulaRule);
 }
 
 /**
  * Get user custom formula rules (custom, not day-specific, for specific baby)
  */
 export async function getUserCustomFormulaRules(babyId: number): Promise<EasyFormulaRule[]> {
-  const records = await db
-    .select()
-    .from(schema.easyFormulaRules)
-    .where(
-      and(
-        eq(schema.easyFormulaRules.babyId, babyId),
-        eq(schema.easyFormulaRules.isCustom, true),
-        isNull(schema.easyFormulaRules.validDate)
-      )
-    )
-    .orderBy(schema.easyFormulaRules.createdAt);
+  const { data, error } = await supabase
+    .from('easy_formula_rules')
+    .select('*')
+    .eq('baby_id', babyId)
+    .eq('is_custom', true)
+    .is('valid_date', null)
+    .order('created_at', { ascending: true });
 
-  return records.map(dbToFormulaRule);
+  if (error) throw error;
+  return (data ?? []).map(dbToFormulaRule);
 }
 
 /**
@@ -190,27 +191,16 @@ export async function getUserCustomFormulaRules(babyId: number): Promise<EasyFor
  * These are custom rules that apply only to a specific date
  */
 export async function getDaySpecificFormulaRules(babyId: number): Promise<EasyFormulaRule[]> {
-  const records = await db
-    .select()
-    .from(schema.easyFormulaRules)
-    .where(
-      and(
-        eq(schema.easyFormulaRules.babyId, babyId),
-        eq(schema.easyFormulaRules.isCustom, true),
-        isNotNull(schema.easyFormulaRules.validDate)
-      )
-    )
-    .orderBy(schema.easyFormulaRules.validDate);
+  const { data, error } = await supabase
+    .from('easy_formula_rules')
+    .select('*')
+    .eq('baby_id', babyId)
+    .eq('is_custom', true)
+    .not('valid_date', 'is', null)
+    .order('valid_date', { ascending: false });
 
-  const rules = records.map(dbToFormulaRule);
-
-  // Sort by date, most recent first
-  return rules.sort((a, b) => {
-    if (a.validDate && b.validDate) {
-      return b.validDate.localeCompare(a.validDate);
-    }
-    return 0;
-  });
+  if (error) throw error;
+  return (data ?? []).map(dbToFormulaRule);
 }
 
 /**
@@ -223,54 +213,53 @@ export async function cloneFormulaRuleForDate(
   date: string, // YYYY-MM-DD format
   phases: EasyCyclePhase[]
 ): Promise<string> {
-  // Get the source rule as raw database record
-  const sourceRecords = await db
-    .select()
-    .from(schema.easyFormulaRules)
-    .where(
-      and(
-        eq(schema.easyFormulaRules.id, sourceRuleId),
-        or(eq(schema.easyFormulaRules.isCustom, false), eq(schema.easyFormulaRules.babyId, babyId))!
-      )
-    )
-    .limit(1);
-
-  if (sourceRecords.length === 0) {
+  // Get the source rule
+  const sourceRule = await getFormulaRuleById(sourceRuleId, babyId);
+  if (!sourceRule) {
     throw new Error(`Source formula rule ${sourceRuleId} not found`);
   }
-
-  const sourceRecord = sourceRecords[0];
 
   // Check if a day-specific rule already exists for this date
   const existing = await getFormulaRuleByDate(babyId, date);
   if (existing) {
     // Update existing day-specific rule with new phases
-    await db
-      .update(schema.easyFormulaRules)
-      .set({
-        sourceRuleId: sourceRuleId,
+    const { error } = await supabase
+      .from('easy_formula_rules')
+      .update({
+        source_rule_id: sourceRuleId,
         phases: JSON.stringify(phases),
-        updatedAt: Math.floor(Date.now() / 1000),
+        updated_at: Math.floor(Date.now() / 1000),
       })
-      .where(eq(schema.easyFormulaRules.id, existing.id));
+      .eq('id', existing.id);
+
+    if (error) throw error;
     return existing.id;
   }
 
   // Create new day-specific rule by cloning the source record
   const newRuleId = `day_${babyId}_${date.replace(/-/g, '')}_${Date.now()}`;
-  const insert: FormulaRuleInsert = {
-    ...sourceRecord,
-    id: newRuleId,
-    babyId,
-    isCustom: true,
-    validDate: date,
-    sourceRuleId: sourceRuleId,
-    phases: JSON.stringify(phases),
-    createdAt: Math.floor(Date.now() / 1000),
-    updatedAt: Math.floor(Date.now() / 1000),
-  };
 
-  await db.insert(schema.easyFormulaRules).values(insert);
+  const { error } = await supabase
+    .from('easy_formula_rules')
+    .insert({
+      id: newRuleId,
+      baby_id: babyId,
+      min_weeks: sourceRule.minWeeks,
+      max_weeks: sourceRule.maxWeeks,
+      label_key: sourceRule.labelKey,
+      label_text: sourceRule.labelText,
+      age_range_key: sourceRule.ageRangeKey,
+      age_range_text: sourceRule.ageRangeText,
+      description: sourceRule.description,
+      is_custom: true,
+      valid_date: date,
+      source_rule_id: sourceRuleId,
+      phases: JSON.stringify(phases),
+      created_at: Math.floor(Date.now() / 1000),
+      updated_at: Math.floor(Date.now() / 1000),
+    });
+
+  if (error) throw error;
   return newRuleId;
 }
 
@@ -281,23 +270,24 @@ export async function createCustomFormulaRule(
   babyId: number,
   rule: Omit<EasyFormulaRule, 'id'> & { id: string; name: string }
 ): Promise<string> {
-  const insert: FormulaRuleInsert = {
-    id: `custom_${babyId}_${Date.now()}`,
-    babyId,
-    isCustom: true,
-    minWeeks: rule.minWeeks,
-    maxWeeks: rule.maxWeeks,
-    labelText: rule.name,
-    ageRangeText: `${rule.minWeeks} - ${rule.maxWeeks ?? '∞'} weeks`,
-    description: rule.description ?? null,
-    phases: JSON.stringify(rule.phases),
-  };
+  const newId = `custom_${babyId}_${Date.now()}`;
 
-  const result = await db
-    .insert(schema.easyFormulaRules)
-    .values(insert)
-    .returning({ id: schema.easyFormulaRules.id });
-  return result[0].id;
+  const { error } = await supabase
+    .from('easy_formula_rules')
+    .insert({
+      id: newId,
+      baby_id: babyId,
+      is_custom: true,
+      min_weeks: rule.minWeeks,
+      max_weeks: rule.maxWeeks,
+      label_text: rule.name,
+      age_range_text: `${rule.minWeeks} - ${rule.maxWeeks ?? '∞'} weeks`,
+      description: rule.description,
+      phases: JSON.stringify(rule.phases),
+    });
+
+  if (error) throw error;
+  return newId;
 }
 
 /**
@@ -308,39 +298,36 @@ export async function updateCustomFormulaRule(
   babyId: number,
   rule: Omit<EasyFormulaRule, 'id'> & { name: string }
 ): Promise<void> {
-  await db
-    .update(schema.easyFormulaRules)
-    .set({
-      labelText: rule.name,
-      ageRangeText: `${rule.minWeeks} - ${rule.maxWeeks ?? '∞'} weeks`,
-      minWeeks: rule.minWeeks,
-      maxWeeks: rule.maxWeeks,
-      description: rule.description ?? null,
+  const { error } = await supabase
+    .from('easy_formula_rules')
+    .update({
+      label_text: rule.name,
+      age_range_text: `${rule.minWeeks} - ${rule.maxWeeks ?? '∞'} weeks`,
+      min_weeks: rule.minWeeks,
+      max_weeks: rule.maxWeeks,
+      description: rule.description,
       phases: JSON.stringify(rule.phases),
-      updatedAt: Math.floor(Date.now() / 1000),
+      updated_at: Math.floor(Date.now() / 1000),
     })
-    .where(
-      and(
-        eq(schema.easyFormulaRules.id, ruleId),
-        eq(schema.easyFormulaRules.babyId, babyId),
-        eq(schema.easyFormulaRules.isCustom, true)
-      )
-    );
+    .eq('id', ruleId)
+    .eq('baby_id', babyId)
+    .eq('is_custom', true);
+
+  if (error) throw error;
 }
 
 /**
  * Delete custom formula rule
  */
 export async function deleteCustomFormulaRule(ruleId: string, babyId: number): Promise<void> {
-  await db
-    .delete(schema.easyFormulaRules)
-    .where(
-      and(
-        eq(schema.easyFormulaRules.id, ruleId),
-        eq(schema.easyFormulaRules.babyId, babyId),
-        eq(schema.easyFormulaRules.isCustom, true)
-      )
-    );
+  const { error } = await supabase
+    .from('easy_formula_rules')
+    .delete()
+    .eq('id', ruleId)
+    .eq('baby_id', babyId)
+    .eq('is_custom', true);
+
+  if (error) throw error;
 }
 
 /**

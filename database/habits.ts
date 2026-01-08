@@ -1,32 +1,104 @@
-import { and, desc, eq, gte, isNull, lte, or } from 'drizzle-orm';
-
-import * as schema from '@/db/schema';
-
-import { getDb } from './db';
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/supabase-types';
 import { PREDEFINED_HABITS } from './predefined-habits';
 
 // ============================================
-// TYPES - Using Drizzle inferred types
+// TYPES
 // ============================================
 
-// Use Drizzle's inferred types from schema
-type HabitDefinitionSelect = typeof schema.habitDefinitions.$inferSelect;
-type BabyHabitSelect = typeof schema.babyHabits.$inferSelect;
-type HabitLogSelect = typeof schema.habitLogs.$inferSelect;
+type HabitDefinitionRow = Database['public']['Tables']['habit_definitions']['Row'];
+type BabyHabitRow = Database['public']['Tables']['baby_habits']['Row'];
+type HabitLogRow = Database['public']['Tables']['habit_logs']['Row'];
 
-// Re-export types from schema
-export type HabitCategory = HabitDefinitionSelect['category'];
-// HabitFrequency is used internally but not exported to avoid unused export warning
-type HabitFrequency = HabitDefinitionSelect['defaultFrequency'];
+export type HabitCategory = HabitDefinitionRow['category'];
+// HabitFrequency is used internally but not exported to avoid unused export warning (in original code)
+// We export it if needed by other files, or keep as internal alias
+type HabitFrequency = HabitDefinitionRow['default_frequency'];
 
-// Export types using Drizzle inferred types
-export type HabitDefinition = HabitDefinitionSelect;
-// HabitLog is used internally but not exported to avoid unused export warning
-type HabitLog = HabitLogSelect;
+export type HabitDefinition = {
+  id: string;
+  category: HabitCategory;
+  iconName: string;
+  labelKey: string;
+  descriptionKey: string;
+  minAgeMonths: number | null;
+  maxAgeMonths: number | null;
+  defaultFrequency: string;
+  sortOrder: number | null;
+  isActive: boolean | null;
+};
 
 // Combined type for baby habit with definition (from joined queries)
-export interface BabyHabitWithDefinition extends BabyHabitSelect {
-  habit: HabitDefinitionSelect;
+export interface BabyHabitWithDefinition {
+  id: number;
+  babyId: number;
+  habitDefinitionId: string;
+  isActive: boolean | null;
+  targetFrequency: string | null;
+  reminderTime: string | null;
+  reminderDays: string | null;
+  createdAt: number;
+  habit: HabitDefinition;
+}
+
+export type HabitLog = {
+  id: number;
+  babyHabitId: number;
+  babyId: number;
+  completedAt: number;
+  duration: number | null;
+  notes: string | null;
+  recordedAt: number;
+};
+
+// ============================================
+// HELPER MAPPERS
+// ============================================
+
+function mapHabitDefinition(row: HabitDefinitionRow): HabitDefinition {
+  return {
+    id: row.id,
+    category: row.category,
+    iconName: row.icon_name,
+    labelKey: row.label_key,
+    descriptionKey: row.description_key,
+    minAgeMonths: row.min_age_months,
+    maxAgeMonths: row.max_age_months,
+    defaultFrequency: row.default_frequency,
+    sortOrder: row.sort_order,
+    isActive: row.is_active,
+  };
+}
+
+function mapBabyHabitWithDefinition(
+  row: BabyHabitRow & { habit_definitions: HabitDefinitionRow | null }
+): BabyHabitWithDefinition {
+  if (!row.habit_definitions) {
+    throw new Error(`Baby habit ${row.id} has no associated definition`);
+  }
+  return {
+    id: row.id,
+    babyId: row.baby_id,
+    habitDefinitionId: row.habit_definition_id,
+    isActive: row.is_active,
+    targetFrequency: row.target_frequency,
+    reminderTime: row.reminder_time,
+    reminderDays: row.reminder_days,
+    createdAt: row.created_at,
+    habit: mapHabitDefinition(row.habit_definitions),
+  };
+}
+
+function mapHabitLog(row: HabitLogRow): HabitLog {
+  return {
+    id: row.id,
+    babyHabitId: row.baby_habit_id,
+    babyId: row.baby_id,
+    completedAt: row.completed_at,
+    duration: row.duration,
+    notes: row.notes,
+    recordedAt: row.recorded_at,
+  };
 }
 
 // ============================================
@@ -34,18 +106,8 @@ export interface BabyHabitWithDefinition extends BabyHabitSelect {
 // ============================================
 
 export async function seedHabitDefinitions() {
-  const db = getDb();
-
-  // Batch insert all habits at once for better performance
-  await db
-    .insert(schema.habitDefinitions)
-    .values(
-      PREDEFINED_HABITS.map((habit) => ({
-        ...habit,
-        isActive: true,
-      }))
-    )
-    .onConflictDoNothing();
+  console.log('Seeding is now handled by Supabase SQL migration.');
+  // No-op: Seeding is done via SQL migration to bypass RLS restrictions on client
 }
 
 // ============================================
@@ -58,6 +120,7 @@ export function isHabitAgeAppropriate(
 ): boolean {
   const minAge = habit.minAgeMonths ?? 0;
   const maxAge = habit.maxAgeMonths;
+  // If maxAge is null, it means "no upper limit"
   return ageMonths >= minAge && (maxAge === null || ageMonths <= maxAge);
 }
 
@@ -66,190 +129,139 @@ export function isHabitAgeAppropriate(
 // ============================================
 
 export async function getHabitDefinitions(ageMonths?: number): Promise<HabitDefinition[]> {
-  const db = getDb();
-
-  let query = db
-    .select()
-    .from(schema.habitDefinitions)
-    .where(eq(schema.habitDefinitions.isActive, true));
+  let query = supabase
+    .from('habit_definitions')
+    .select('*')
+    .eq('is_active', true);
 
   if (ageMonths !== undefined) {
-    query = db
-      .select()
-      .from(schema.habitDefinitions)
-      .where(
-        and(
-          eq(schema.habitDefinitions.isActive, true),
-          lte(schema.habitDefinitions.minAgeMonths, ageMonths),
-          or(
-            isNull(schema.habitDefinitions.maxAgeMonths),
-            gte(schema.habitDefinitions.maxAgeMonths, ageMonths)
-          )
-        )
-      );
+    // Filter in JS or intricate Postgrest syntax.
+    // Postgrest OR logic is: .or(`max_age_months.is.null,max_age_months.gte.${ageMonths}`)
+    // AND it with min_age_months.lte.${ageMonths}
+    // And is_active.eq.true
+
+    // Filter by min age: min_age_months <= ageMonths
+    query = query.lte('min_age_months', ageMonths);
+
+    // Filter by max age: (max_age_months IS NULL) OR (max_age_months >= ageMonths)
+    query = query.or(`max_age_months.is.null,max_age_months.gte.${ageMonths}`);
   }
 
-  const results = await query;
-  return results;
-}
+  const { data, error } = await query;
+  if (error) throw error;
 
-// Removed unused export - getHabitDefinitionsByCategory
+  return (data ?? []).map(mapHabitDefinition);
+}
 
 // ============================================
 // BABY HABIT FUNCTIONS
 // ============================================
 
 export async function getBabyHabits(babyId: number): Promise<BabyHabitWithDefinition[]> {
-  const db = getDb();
-  const results = await db
-    .select({
-      id: schema.babyHabits.id,
-      babyId: schema.babyHabits.babyId,
-      habitDefinitionId: schema.babyHabits.habitDefinitionId,
-      isActive: schema.babyHabits.isActive,
-      targetFrequency: schema.babyHabits.targetFrequency,
-      reminderTime: schema.babyHabits.reminderTime,
-      reminderDays: schema.babyHabits.reminderDays,
-      createdAt: schema.babyHabits.createdAt,
-      habit: {
-        id: schema.habitDefinitions.id,
-        category: schema.habitDefinitions.category,
-        iconName: schema.habitDefinitions.iconName,
-        labelKey: schema.habitDefinitions.labelKey,
-        descriptionKey: schema.habitDefinitions.descriptionKey,
-        minAgeMonths: schema.habitDefinitions.minAgeMonths,
-        maxAgeMonths: schema.habitDefinitions.maxAgeMonths,
-        defaultFrequency: schema.habitDefinitions.defaultFrequency,
-        sortOrder: schema.habitDefinitions.sortOrder,
-        isActive: schema.habitDefinitions.isActive,
-      },
-    })
-    .from(schema.babyHabits)
-    .innerJoin(
-      schema.habitDefinitions,
-      eq(schema.babyHabits.habitDefinitionId, schema.habitDefinitions.id)
-    )
-    .where(and(eq(schema.babyHabits.babyId, babyId), eq(schema.babyHabits.isActive, true)));
+  const { data, error } = await supabase
+    .from('baby_habits')
+    .select('*, habit_definitions!inner(*)') // !inner join ensures habit definition exists
+    .eq('baby_id', babyId)
+    .eq('is_active', true);
 
-  return results;
+  if (error) throw error;
+
+  // Cast data to expected type structure for mapping
+  // Supabase return type with join is { ...BabyHabitRow, habit_definitions: HabitDefinitionRow }
+  const rows = data as (BabyHabitRow & { habit_definitions: HabitDefinitionRow })[];
+
+  return rows.map(mapBabyHabitWithDefinition);
 }
 
 // Get habits with active reminders (for scheduling page)
 export async function getBabyHabitsWithReminders(
   babyId: number
 ): Promise<BabyHabitWithDefinition[]> {
-  const db = getDb();
-  const results = await db
-    .select({
-      id: schema.babyHabits.id,
-      babyId: schema.babyHabits.babyId,
-      habitDefinitionId: schema.babyHabits.habitDefinitionId,
-      isActive: schema.babyHabits.isActive,
-      targetFrequency: schema.babyHabits.targetFrequency,
-      reminderTime: schema.babyHabits.reminderTime,
-      reminderDays: schema.babyHabits.reminderDays,
-      createdAt: schema.babyHabits.createdAt,
-      habit: {
-        id: schema.habitDefinitions.id,
-        category: schema.habitDefinitions.category,
-        iconName: schema.habitDefinitions.iconName,
-        labelKey: schema.habitDefinitions.labelKey,
-        descriptionKey: schema.habitDefinitions.descriptionKey,
-        minAgeMonths: schema.habitDefinitions.minAgeMonths,
-        maxAgeMonths: schema.habitDefinitions.maxAgeMonths,
-        defaultFrequency: schema.habitDefinitions.defaultFrequency,
-        sortOrder: schema.habitDefinitions.sortOrder,
-        isActive: schema.habitDefinitions.isActive,
-      },
-    })
-    .from(schema.babyHabits)
-    .innerJoin(
-      schema.habitDefinitions,
-      eq(schema.babyHabits.habitDefinitionId, schema.habitDefinitions.id)
-    )
-    .where(
-      and(
-        eq(schema.babyHabits.babyId, babyId),
-        eq(schema.babyHabits.isActive, true),
-        // Only get habits that have a reminder time set
-        schema.babyHabits.reminderTime
-      )
-    );
+  const { data, error } = await supabase
+    .from('baby_habits')
+    .select('*, habit_definitions!inner(*)')
+    .eq('baby_id', babyId)
+    .eq('is_active', true)
+    .not('reminder_time', 'is', null);
 
-  return results;
+  if (error) throw error;
+
+  const rows = data as (BabyHabitRow & { habit_definitions: HabitDefinitionRow })[];
+  return rows.map(mapBabyHabitWithDefinition);
 }
 
 export async function addBabyHabit(
   babyId: number,
   habitDefinitionId: string,
-  targetFrequency?: HabitFrequency,
+  targetFrequency?: string,
   reminderTime?: string,
   reminderDays?: string
 ): Promise<number> {
-  const db = getDb();
-
   // First check if the habit already exists (including inactive ones)
-  const existing = await db
-    .select({ id: schema.babyHabits.id })
-    .from(schema.babyHabits)
-    .where(
-      and(
-        eq(schema.babyHabits.babyId, babyId),
-        eq(schema.babyHabits.habitDefinitionId, habitDefinitionId)
-      )
-    )
-    .limit(1);
+  const { data: existing } = await supabase
+    .from('baby_habits')
+    .select('id')
+    .eq('baby_id', babyId)
+    .eq('habit_definition_id', habitDefinitionId)
+    .single();
 
-  if (existing.length > 0) {
+  if (existing) {
     // Reactivate and update existing habit
-    await db
-      .update(schema.babyHabits)
-      .set({
-        isActive: true,
-        targetFrequency: targetFrequency ?? null,
-        reminderTime: reminderTime ?? null,
-        reminderDays: reminderDays ?? null,
+    const { error } = await supabase
+      .from('baby_habits')
+      .update({
+        is_active: true,
+        target_frequency: targetFrequency ?? null,
+        reminder_time: reminderTime ?? null,
+        reminder_days: reminderDays ?? null,
       })
-      .where(eq(schema.babyHabits.id, existing[0].id));
-    return existing[0].id;
+      .eq('id', existing.id);
+
+    if (error) throw error;
+    return existing.id;
   }
 
   // Insert new habit
-  const result = await db
-    .insert(schema.babyHabits)
-    .values({
-      babyId,
-      habitDefinitionId,
-      isActive: true,
-      targetFrequency: targetFrequency ?? null,
-      reminderTime: reminderTime ?? null,
-      reminderDays: reminderDays ?? null,
+  const { data: inserted, error } = await supabase
+    .from('baby_habits')
+    .insert({
+      baby_id: babyId,
+      habit_definition_id: habitDefinitionId,
+      is_active: true,
+      target_frequency: targetFrequency ?? null,
+      reminder_time: reminderTime ?? null,
+      reminder_days: reminderDays ?? null,
     })
-    .returning({ id: schema.babyHabits.id });
+    .select('id')
+    .single();
 
-  return result[0].id;
+  if (error) throw error;
+  return inserted.id;
 }
 
 export async function removeBabyHabit(babyHabitId: number): Promise<void> {
-  const db = getDb();
-  await db
-    .update(schema.babyHabits)
-    .set({ isActive: false })
-    .where(eq(schema.babyHabits.id, babyHabitId));
-}
+  const { error } = await supabase
+    .from('baby_habits')
+    .update({ is_active: false })
+    .eq('id', babyHabitId);
 
-// Removed unused export - deleteBabyHabit
+  if (error) throw error;
+}
 
 export async function updateBabyHabitReminder(
   babyHabitId: number,
   reminderTime: string | null,
   reminderDays: string | null = null
 ): Promise<void> {
-  const db = getDb();
-  await db
-    .update(schema.babyHabits)
-    .set({ reminderTime, reminderDays })
-    .where(eq(schema.babyHabits.id, babyHabitId));
+  const { error } = await supabase
+    .from('baby_habits')
+    .update({
+      reminder_time: reminderTime,
+      reminder_days: reminderDays
+    })
+    .eq('id', babyHabitId);
+
+  if (error) throw error;
 }
 
 // ============================================
@@ -263,40 +275,40 @@ export async function logHabit(
   duration?: number,
   notes?: string
 ): Promise<number> {
-  const db = getDb();
   const now = Math.floor(Date.now() / 1000);
-  const result = await db
-    .insert(schema.habitLogs)
-    .values({
-      babyId,
-      babyHabitId,
-      completedAt: completedAt ?? now,
+
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .insert({
+      baby_id: babyId,
+      baby_habit_id: babyHabitId,
+      completed_at: completedAt ?? now,
       duration: duration ?? null,
       notes: notes ?? null,
-      recordedAt: now,
+      recorded_at: now,
     })
-    .returning({ id: schema.habitLogs.id });
+    .select('id')
+    .single();
 
-  return result[0].id;
+  if (error) throw error;
+  return data.id;
 }
 
-// Removed unused export - getHabitLogs
-
 export async function getTodayHabitLogs(babyId: number): Promise<HabitLog[]> {
-  const db = getDb();
-
   // Get start of today (midnight) in seconds
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const startTime = Math.floor(startOfDay.getTime() / 1000);
 
-  const results = await db
-    .select()
-    .from(schema.habitLogs)
-    .where(and(eq(schema.habitLogs.babyId, babyId), gte(schema.habitLogs.completedAt, startTime)))
-    .orderBy(desc(schema.habitLogs.completedAt));
+  const { data, error } = await supabase
+    .from('habit_logs')
+    .select('*')
+    .eq('baby_id', babyId)
+    .gte('completed_at', startTime)
+    .order('completed_at', { ascending: false });
 
-  return results;
+  if (error) throw error;
+  return (data ?? []).map(mapHabitLog);
 }
 
 // ============================================
@@ -304,22 +316,18 @@ export async function getTodayHabitLogs(babyId: number): Promise<HabitLog[]> {
 // ============================================
 
 export async function getHabitStreak(babyHabitId: number): Promise<number> {
-  const db = getDb();
-
   // Get all logs ordered by date descending
-  const logs = await db
-    .select({
-      completedAt: schema.habitLogs.completedAt,
-    })
-    .from(schema.habitLogs)
-    .where(eq(schema.habitLogs.babyHabitId, babyHabitId))
-    .orderBy(desc(schema.habitLogs.completedAt));
+  const { data: logs, error } = await supabase
+    .from('habit_logs')
+    .select('completed_at')
+    .eq('baby_habit_id', babyHabitId)
+    .order('completed_at', { ascending: false });
 
-  if (logs.length === 0) return 0;
+  if (error || !logs || logs.length === 0) return 0;
 
   // Convert timestamps to dates (day only)
   const logDates = logs.map((log) => {
-    const date = new Date(log.completedAt * 1000);
+    const date = new Date(log.completed_at * 1000);
     return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   });
 

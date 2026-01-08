@@ -1,73 +1,116 @@
-import { and, desc, eq, gte, lte, sql, type SQLWrapper } from 'drizzle-orm';
-
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/supabase-types';
 import { requireActiveBabyProfileId } from '@/database/baby-profile';
-import { db } from '@/database/db';
-import * as schema from '@/db/schema';
 
-// Use Drizzle's inferred types from schema
-type PumpingSelect = typeof schema.pumpings.$inferSelect;
-type PumpingInsert = typeof schema.pumpings.$inferInsert;
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
 
-// Payload for creating/updating pumpings
-export type PumpingPayload = Omit<PumpingInsert, 'id' | 'recordedAt' | 'babyId'> & {
+type PumpingRow = Database['public']['Tables']['pumpings']['Row'];
+
+export type PumpingPayload = {
   babyId?: number;
+  startTime?: number;
+  amountMl: number;
+  leftAmountMl?: number | null;
+  rightAmountMl?: number | null;
+  leftDuration?: number | null;
+  rightDuration?: number | null;
+  duration?: number | null;
+  notes?: string | null;
 };
 
-// Return type for pumping records
-export type PumpingRecord = PumpingSelect;
+export type PumpingRecord = {
+  id: number;
+  babyId: number;
+  startTime: number;
+  amountMl: number;
+  leftAmountMl: number | null;
+  rightAmountMl: number | null;
+  leftDuration: number | null;
+  rightDuration: number | null;
+  duration: number | null;
+  notes: string | null;
+  recordedAt: number;
+};
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+function rowToRecord(row: PumpingRow): PumpingRecord {
+  return {
+    id: row.id,
+    babyId: row.baby_id,
+    startTime: row.start_time,
+    amountMl: row.amount_ml,
+    leftAmountMl: row.left_amount_ml,
+    rightAmountMl: row.right_amount_ml,
+    leftDuration: row.left_duration,
+    rightDuration: row.right_duration,
+    duration: row.duration,
+    notes: row.notes,
+    recordedAt: row.recorded_at,
+  };
+}
 
 async function resolveBabyId(provided?: number): Promise<number> {
-  if (provided != null) {
-    return provided;
-  }
+  if (provided != null) return provided;
   return requireActiveBabyProfileId();
 }
 
+// ============================================
+// CRUD OPERATIONS
+// ============================================
+
 export async function savePumping(payload: PumpingPayload): Promise<number> {
   const babyId = await resolveBabyId(payload.babyId);
-  const result = await db
-    .insert(schema.pumpings)
-    .values({ ...payload, babyId })
-    .returning({ id: schema.pumpings.id });
 
-  return result[0]?.id ?? 0;
+  const { data, error } = await supabase
+    .from('pumpings')
+    .insert({
+      baby_id: babyId,
+      start_time: payload.startTime ?? Math.floor(Date.now() / 1000),
+      amount_ml: payload.amountMl,
+      left_amount_ml: payload.leftAmountMl,
+      right_amount_ml: payload.rightAmountMl,
+      left_duration: payload.leftDuration,
+      right_duration: payload.rightDuration,
+      duration: payload.duration,
+      notes: payload.notes,
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  return data.id;
 }
 
 export async function getPumpings(options?: {
   limit?: number;
   offset?: number;
-  startDate?: number; // Unix timestamp in seconds
-  endDate?: number; // Unix timestamp in seconds
+  startDate?: number;
+  endDate?: number;
   babyId?: number;
 }): Promise<PumpingRecord[]> {
   const { limit, offset, startDate, endDate, babyId: providedBabyId } = options ?? {};
   const babyId = await resolveBabyId(providedBabyId);
 
-  const conditions: SQLWrapper[] = [];
-  conditions.push(eq(schema.pumpings.babyId, babyId));
-  if (startDate) {
-    conditions.push(gte(schema.pumpings.startTime, startDate));
-  }
-  if (endDate) {
-    conditions.push(lte(schema.pumpings.startTime, endDate));
-  }
+  let query = supabase
+    .from('pumpings')
+    .select('*')
+    .eq('baby_id', babyId)
+    .order('start_time', { ascending: false });
 
-  let query = db.select().from(schema.pumpings).$dynamic();
+  if (startDate) query = query.gte('start_time', startDate);
+  if (endDate) query = query.lte('start_time', endDate);
+  if (limit) query = query.limit(limit);
+  if (offset) query = query.range(offset, offset + (limit ?? 50) - 1);
 
-  if (conditions.length > 0) {
-    query = query.where(and(...conditions));
-  }
+  const { data, error } = await query;
 
-  query = query.orderBy(desc(schema.pumpings.startTime));
-
-  if (limit !== undefined) {
-    query = query.limit(limit);
-  }
-  if (offset !== undefined) {
-    query = query.offset(offset);
-  }
-
-  return await query;
+  if (error) throw error;
+  return (data ?? []).map(rowToRecord);
 }
 
 export async function getPumpingById(
@@ -75,39 +118,60 @@ export async function getPumpingById(
   babyId?: number
 ): Promise<PumpingRecord | null> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  const result = await db
-    .select()
-    .from(schema.pumpings)
-    .where(and(eq(schema.pumpings.id, pumpingId), eq(schema.pumpings.babyId, resolvedBabyId)))
-    .limit(1);
 
-  return result[0] ?? null;
+  const { data, error } = await supabase
+    .from('pumpings')
+    .select('*')
+    .eq('id', pumpingId)
+    .eq('baby_id', resolvedBabyId)
+    .single();
+
+  if (error || !data) return null;
+  return rowToRecord(data);
 }
 
-// Calculate total inventory from all pumpings (excluding those used in feedings)
 export async function getPumpingInventory(babyId?: number): Promise<number> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  const result = await db
-    .select({
-      total: sql<number>`COALESCE(SUM(${schema.pumpings.amountMl}), 0)`.as('total'),
-    })
-    .from(schema.pumpings)
-    .where(eq(schema.pumpings.babyId, resolvedBabyId));
 
-  return result[0]?.total ?? 0;
+  const { data, error } = await supabase
+    .from('pumpings')
+    .select('amount_ml')
+    .eq('baby_id', resolvedBabyId);
+
+  if (error) throw error;
+
+  return (data ?? []).reduce((sum, row) => sum + (row.amount_ml ?? 0), 0);
 }
 
 export async function updatePumping(id: number, payload: PumpingPayload): Promise<void> {
   const babyId = await resolveBabyId(payload.babyId);
-  await db
-    .update(schema.pumpings)
-    .set({ ...payload, babyId })
-    .where(and(eq(schema.pumpings.id, id), eq(schema.pumpings.babyId, babyId)));
+
+  const { error } = await supabase
+    .from('pumpings')
+    .update({
+      start_time: payload.startTime,
+      amount_ml: payload.amountMl,
+      left_amount_ml: payload.leftAmountMl,
+      right_amount_ml: payload.rightAmountMl,
+      left_duration: payload.leftDuration,
+      right_duration: payload.rightDuration,
+      duration: payload.duration,
+      notes: payload.notes,
+    })
+    .eq('id', id)
+    .eq('baby_id', babyId);
+
+  if (error) throw error;
 }
 
 export async function deletePumping(id: number, babyId?: number): Promise<void> {
   const resolvedBabyId = await resolveBabyId(babyId);
-  await db
-    .delete(schema.pumpings)
-    .where(and(eq(schema.pumpings.id, id), eq(schema.pumpings.babyId, resolvedBabyId)));
+
+  const { error } = await supabase
+    .from('pumpings')
+    .delete()
+    .eq('id', id)
+    .eq('baby_id', resolvedBabyId);
+
+  if (error) throw error;
 }
