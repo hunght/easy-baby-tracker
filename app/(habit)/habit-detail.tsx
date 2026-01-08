@@ -128,7 +128,15 @@ export default function HabitDetailScreen() {
     },
   ];
 
-  const category = (params.category as HabitCategory) || 'health';
+  const category: HabitCategory =
+    params.category === 'health' ||
+    params.category === 'learning' ||
+    params.category === 'physical' ||
+    params.category === 'sleep' ||
+    params.category === 'social' ||
+    params.category === 'nutrition'
+      ? params.category
+      : 'health';
   const CategoryIcon = categoryIcons[category] || Heart;
   const categoryColor = categoryColors[category] || '#FF5C8D';
 

@@ -1,8 +1,3 @@
-import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/supabase-types';
-
-type FormulaRuleInsert = Database['public']['Tables']['easy_formula_rules']['Insert'];
-
 /**
  * Seed predefined formula rules - called during migration or first app load
  */

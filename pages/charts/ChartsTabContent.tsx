@@ -12,6 +12,19 @@ import { SleepCharts } from '@/pages/charts/components/SleepCharts';
 
 type ChartCategory = 'feeding' | 'sleep' | 'growth' | 'diaper';
 
+function isFeatureKey(value: string): value is FeatureKey {
+  return (
+    value === 'feeding' ||
+    value === 'diaper' ||
+    value === 'sleep' ||
+    value === 'habit' ||
+    value === 'health' ||
+    value === 'growth' ||
+    value === 'diary' ||
+    value === 'pumping'
+  );
+}
+
 export function ChartsTabContent() {
   const { t } = useLocalization();
   const { features } = useFeatureFlags();
@@ -24,7 +37,12 @@ export function ChartsTabContent() {
     { id: 'diaper', label: t('tracking.tiles.diaper.label') },
   ];
 
-  const categories = allCategories.filter((cat) => features[cat.id as FeatureKey]);
+  const categories = allCategories.filter((cat) => {
+    if (isFeatureKey(cat.id)) {
+      return features[cat.id];
+    }
+    return false;
+  });
 
   const renderContent = () => {
     switch (selectedCategory) {

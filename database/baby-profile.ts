@@ -41,11 +41,16 @@ const ACTIVE_PROFILE_KEY = 'activeProfileId';
 // HELPER FUNCTIONS
 // ============================================
 
+function isGender(value: string): value is Gender {
+  return value === 'boy' || value === 'girl' || value === 'unknown';
+}
+
 function rowToRecord(row: BabyProfileRow, concerns: string[]): BabyProfileRecord {
+  const gender: Gender = isGender(row.gender) ? row.gender : 'unknown';
   return {
     id: row.id,
     nickname: row.nickname,
-    gender: row.gender as Gender,
+    gender,
     birth_date: row.birth_date,
     due_date: row.due_date,
     avatar_uri: row.avatar_uri,
@@ -157,7 +162,10 @@ export async function getBabyProfiles(): Promise<BabyProfileRecord[]> {
 
   // Fetch all concerns for these profiles
   const babyIds = profiles.map((p) => p.id);
-  const { data: concerns } = await supabase.from('concern_choices').select('*').in('baby_id', babyIds);
+  const { data: concerns } = await supabase
+    .from('concern_choices')
+    .select('*')
+    .in('baby_id', babyIds);
 
   const concernsByBabyId = new Map<number, string[]>();
   concerns?.forEach((c) => {
@@ -247,7 +255,10 @@ export async function saveOnboardingProfile(payload: BabyProfilePayload) {
   return babyId;
 }
 
-export async function updateBabyFirstWakeTime(babyId: number, firstWakeTime: string): Promise<void> {
+export async function updateBabyFirstWakeTime(
+  babyId: number,
+  firstWakeTime: string
+): Promise<void> {
   const { error } = await supabase
     .from('baby_profiles')
     .update({ first_wake_time: firstWakeTime })

@@ -1,20 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as FileSystem from 'expo-file-system/legacy';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  View,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { Modal, Pressable, ScrollView, View, KeyboardAvoidingView, Platform } from 'react-native';
 import { z } from 'zod';
 
 import { DatePickerField } from '@/components/DatePickerField';
@@ -37,6 +27,7 @@ import {
 } from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { ModalHeader } from '@/components/ModalHeader';
+import { deleteAvatar, pickAndUploadAvatar, getAvatarUrl } from '@/lib/avatar-storage';
 
 const genderSegments: { key: Gender; labelKey: string }[] = [
   { key: 'unknown', labelKey: 'onboarding.babyProfile.genderOptions.unknown' },
@@ -50,36 +41,6 @@ const genderSchema = z.enum(['unknown', 'boy', 'girl']);
 // Type guard using Zod validation
 function isGender(value: unknown): value is Gender {
   return genderSchema.safeParse(value).success;
-}
-
-// Directory for storing baby profile photos
-const PROFILE_PHOTO_DIR =
-  (FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? '') + 'profile-photos/';
-
-async function ensureProfilePhotoDir() {
-  if (!PROFILE_PHOTO_DIR) {
-    throw new Error('FileSystem directory unavailable');
-  }
-  const info = await FileSystem.getInfoAsync(PROFILE_PHOTO_DIR);
-  if (!info.exists) {
-    await FileSystem.makeDirectoryAsync(PROFILE_PHOTO_DIR, { intermediates: true });
-  }
-  return PROFILE_PHOTO_DIR;
-}
-
-async function persistAsset(asset: ImagePicker.ImagePickerAsset) {
-  if (!asset.uri) {
-    return null;
-  }
-
-  const directory = await ensureProfilePhotoDir();
-  const extensionFromName =
-    asset.fileName?.split('.').pop()?.toLowerCase() ?? asset.uri.split('.').pop()?.split('?')[0];
-  const ext = extensionFromName && extensionFromName.length <= 5 ? extensionFromName : 'jpg';
-  const dest = `${directory}${Date.now()}-${Math.round(Math.random() * 1_000_000)}.${ext}`;
-
-  await FileSystem.copyAsync({ from: asset.uri, to: dest });
-  return dest;
 }
 
 export default function ProfileEditScreen() {
@@ -120,119 +81,43 @@ export default function ProfileEditScreen() {
     console.log('[ProfileEdit] avatarUri state changed to:', avatarUri);
   }, [avatarUri]);
 
-  const requestPermission = async (type: 'camera' | 'library') => {
-    const permission =
-      type === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permission.status !== 'granted') {
-      Alert.alert(
-        t('common.permissionDenied') ?? 'Permission needed',
-        t('common.permissionDeniedDescription') ?? 'Please grant access in Settings to continue.'
-      );
-      return false;
-    }
-    return true;
-  };
-
-  const replacePhoto = async (asset: ImagePicker.ImagePickerAsset) => {
-    console.log('[ProfileEdit] replacePhoto called with asset:', {
-      uri: asset.uri,
-      fileName: asset.fileName,
-    });
+  const handleTakePhoto = async () => {
+    setShowPhotoModal(false);
     setPhotoProcessing(true);
     try {
-      // Delete old photo if exists
-      if (avatarUri) {
-        console.log('[ProfileEdit] Deleting old photo:', avatarUri);
-        await FileSystem.deleteAsync(avatarUri, { idempotent: true });
+      const uploadedUrl = await pickAndUploadAvatar('camera');
+      if (uploadedUrl) {
+        // Delete old avatar if exists
+        if (avatarUri) {
+          await deleteAvatar(avatarUri);
+        }
+        setAvatarUri(uploadedUrl);
       }
-      const storedUri = await persistAsset(asset);
-      console.log('[ProfileEdit] persistAsset returned:', storedUri);
-      if (!storedUri) {
-        throw new Error('Unable to store image');
-      }
-      // Verify the file exists
-      const fileInfo = await FileSystem.getInfoAsync(storedUri);
-      console.log('[ProfileEdit] File info:', fileInfo);
-      if (!fileInfo.exists) {
-        throw new Error('Stored file does not exist');
-      }
-      console.log('[ProfileEdit] Setting avatarUri to:', storedUri);
-      setAvatarUri(storedUri);
     } catch (error) {
-      console.error('[ProfileEdit] Error replacing photo:', error);
+      console.error('Error in handleTakePhoto:', error);
       showNotification(t('common.photoSaveError'), 'error');
     } finally {
       setPhotoProcessing(false);
     }
   };
 
-  const handleTakePhoto = async () => {
-    // Request permission while modal is still visible
-    const allowed = await requestPermission('camera');
-    if (!allowed) return;
-
-    try {
-      // Launch camera while modal is still visible (iOS allows this)
-      // This avoids the issue where closing modal first causes camera to hang
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-      });
-
-      // Close modal after camera interaction completes
-      setShowPhotoModal(false);
-
-      if (result.canceled || !result.assets || result.assets.length === 0) {
-        return;
-      }
-      await replacePhoto(result.assets[0]);
-    } catch (error) {
-      console.error('Error in handleTakePhoto:', error);
-      setShowPhotoModal(false);
-    }
-  };
-
   const handleChoosePhoto = async () => {
-    console.log('[ProfileEdit] handleChoosePhoto called');
-    // Request permission while modal is still visible
-    const allowed = await requestPermission('library');
-    console.log('[ProfileEdit] Library permission:', allowed);
-    if (!allowed) return;
-
+    setShowPhotoModal(false);
+    setPhotoProcessing(true);
     try {
-      console.log('[ProfileEdit] Launching image library...');
-      // Launch image library while modal is still visible
-      const result = await ImagePicker.launchImageLibraryAsync({
-        allowsEditing: false,
-        quality: 0.8,
-        selectionLimit: 1,
-        mediaTypes: ['images'],
-      });
-
-      console.log('[ProfileEdit] Library result:', {
-        canceled: result.canceled,
-        hasAssets: !!result.assets,
-        assetsLength: result.assets?.length,
-      });
-
-      // Close modal after library interaction completes
-      setShowPhotoModal(false);
-
-      if (result.canceled || !result.assets || result.assets.length === 0) {
-        console.log('[ProfileEdit] No assets selected, returning');
-        return;
+      const uploadedUrl = await pickAndUploadAvatar('library');
+      if (uploadedUrl) {
+        // Delete old avatar if exists
+        if (avatarUri) {
+          await deleteAvatar(avatarUri);
+        }
+        setAvatarUri(uploadedUrl);
       }
-
-      console.log('[ProfileEdit] Calling replacePhoto with asset:', result.assets[0].uri);
-      await replacePhoto(result.assets[0]);
-      console.log('[ProfileEdit] replacePhoto completed, avatarUri should be updated');
     } catch (error) {
-      console.error('[ProfileEdit] Error in handleChoosePhoto:', error);
-      setShowPhotoModal(false);
+      console.error('Error in handleChoosePhoto:', error);
+      showNotification(t('common.photoSaveError'), 'error');
+    } finally {
+      setPhotoProcessing(false);
     }
   };
 
@@ -241,7 +126,7 @@ export default function ProfileEditScreen() {
     if (!avatarUri) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await FileSystem.deleteAsync(avatarUri, { idempotent: true });
+      await deleteAvatar(avatarUri);
     } catch (error) {
       console.warn('Failed to delete photo', error);
     }
@@ -319,7 +204,7 @@ export default function ProfileEditScreen() {
                 {avatarUri ? (
                   <Image
                     key={avatarUri}
-                    source={{ uri: avatarUri }}
+                    source={{ uri: getAvatarUrl(avatarUri) ?? avatarUri }}
                     style={{ width: 96, height: 96 }}
                     contentFit="cover"
                     cachePolicy="none"

@@ -10,6 +10,7 @@ import { GrowthRecord } from '@/database/growth';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { formatNumber } from '@/lib/format';
 import { computeMonthsOld } from '@/lib/tracking-utils';
+import { getAvatarUrl } from '@/lib/avatar-storage';
 
 type Props = {
   profile: BabyProfileRecord;
@@ -72,7 +73,7 @@ export function BabyInfoBanner({
               {profile.avatarUri ? (
                 <Image
                   key={profile.avatarUri}
-                  source={{ uri: profile.avatarUri }}
+                  source={{ uri: getAvatarUrl(profile.avatarUri) ?? profile.avatarUri }}
                   style={{ width: 64, height: 64 }}
                   contentFit="cover"
                   cachePolicy="none"

@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Switch, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, View } from 'react-native';
 import { z } from 'zod';
 
 import { Text } from '@/components/ui/text';
@@ -12,6 +12,8 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TabPageHeader } from '@/components/TabPageHeader';
 import { useNotification } from '@/components/NotificationContext';
 import { useTheme } from '@/lib/ThemeContext';
+import { useSupabaseAuth } from '@/pages/root-layout/SupabaseAuthProvider';
+import { signOut } from '@/lib/supabase';
 
 import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
 import { getBabyProfiles, getActiveBabyProfile } from '@/database/baby-profile';
@@ -52,6 +54,9 @@ export default function SettingsScreen() {
   const { themeMode, setThemeMode } = useTheme();
   const router = useRouter();
   const { showNotification } = useNotification();
+  const { isAnonymous, isLoading: authLoading } = useSupabaseAuth();
+  const queryClient = useQueryClient();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const { data: profiles = [], isLoading } = useQuery({
     queryKey: BABY_PROFILES_QUERY_KEY,
@@ -96,7 +101,62 @@ export default function SettingsScreen() {
     }
   };
 
-  if (isLoading) {
+  // Show login prompt if user is anonymous
+  if (!authLoading && isAnonymous) {
+    return (
+      <View className="flex-1 bg-background">
+        <TabPageHeader title={t('settings.title')} subtitle={t('settings.description')} />
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-6 py-8 gap-6"
+          showsVerticalScrollIndicator={false}>
+          {/* Login Required Card */}
+          <View className="rounded-2xl border border-border bg-card p-6">
+            <Text className="mb-4 text-2xl font-bold text-foreground">
+              {t('auth.loginRequired', { defaultValue: 'Sign In Required' })}
+            </Text>
+            <Text className="mb-6 text-base leading-6 text-muted-foreground">
+              {t('auth.loginRequiredMessage', {
+                defaultValue:
+                  'To access settings and sync your data across devices, please sign in to your account.',
+              })}
+            </Text>
+            <View className="mb-6 gap-3">
+              <Text className="text-base font-semibold text-foreground">
+                {t('auth.benefits', { defaultValue: 'Benefits of signing in:' })}
+              </Text>
+              <View className="gap-2">
+                <Text className="text-base text-muted-foreground">
+                  {t('auth.benefit1', { defaultValue: '• Sync data across all your devices' })}
+                </Text>
+                <Text className="text-base text-muted-foreground">
+                  {t('auth.benefit2', { defaultValue: '• Keep your data safe and backed up' })}
+                </Text>
+                <Text className="text-base text-muted-foreground">
+                  {t('auth.benefit3', { defaultValue: '• Access advanced settings' })}
+                </Text>
+                <Text className="text-base text-muted-foreground">
+                  {t('auth.benefit4', { defaultValue: '• Your existing data will be preserved' })}
+                </Text>
+              </View>
+            </View>
+            <Button
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('/(auth)/login');
+              }}
+              className="h-14">
+              <Text className="text-base font-semibold text-primary-foreground">
+                {t('auth.signIn', { defaultValue: 'Sign In' })}
+              </Text>
+            </Button>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  if (isLoading || authLoading) {
     return (
       <View className="flex-1 items-center justify-center gap-3 bg-background">
         <ActivityIndicator size="large" />
@@ -327,6 +387,77 @@ export default function SettingsScreen() {
                   ))}
                 </ToggleGroup>
               </View>
+
+              {/* Account Section */}
+              {!isAnonymous && (
+                <View className="gap-3 rounded-2xl border border-destructive/20 bg-card p-5 shadow-sm">
+                  <View className="mb-2">
+                    <Text className="text-lg font-extrabold text-foreground">
+                      {t('settings.accountTitle', { defaultValue: 'Account' })}
+                    </Text>
+                    <Text className="text-sm text-muted-foreground">
+                      {t('settings.accountSubtitle', {
+                        defaultValue: 'Manage your account settings',
+                      })}
+                    </Text>
+                  </View>
+                  <Button
+                    variant="outline"
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      Alert.alert(
+                        t('auth.signOut', { defaultValue: 'Sign Out' }),
+                        t('auth.signOutConfirm', {
+                          defaultValue:
+                            'Are you sure you want to sign out? You will need to sign in again to access your synced data.',
+                        }),
+                        [
+                          {
+                            text: t('common.cancel', { defaultValue: 'Cancel' }),
+                            style: 'cancel',
+                          },
+                          {
+                            text: t('auth.signOut', { defaultValue: 'Sign Out' }),
+                            style: 'destructive',
+                            onPress: async () => {
+                              setIsSigningOut(true);
+                              try {
+                                await signOut();
+                                // Clear all React Query cache
+                                queryClient.clear();
+                                // Invalidate all queries to refetch with anonymous user
+                                queryClient.invalidateQueries();
+                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                showNotification(
+                                  t('auth.signOutSuccess', {
+                                    defaultValue: 'Signed out successfully',
+                                  }),
+                                  'success'
+                                );
+                              } catch (error) {
+                                console.error('Sign out error:', error);
+                                showNotification(
+                                  t('auth.signOutError', { defaultValue: 'Failed to sign out' }),
+                                  'error'
+                                );
+                              } finally {
+                                setIsSigningOut(false);
+                              }
+                            },
+                          },
+                        ]
+                      );
+                    }}
+                    disabled={isSigningOut}
+                    className="h-12 border-destructive/30">
+                    <Text className="text-base font-semibold text-destructive">
+                      {isSigningOut
+                        ? t('common.loading', { defaultValue: 'Loading...' })
+                        : t('auth.signOut', { defaultValue: 'Sign Out' })}
+                    </Text>
+                  </Button>
+                </View>
+              )}
             </View>
           </TabsContent>
         </ScrollView>

@@ -1,7 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/supabase-types';
 
-
 // ============================================
 // TYPES
 // ============================================
@@ -11,9 +10,6 @@ type BabyHabitRow = Database['public']['Tables']['baby_habits']['Row'];
 type HabitLogRow = Database['public']['Tables']['habit_logs']['Row'];
 
 export type HabitCategory = HabitDefinitionRow['category'];
-// HabitFrequency is used internally but not exported to avoid unused export warning (in original code)
-// We export it if needed by other files, or keep as internal alias
-type HabitFrequency = HabitDefinitionRow['default_frequency'];
 
 export type HabitDefinition = {
   id: string;
@@ -129,10 +125,7 @@ export function isHabitAgeAppropriate(
 // ============================================
 
 export async function getHabitDefinitions(ageMonths?: number): Promise<HabitDefinition[]> {
-  let query = supabase
-    .from('habit_definitions')
-    .select('*')
-    .eq('is_active', true);
+  let query = supabase.from('habit_definitions').select('*').eq('is_active', true);
 
   if (ageMonths !== undefined) {
     // Filter in JS or intricate Postgrest syntax.
@@ -166,9 +159,20 @@ export async function getBabyHabits(babyId: number): Promise<BabyHabitWithDefini
 
   if (error) throw error;
 
-  // Cast data to expected type structure for mapping
-  // Supabase return type with join is { ...BabyHabitRow, habit_definitions: HabitDefinitionRow }
-  const rows = data as (BabyHabitRow & { habit_definitions: HabitDefinitionRow })[];
+  // Type guard for joined data structure
+  function hasHabitDefinition(
+    row: unknown
+  ): row is BabyHabitRow & { habit_definitions: HabitDefinitionRow } {
+    return (
+      typeof row === 'object' &&
+      row !== null &&
+      'habit_definitions' in row &&
+      row.habit_definitions !== null &&
+      typeof row.habit_definitions === 'object'
+    );
+  }
+
+  const rows = (data ?? []).filter(hasHabitDefinition);
 
   return rows.map(mapBabyHabitWithDefinition);
 }
@@ -186,7 +190,20 @@ export async function getBabyHabitsWithReminders(
 
   if (error) throw error;
 
-  const rows = data as (BabyHabitRow & { habit_definitions: HabitDefinitionRow })[];
+  // Type guard for joined data structure
+  function hasHabitDefinition(
+    row: unknown
+  ): row is BabyHabitRow & { habit_definitions: HabitDefinitionRow } {
+    return (
+      typeof row === 'object' &&
+      row !== null &&
+      'habit_definitions' in row &&
+      row.habit_definitions !== null &&
+      typeof row.habit_definitions === 'object'
+    );
+  }
+
+  const rows = (data ?? []).filter(hasHabitDefinition);
   return rows.map(mapBabyHabitWithDefinition);
 }
 
@@ -257,7 +274,7 @@ export async function updateBabyHabitReminder(
     .from('baby_habits')
     .update({
       reminder_time: reminderTime,
-      reminder_days: reminderDays
+      reminder_days: reminderDays,
     })
     .eq('id', babyHabitId);
 

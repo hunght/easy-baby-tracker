@@ -98,7 +98,6 @@ module.exports = defineConfig([
             'components/ui/**',
             // Config files
             '*.config.js',
-            '*.config.ts',
             // Database migrations/seeding (used programmatically)
             'database/easy-formula-rules.ts',
             // Internal types that might be used in same module
@@ -107,6 +106,22 @@ module.exports = defineConfig([
             'lib/notifications-wrapper.ts',
             'lib/easy-schedule-generator.ts',
             'localization/LocalizationProvider.tsx',
+            // Public API exports that may be used externally
+            'components/QuickActionMenu.tsx',
+            'database/habits.ts',
+            'database/scheduled-notifications.ts',
+            'hooks/use-color-scheme.web.ts',
+            'lib/format-date.ts',
+            'lib/logger.ts',
+            'lib/supabase-types.ts',
+            'lib/supabase.ts',
+            'lib/tracking-utils.ts',
+            'localization/translations.ts',
+            'pages/onboarding/components/ConcernsStep.tsx',
+            'pages/onboarding/components/FeaturesStep.tsx',
+            'pages/root-layout/MigrationCompleteHandler.tsx',
+            'pages/root-layout/SupabaseAuthProvider.tsx',
+            'lib/merge-anonymous-data.ts', // Used internally by SupabaseAuthProvider
           ],
         },
       ],
@@ -142,7 +157,6 @@ module.exports = defineConfig([
       'app/**/*.tsx',
       'app/**/*.ts',
       '*.config.js',
-      '*.config.ts',
     ],
     rules: {
       'unused-imports/no-unused-vars': 'off', // Allow unused exports in route/config files

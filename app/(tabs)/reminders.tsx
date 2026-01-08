@@ -103,8 +103,9 @@ export default function SchedulingScreen() {
     // Add scheduled notifications
     scheduledNotifications.forEach((record) => {
       const parsedData = safeParseNotificationData(record.data);
-      const isKnownType = isTypeLabelKey(record.notificationType);
-      const notificationType = (isKnownType ? record.notificationType : 'default') as keyof typeof typeLabels;
+      const notificationType: keyof typeof typeLabels = isTypeLabelKey(record.notificationType)
+        ? record.notificationType
+        : 'default';
       const label = parsedData?.label ?? typeLabels[notificationType];
 
       unified.push({
@@ -230,12 +231,13 @@ export default function SchedulingScreen() {
     return (
       <Pressable
         key={reminder.id}
-        className={`mb-3 overflow-hidden rounded-2xl border active:opacity-80 ${isNext
-          ? 'border-accent/50 bg-accent/10'
-          : isPast
-            ? 'border-border/50 bg-muted/50'
-            : 'border-border bg-card'
-          }`}
+        className={`mb-3 overflow-hidden rounded-2xl border active:opacity-80 ${
+          isNext
+            ? 'border-accent/50 bg-accent/10'
+            : isPast
+              ? 'border-border/50 bg-muted/50'
+              : 'border-border bg-card'
+        }`}
         onPress={() => setSelectedReminder(reminder)}>
         {/* Day Label Bar - only show if not today or in "All" view */}
         {!isToday && (
@@ -251,18 +253,21 @@ export default function SchedulingScreen() {
           <View className="mb-2 flex-row items-center justify-between">
             <View className="flex-row items-center gap-2">
               <Text
-                className={`text-xl font-bold ${isNext ? 'text-accent' : isPast ? 'text-muted-foreground' : 'text-foreground'
-                  }`}>
+                className={`text-xl font-bold ${
+                  isNext ? 'text-accent' : isPast ? 'text-muted-foreground' : 'text-foreground'
+                }`}>
                 {formatTime(reminder.scheduledTime)}
               </Text>
               {/* Time left badge */}
               {timeLeft && !isPast && (
                 <View
-                  className={`rounded-full px-2 py-0.5 ${timeLeft.urgent ? 'bg-orange-500' : 'bg-muted'
-                    }`}>
+                  className={`rounded-full px-2 py-0.5 ${
+                    timeLeft.urgent ? 'bg-orange-500' : 'bg-muted'
+                  }`}>
                   <Text
-                    className={`text-xs font-semibold ${timeLeft.urgent ? 'text-white' : 'text-muted-foreground'
-                      }`}>
+                    className={`text-xs font-semibold ${
+                      timeLeft.urgent ? 'text-white' : 'text-muted-foreground'
+                    }`}>
                     {timeLeft.text}
                   </Text>
                 </View>
@@ -283,8 +288,9 @@ export default function SchedulingScreen() {
 
           {/* Label */}
           <Text
-            className={`text-base font-semibold ${isPast ? 'text-muted-foreground' : 'text-foreground'
-              }`}>
+            className={`text-base font-semibold ${
+              isPast ? 'text-muted-foreground' : 'text-foreground'
+            }`}>
             {reminder.label}
           </Text>
 

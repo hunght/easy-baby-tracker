@@ -22,13 +22,29 @@ type Props = {
   onSelectFilter: (filter: TimelineActivityType | 'all') => void;
 };
 
+function isFeatureKey(value: string): value is FeatureKey {
+  return (
+    value === 'feeding' ||
+    value === 'diaper' ||
+    value === 'sleep' ||
+    value === 'habit' ||
+    value === 'health' ||
+    value === 'growth' ||
+    value === 'diary' ||
+    value === 'pumping'
+  );
+}
+
 export const TimelineFilters = ({ selectedFilter, onSelectFilter }: Props) => {
   const { features } = useFeatureFlags();
 
   const visibleFilters = React.useMemo(() => {
     return FILTERS.filter((f) => {
       if (f.value === 'all') return true;
-      return features[f.value as FeatureKey];
+      if (isFeatureKey(f.value)) {
+        return features[f.value];
+      }
+      return false;
     });
   }, [features]);
 

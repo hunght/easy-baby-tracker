@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 
 import { getAppState, setAppState } from '@/database/app-state';
 
@@ -36,6 +37,18 @@ const FeatureFlagContext = createContext<FeatureFlagContextType | undefined>(und
 
 const APP_STATE_KEY = 'enabled_features';
 
+// Zod schema for FeatureFlags validation
+const featureFlagsSchema = z.object({
+  feeding: z.boolean(),
+  diaper: z.boolean(),
+  sleep: z.boolean(),
+  habit: z.boolean(),
+  health: z.boolean(),
+  growth: z.boolean(),
+  diary: z.boolean(),
+  pumping: z.boolean(),
+});
+
 export function FeatureFlagProvider({ children }: { children: React.ReactNode }) {
   const [features, setFeatures] = useState<FeatureFlags>(DEFAULT_FLAGS);
 
@@ -45,7 +58,15 @@ export function FeatureFlagProvider({ children }: { children: React.ReactNode })
     queryFn: async () => {
       const value = await getAppState(APP_STATE_KEY);
       if (value) {
-        return JSON.parse(value) as FeatureFlags;
+        try {
+          const parsed = JSON.parse(value);
+          const result = featureFlagsSchema.safeParse(parsed);
+          if (result.success) {
+            return result.data;
+          }
+        } catch {
+          // JSON parsing failed - return null
+        }
       }
       return null;
     },

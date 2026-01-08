@@ -7,7 +7,6 @@ import { requireActiveBabyProfileId } from '@/database/baby-profile';
 // ============================================
 
 type FeedingRow = Database['public']['Tables']['feedings']['Row'];
-type FeedingInsert = Database['public']['Tables']['feedings']['Insert'];
 
 export type FeedingType = 'breast' | 'bottle' | 'solids';
 export type IngredientType = 'breast_milk' | 'formula' | 'others';
@@ -48,16 +47,30 @@ export type FeedingRecord = {
 // HELPER FUNCTIONS
 // ============================================
 
+function isFeedingType(value: string): value is FeedingType {
+  return value === 'breast' || value === 'bottle' || value === 'solids';
+}
+
+function isIngredientType(value: string): value is IngredientType {
+  return value === 'breast_milk' || value === 'formula' || value === 'others';
+}
+
 function rowToRecord(row: FeedingRow): FeedingRecord {
+  const type: FeedingType = isFeedingType(row.type) ? row.type : 'breast';
+  const ingredientType: IngredientType | null = row.ingredient_type
+    ? isIngredientType(row.ingredient_type)
+      ? row.ingredient_type
+      : null
+    : null;
   return {
     id: row.id,
     babyId: row.baby_id,
-    type: row.type as FeedingType,
+    type,
     startTime: row.start_time,
     duration: row.duration,
     leftDuration: row.left_duration,
     rightDuration: row.right_duration,
-    ingredientType: row.ingredient_type as IngredientType | null,
+    ingredientType,
     amountMl: row.amount_ml,
     ingredient: row.ingredient,
     amountGrams: row.amount_grams,

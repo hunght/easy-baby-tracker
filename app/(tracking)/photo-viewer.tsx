@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui/text';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import { getAvatarUrl } from '@/lib/avatar-storage';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -109,7 +110,7 @@ export default function PhotoViewerScreen() {
         bouncesZoom>
         <Pressable onPress={handleDoubleTap} style={{ flex: 1 }}>
           <Image
-            source={{ uri }}
+            source={{ uri: getAvatarUrl(uri) ?? uri }}
             style={{ width: SCREEN_WIDTH, height: SCREEN_HEIGHT }}
             contentFit="contain"
             transition={200}

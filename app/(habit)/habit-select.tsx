@@ -143,16 +143,14 @@ export default function HabitSelectScreen() {
   };
 
   // Group habits by category
-  const habitsByCategory = allHabits?.reduce<Partial<Record<HabitCategory, HabitDefinition[]>>>(
-    (acc, habit) => {
+  const habitsByCategory =
+    allHabits?.reduce<Partial<Record<HabitCategory, HabitDefinition[]>>>((acc, habit) => {
       if (!acc[habit.category]) {
         acc[habit.category] = [];
       }
       acc[habit.category]!.push(habit);
       return acc;
-    },
-    {}
-  ) as Record<HabitCategory, HabitDefinition[]>;
+    }, {}) ?? {};
 
   if (isLoadingHabits) {
     return (

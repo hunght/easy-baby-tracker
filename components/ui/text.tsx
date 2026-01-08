@@ -46,13 +46,13 @@ type TextVariantProps = VariantProps<typeof textVariants>;
 
 type TextVariant = NonNullable<TextVariantProps['variant']>;
 
-const ROLE: Partial<Record<TextVariant, Role>> = {
-  h1: 'heading',
-  h2: 'heading',
-  h3: 'heading',
-  h4: 'heading',
-  blockquote: Platform.select({ web: 'blockquote' as Role }),
-  code: Platform.select({ web: 'code' as Role }),
+const getRole = (variant: TextVariant): Role | undefined => {
+  if (variant === 'h1' || variant === 'h2' || variant === 'h3' || variant === 'h4') {
+    return 'heading';
+  }
+  // blockquote and code are web-only roles, not part of React Native's Role type
+  // Return undefined for native platforms
+  return undefined;
 };
 
 const ARIA_LEVEL: Partial<Record<TextVariant, string>> = {
@@ -79,7 +79,7 @@ function Text({
   return (
     <Component
       className={cn(textVariants({ variant }), textClass, className)}
-      role={variant ? ROLE[variant] : undefined}
+      role={variant ? getRole(variant) : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}
       {...props}
     />

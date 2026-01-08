@@ -1,10 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/supabase-types';
-import type {
-  EasyFormulaRule,
-  EasyFormulaRuleId,
-  EasyCyclePhase,
-} from '@/lib/easy-schedule-generator';
+import type { EasyFormulaRule, EasyCyclePhase } from '@/lib/easy-schedule-generator';
 import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
 import { safeParseEasyCyclePhases } from '@/lib/json-parse';
 
@@ -41,10 +37,7 @@ function dbToFormulaRule(record: FormulaRuleRow): EasyFormulaRule {
  * Excludes day-specific rules (validDate is set)
  */
 export async function getFormulaRules(babyId?: number): Promise<EasyFormulaRule[]> {
-  let query = supabase
-    .from('easy_formula_rules')
-    .select('*')
-    .is('valid_date', null);
+  let query = supabase.from('easy_formula_rules').select('*').is('valid_date', null);
 
   if (babyId) {
     // (is_custom = false) OR (baby_id = babyId)
@@ -71,10 +64,7 @@ export async function getFormulaRuleById(
   ruleId: string,
   babyId?: number
 ): Promise<EasyFormulaRule | null> {
-  let query = supabase
-    .from('easy_formula_rules')
-    .select('*')
-    .eq('id', ruleId);
+  let query = supabase.from('easy_formula_rules').select('*').eq('id', ruleId);
 
   if (babyId) {
     query = query.or(`is_custom.eq.false,baby_id.eq.${babyId}`);
@@ -127,7 +117,7 @@ export async function getFormulaRuleByAge(
   if (error) throw error;
 
   // Filter in JS for max_weeks logic
-  const match = (data ?? []).find(rule => {
+  const match = (data ?? []).find((rule) => {
     if (rule.max_weeks === null) return true;
     return rule.max_weeks >= ageWeeks;
   });
@@ -239,25 +229,23 @@ export async function cloneFormulaRuleForDate(
   // Create new day-specific rule by cloning the source record
   const newRuleId = `day_${babyId}_${date.replace(/-/g, '')}_${Date.now()}`;
 
-  const { error } = await supabase
-    .from('easy_formula_rules')
-    .insert({
-      id: newRuleId,
-      baby_id: babyId,
-      min_weeks: sourceRule.minWeeks,
-      max_weeks: sourceRule.maxWeeks,
-      label_key: sourceRule.labelKey,
-      label_text: sourceRule.labelText,
-      age_range_key: sourceRule.ageRangeKey,
-      age_range_text: sourceRule.ageRangeText,
-      description: sourceRule.description,
-      is_custom: true,
-      valid_date: date,
-      source_rule_id: sourceRuleId,
-      phases: JSON.stringify(phases),
-      created_at: Math.floor(Date.now() / 1000),
-      updated_at: Math.floor(Date.now() / 1000),
-    });
+  const { error } = await supabase.from('easy_formula_rules').insert({
+    id: newRuleId,
+    baby_id: babyId,
+    min_weeks: sourceRule.minWeeks,
+    max_weeks: sourceRule.maxWeeks,
+    label_key: sourceRule.labelKey,
+    label_text: sourceRule.labelText,
+    age_range_key: sourceRule.ageRangeKey,
+    age_range_text: sourceRule.ageRangeText,
+    description: sourceRule.description,
+    is_custom: true,
+    valid_date: date,
+    source_rule_id: sourceRuleId,
+    phases: JSON.stringify(phases),
+    created_at: Math.floor(Date.now() / 1000),
+    updated_at: Math.floor(Date.now() / 1000),
+  });
 
   if (error) throw error;
   return newRuleId;
@@ -272,19 +260,17 @@ export async function createCustomFormulaRule(
 ): Promise<string> {
   const newId = `custom_${babyId}_${Date.now()}`;
 
-  const { error } = await supabase
-    .from('easy_formula_rules')
-    .insert({
-      id: newId,
-      baby_id: babyId,
-      is_custom: true,
-      min_weeks: rule.minWeeks,
-      max_weeks: rule.maxWeeks,
-      label_text: rule.name,
-      age_range_text: `${rule.minWeeks} - ${rule.maxWeeks ?? '∞'} weeks`,
-      description: rule.description,
-      phases: JSON.stringify(rule.phases),
-    });
+  const { error } = await supabase.from('easy_formula_rules').insert({
+    id: newId,
+    baby_id: babyId,
+    is_custom: true,
+    min_weeks: rule.minWeeks,
+    max_weeks: rule.maxWeeks,
+    label_text: rule.name,
+    age_range_text: `${rule.minWeeks} - ${rule.maxWeeks ?? '∞'} weeks`,
+    description: rule.description,
+    phases: JSON.stringify(rule.phases),
+  });
 
   if (error) throw error;
   return newId;

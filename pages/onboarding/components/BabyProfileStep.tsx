@@ -1,7 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 
@@ -12,6 +10,7 @@ import { Text } from '@/components/ui/text';
 import { BabyProfilePayload, Gender } from '@/database/baby-profile';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import { useLocalization } from '@/localization/LocalizationProvider';
+import { pickAndUploadAvatar, getAvatarUrl } from '@/lib/avatar-storage';
 
 type BabyProfileStepProps = {
   headerText: string;
@@ -25,36 +24,6 @@ const genderSegments: { key: Gender; labelKey: string }[] = [
   { key: 'girl', labelKey: 'onboarding.babyProfile.genderOptions.girl' },
 ];
 
-// Directory for storing baby profile photos
-const PROFILE_PHOTO_DIR =
-  (FileSystem.documentDirectory ?? FileSystem.cacheDirectory ?? '') + 'profile-photos/';
-
-async function ensureProfilePhotoDir() {
-  if (!PROFILE_PHOTO_DIR) {
-    throw new Error('FileSystem directory unavailable');
-  }
-  const info = await FileSystem.getInfoAsync(PROFILE_PHOTO_DIR);
-  if (!info.exists) {
-    await FileSystem.makeDirectoryAsync(PROFILE_PHOTO_DIR, { intermediates: true });
-  }
-  return PROFILE_PHOTO_DIR;
-}
-
-async function persistAsset(asset: ImagePicker.ImagePickerAsset) {
-  if (!asset.uri) {
-    return null;
-  }
-
-  const directory = await ensureProfilePhotoDir();
-  const extensionFromName =
-    asset.fileName?.split('.').pop()?.toLowerCase() ?? asset.uri.split('.').pop()?.split('?')[0];
-  const ext = extensionFromName && extensionFromName.length <= 5 ? extensionFromName : 'jpg';
-  const dest = `${directory}${Date.now()}-${Math.round(Math.random() * 1_000_000)}.${ext}`;
-
-  await FileSystem.copyAsync({ from: asset.uri, to: dest });
-  return dest;
-}
-
 export function BabyProfileStep({ headerText, concerns, onSave }: BabyProfileStepProps) {
   const { t } = useLocalization();
   const brandColors = useBrandColor();
@@ -67,30 +36,10 @@ export function BabyProfileStep({ headerText, concerns, onSave }: BabyProfileSte
   const [isSaving, setIsSaving] = useState(false);
 
   const handleChoosePhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permission.status !== 'granted') {
-      Alert.alert(
-        t('common.permissionDenied') ?? 'Permission needed',
-        t('common.permissionDeniedDescription') ?? 'Please grant access in Settings to continue.'
-      );
-      return;
-    }
-
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        allowsEditing: true, // Allow cropping for better circular avatars
-        aspect: [1, 1],
-        quality: 0.8,
-        mediaTypes: ['images'],
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        const persistedUri = await persistAsset(asset);
-        if (persistedUri) {
-          setAvatarUri(persistedUri);
-        }
+      const uploadedUrl = await pickAndUploadAvatar('library');
+      if (uploadedUrl) {
+        setAvatarUri(uploadedUrl);
       }
     } catch (error) {
       console.error('Error selecting photo:', error);
@@ -135,7 +84,7 @@ export function BabyProfileStep({ headerText, concerns, onSave }: BabyProfileSte
               style={{ width: 108, height: 108 }}>
               {avatarUri ? (
                 <Image
-                  source={{ uri: avatarUri }}
+                  source={{ uri: getAvatarUrl(avatarUri) ?? avatarUri }}
                   style={{ width: 100, height: 100 }}
                   contentFit="cover"
                 />

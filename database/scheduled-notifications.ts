@@ -7,7 +7,6 @@ import { getActiveBabyProfileId, requireActiveBabyProfileId } from '@/database/b
 // ============================================
 
 type ScheduledNotificationRow = Database['public']['Tables']['scheduled_notifications']['Row'];
-type ScheduledNotificationInsert = Database['public']['Tables']['scheduled_notifications']['Insert'];
 
 export type ScheduledNotificationRecord = {
   id: number;
@@ -97,10 +96,7 @@ export async function getScheduledNotifications(options?: {
   const { babyId: providedBabyId, notificationType, includeExpired = true } = options ?? {};
   const babyId = await resolveBabyId(providedBabyId);
 
-  let query = supabase
-    .from('scheduled_notifications')
-    .select('*')
-    .eq('baby_id', babyId);
+  let query = supabase.from('scheduled_notifications').select('*').eq('baby_id', babyId);
 
   if (notificationType) {
     query = query.eq('notification_type', notificationType);
