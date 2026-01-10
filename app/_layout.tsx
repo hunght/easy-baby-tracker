@@ -1,7 +1,12 @@
 // Polyfill window for Convex compatibility in React Native
+declare const window: Window & {
+  addEventListener?: typeof globalThis.addEventListener;
+  removeEventListener?: typeof globalThis.removeEventListener;
+};
+
 if (typeof window !== 'undefined' && !window.addEventListener) {
-  (window as any).addEventListener = () => {};
-  (window as any).removeEventListener = () => {};
+  window.addEventListener = () => undefined;
+  window.removeEventListener = () => undefined;
 }
 
 import '@/global.css';

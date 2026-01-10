@@ -98,29 +98,21 @@ module.exports = defineConfig([
             'components/ui/**',
             // Config files
             '*.config.js',
-            // Database migrations/seeding (used programmatically)
-            'database/easy-formula-rules.ts',
+            // Database layer (re-exports from Convex)
+            'database/**',
             // Internal types that might be used in same module
             'components/TimeField.tsx',
             // Types/interfaces exported for external use
             'lib/notifications-wrapper.ts',
             'lib/easy-schedule-generator.ts',
+            'lib/notification-scheduler.ts',
             'localization/LocalizationProvider.tsx',
-            // Public API exports that may be used externally
-            'components/QuickActionMenu.tsx',
-            'database/habits.ts',
-            'database/scheduled-notifications.ts',
-            'hooks/use-color-scheme.web.ts',
-            'lib/format-date.ts',
-            'lib/logger.ts',
             'lib/tracking-utils.ts',
             'localization/translations.ts',
-            'pages/onboarding/components/ConcernsStep.tsx',
-            'pages/onboarding/components/FeaturesStep.tsx',
-            'pages/root-layout/MigrationCompleteHandler.tsx',
-            'pages/root-layout/ConvexAuthProvider.tsx', // Used by DatabaseInitializer
-            'lib/convex.ts', // Convex client - used by ConvexAuthProvider
-            'convex/**', // Convex backend functions
+            // Convex client and auth
+            'pages/root-layout/ConvexAuthProvider.tsx',
+            'lib/convex.ts',
+            'convex/**',
           ],
         },
       ],

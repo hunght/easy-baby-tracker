@@ -21,7 +21,9 @@
       "Bash(npx convex deploy:*)",
       "Bash(npx convex dev --once)",
       "Bash(pkill:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx knip:*)"
     ]
   }
 }
