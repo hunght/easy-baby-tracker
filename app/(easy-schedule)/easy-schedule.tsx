@@ -1,20 +1,18 @@
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { ScrollView, View } from 'react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useMutation, useQuery } from "convex/react";
+import { ScrollView, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 
-import { Text } from '@/components/ui/text';
-import { BABY_PROFILE_QUERY_KEY, formulaRuleByIdKey } from '@/constants/query-keys';
-import { getActiveBabyProfile, updateSelectedEasyFormula } from '@/database/baby-profile';
-import { getFormulaRuleById, getFormulaRuleByAge } from '@/database/easy-formula-rules';
-import { useLocalization } from '@/localization/LocalizationProvider';
-import { ScheduleHeader } from '@/pages/easy-schedule/components/ScheduleHeader';
-import { ScheduleGroup } from '@/pages/easy-schedule/components/ScheduleGroup';
-import { generateEasySchedule } from '@/lib/easy-schedule-generator';
-import type { EasyScheduleItem } from '@/lib/easy-schedule-generator';
+import { Text } from "@/components/ui/text";
+import { api } from "@/convex/_generated/api";
+import { useLocalization } from "@/localization/LocalizationProvider";
+import { ScheduleHeader } from "@/pages/easy-schedule/components/ScheduleHeader";
+import { ScheduleGroup } from "@/pages/easy-schedule/components/ScheduleGroup";
+import { generateEasySchedule } from "@/lib/easy-schedule-generator";
+import type { EasyScheduleItem } from "@/lib/easy-schedule-generator";
 
 function timeStringToMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
+  const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
 }
 
@@ -29,113 +27,59 @@ function calculateAgeInWeeks(birthDate: string): number {
 export default function EasyScheduleScreen() {
   const { t, locale } = useLocalization();
   const router = useRouter();
-  const queryClient = useQueryClient();
 
-  const { data: babyProfile } = useQuery({
-    queryKey: BABY_PROFILE_QUERY_KEY,
-    queryFn: getActiveBabyProfile,
-    staleTime: 30 * 1000,
-  });
+  // Get active baby profile
+  const babyProfile = useQuery(api.babyProfiles.getActive);
 
   // Use wake time from baby profile, or default to 07:00
-  const firstWakeTime = babyProfile?.firstWakeTime ?? '07:00';
+  const firstWakeTime = babyProfile?.firstWakeTime ?? "07:00";
 
   const labels = useMemo(
     () => ({
-      eat: t('easySchedule.activityLabels.eat'),
-      activity: t('easySchedule.activityLabels.activity'),
+      eat: t("easySchedule.activityLabels.eat"),
+      activity: t("easySchedule.activityLabels.activity"),
       sleep: (napNumber: number) =>
-        t('easySchedule.activityLabels.sleep').replace('{{number}}', String(napNumber)),
-      yourTime: t('easySchedule.activityLabels.yourTime'),
+        t("easySchedule.activityLabels.sleep").replace(
+          "{{number}}",
+          String(napNumber)
+        ),
+      yourTime: t("easySchedule.activityLabels.yourTime"),
     }),
     [t]
   );
 
   // Auto-select mutation
-  const autoSelectMutation = useMutation({
-    mutationFn: async ({ babyId, formulaId }: { babyId: number; formulaId: string }) => {
-      await updateSelectedEasyFormula(babyId, formulaId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
-    },
-  });
+  const updateSelectedFormula = useMutation(api.babyProfiles.updateSelectedEasyFormula);
 
-  // Get active formula by selected ID with fallback logic
-  const { data: formulaRule, isLoading: isLoadingFormula } = useQuery({
-    queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
-    queryFn: async () => {
-      if (!babyProfile?.selectedEasyFormulaId || !babyProfile?.id) {
-        return null;
-      }
+  // Get formula rule by selected ID
+  const formulaRule = useQuery(
+    api.easyFormulaRules.getById,
+    babyProfile?.selectedEasyFormulaId
+      ? { ruleId: babyProfile.selectedEasyFormulaId, babyId: babyProfile._id }
+      : "skip"
+  );
 
-      const rule = await getFormulaRuleById(babyProfile.selectedEasyFormulaId, babyProfile.id);
-
-      // If rule not found and it's a day-specific rule, try to get source rule or fallback
-      if (!rule && babyProfile.selectedEasyFormulaId.startsWith('day_')) {
-        // Try to get a formula by age as fallback
-        const ageWeeks = calculateAgeInWeeks(babyProfile.birthDate);
-        const fallbackRule = await getFormulaRuleByAge(ageWeeks, babyProfile.id);
-
-        if (fallbackRule) {
-          // Update selected formula to the fallback
-          await updateSelectedEasyFormula(babyProfile.id, fallbackRule.id);
-          // Invalidate queries to refresh
-          queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
-          return fallbackRule;
-        }
-      }
-
-      return rule;
-    },
-    enabled: !!babyProfile?.selectedEasyFormulaId,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Handle missing formula - clear invalid selection and trigger auto-select
-  useEffect(() => {
-    const handleMissingFormula = async () => {
-      // Only act if loading is complete, but formula is missing
-      if (
-        !isLoadingFormula &&
-        !formulaRule &&
-        babyProfile?.selectedEasyFormulaId &&
-        babyProfile?.id &&
-        !autoSelectMutation.isPending
-      ) {
-        // Clear the invalid selection
-        await updateSelectedEasyFormula(babyProfile.id, null);
-        queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
-      }
-    };
-
-    handleMissingFormula();
-  }, [isLoadingFormula, formulaRule, babyProfile, autoSelectMutation.isPending, queryClient]);
+  const isLoadingFormula = babyProfile !== undefined && babyProfile?.selectedEasyFormulaId && formulaRule === undefined;
 
   // Auto-select formula based on baby's age if none selected
   useEffect(() => {
     const autoSelectFormula = async () => {
-      if (!babyProfile || babyProfile.selectedEasyFormulaId || autoSelectMutation.isPending) {
+      if (!babyProfile || babyProfile.selectedEasyFormulaId) {
         return;
       }
 
       // Calculate baby's age in weeks
       const ageWeeks = calculateAgeInWeeks(babyProfile.birthDate);
 
-      // Find matching formula for this age
-      const matchingFormula = await getFormulaRuleByAge(ageWeeks, babyProfile.id);
-
-      if (matchingFormula) {
-        // Auto-select this formula
-        autoSelectMutation.mutate({
-          babyId: babyProfile.id,
-          formulaId: matchingFormula.id,
-        });
-      }
+      // Auto-select a formula for this age
+      updateSelectedFormula({
+        babyId: babyProfile._id,
+        selectedEasyFormulaId: undefined, // Let the backend select based on age
+      });
     };
 
     autoSelectFormula();
-  }, [babyProfile, autoSelectMutation]);
+  }, [babyProfile, updateSelectedFormula]);
 
   // Check if there's a day-specific rule (custom schedule) by checking if validDate exists
   const hasCustomSchedule = !!formulaRule?.validDate;
@@ -147,10 +91,15 @@ export default function EasyScheduleScreen() {
       return;
     }
 
+    // Parse phases from formula rule
+    const phases = typeof formulaRule.phases === "string"
+      ? JSON.parse(formulaRule.phases)
+      : formulaRule.phases;
+
     // Generate schedule from formula rule phases
     const items = generateEasySchedule(firstWakeTime, {
       labels,
-      phases: [...formulaRule.phases],
+      phases: [...phases],
     });
 
     setScheduleItems(items);
@@ -163,15 +112,13 @@ export default function EasyScheduleScreen() {
     let currentGroup: EasyScheduleItem[] = [];
 
     scheduleItems.forEach((item) => {
-      // Start a new group when:
-      // 1. We encounter an E or E.A item and there's already a group (new cycle with eating/combined)
-      // 2. We encounter an A item and the last item is Y (previous cycle ended, this A starts a new cycle)
       const lastItem = currentGroup[currentGroup.length - 1];
-      const cycleEnded = lastItem?.activityType === 'Y';
+      const cycleEnded = lastItem?.activityType === "Y";
 
       const shouldStartNewGroup =
-        ((item.activityType === 'E' || item.activityType === 'E.A') && currentGroup.length > 0) ||
-        (item.activityType === 'A' && currentGroup.length > 0 && cycleEnded);
+        ((item.activityType === "E" || item.activityType === "E.A") &&
+          currentGroup.length > 0) ||
+        (item.activityType === "A" && currentGroup.length > 0 && cycleEnded);
 
       if (shouldStartNewGroup) {
         groups.push({
@@ -193,7 +140,7 @@ export default function EasyScheduleScreen() {
     return groups;
   })();
 
-  // Navigate to phase edit page instead of opening modal
+  // Navigate to phase edit page
   const openPhaseEdit = useCallback(
     (
       item: EasyScheduleItem,
@@ -202,7 +149,7 @@ export default function EasyScheduleScreen() {
       _durationLabel: string
     ) => {
       router.push({
-        pathname: '/(easy-schedule)/phase-edit',
+        pathname: "/(easy-schedule)/phase-edit",
         params: {
           order: item.order.toString(),
           label: item.label,
@@ -215,38 +162,69 @@ export default function EasyScheduleScreen() {
     [router]
   );
 
-  if (isLoadingFormula || !formulaRule) {
+  // Show message if no baby profile is set
+  if (babyProfile === null) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Text className="text-muted-foreground">{t('common.loading')}</Text>
+      <View className="flex-1 items-center justify-center bg-background px-5">
+        <Text className="text-lg font-semibold text-foreground">
+          {t("easySchedule.noBabyProfile", { defaultValue: "No baby profile selected" })}
+        </Text>
+        <Text className="mt-2 text-center text-muted-foreground">
+          {t("easySchedule.selectBabyProfile", { defaultValue: "Please add or select a baby profile in Settings." })}
+        </Text>
       </View>
     );
   }
 
+  if (isLoadingFormula || !formulaRule) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <Text className="text-muted-foreground">{t("common.loading")}</Text>
+      </View>
+    );
+  }
+
+  // Transform formulaRule for ScheduleHeader
+  const headerFormulaRule = {
+    id: formulaRule._id,
+    labelKey: formulaRule.labelKey ?? "",
+    labelText: formulaRule.labelText ?? null,
+    ageRangeKey: formulaRule.ageRangeKey ?? "",
+    ageRangeText: formulaRule.ageRangeText ?? null,
+    minWeeks: formulaRule.minWeeks,
+    maxWeeks: formulaRule.maxWeeks ?? null,
+    phases: typeof formulaRule.phases === "string"
+      ? JSON.parse(formulaRule.phases)
+      : formulaRule.phases,
+    validDate: formulaRule.validDate ?? null,
+    description: formulaRule.description ?? null,
+  };
+
   return (
     <View className="flex-1 bg-background">
-      <ScheduleHeader formulaRule={formulaRule} />
+      <ScheduleHeader formulaRule={headerFormulaRule} />
 
-      <ScrollView contentContainerClassName="p-5 pb-10 gap-3" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerClassName="p-5 pb-10 gap-3"
+        showsVerticalScrollIndicator={false}
+      >
         {hasCustomSchedule && (
           <View className="rounded-md border border-accent/30 bg-accent/5 px-3 py-2">
             <Text className="text-xs font-medium text-foreground">
-              {t('easySchedule.customScheduleNotice', {
-                defaultValue: '✨ Custom schedule for today - resets tomorrow',
+              {t("easySchedule.customScheduleNotice", {
+                defaultValue: "Custom schedule for today - resets tomorrow",
               })}
             </Text>
           </View>
         )}
 
-        {groupedSchedule.map((group, _groupIndex) => {
-          // Filter out Y items and S items with 0 duration (sleep = 0)
+        {groupedSchedule.map((group) => {
+          // Filter out Y items and S items with 0 duration
           const phases = group.items.filter(
             (item) =>
-              item.activityType !== 'Y' &&
-              !(item.activityType === 'S' && item.durationMinutes === 0)
+              item.activityType !== "Y" &&
+              !(item.activityType === "S" && item.durationMinutes === 0)
           );
-          // Calculate baseMinutes for this group using the first phase's actual start time
-          // This ensures adjusted schedules are displayed correctly
           const firstPhase = phases[0];
           const groupBaseMinutes = firstPhase
             ? timeStringToMinutes(firstPhase.startTime)

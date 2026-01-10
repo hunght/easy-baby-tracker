@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run type-check:*)",
+      "WebFetch(domain:docs.convex.dev)",
+      "WebFetch(domain:labs.convex.dev)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(cut:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npx expo start:*)",
+      "WebSearch",
+      "Bash(xcrun simctl launch:*)",
+      "Bash(xcrun simctl openurl:*)",
+      "Bash(npx @convex-dev/auth:*)",
+      "Bash(npx convex env list:*)",
+      "Bash(npx convex deploy:*)",
+      "Bash(npx convex dev --once)",
+      "Bash(pkill:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

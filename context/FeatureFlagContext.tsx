@@ -1,18 +1,18 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { z } from 'zod';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { z } from "zod";
 
-import { getAppState, setAppState } from '@/database/app-state';
+import { api } from "@/convex/_generated/api";
 
 export type FeatureKey =
-  | 'feeding'
-  | 'diaper'
-  | 'sleep'
-  | 'habit'
-  | 'health'
-  | 'growth'
-  | 'diary'
-  | 'pumping';
+  | "feeding"
+  | "diaper"
+  | "sleep"
+  | "habit"
+  | "health"
+  | "growth"
+  | "diary"
+  | "pumping";
 
 type FeatureFlags = Record<FeatureKey, boolean>;
 
@@ -33,9 +33,11 @@ type FeatureFlagContextType = {
   isLoading: boolean;
 };
 
-const FeatureFlagContext = createContext<FeatureFlagContextType | undefined>(undefined);
+const FeatureFlagContext = createContext<FeatureFlagContextType | undefined>(
+  undefined
+);
 
-const APP_STATE_KEY = 'enabled_features';
+const APP_STATE_KEY = "enabled_features";
 
 // Zod schema for FeatureFlags validation
 const featureFlagsSchema = z.object({
@@ -49,44 +51,45 @@ const featureFlagsSchema = z.object({
   pumping: z.boolean(),
 });
 
-export function FeatureFlagProvider({ children }: { children: React.ReactNode }) {
+export function FeatureFlagProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [features, setFeatures] = useState<FeatureFlags>(DEFAULT_FLAGS);
 
-  // Load flags with useQuery
-  const { data: savedFeatures, isLoading } = useQuery({
-    queryKey: [APP_STATE_KEY],
-    queryFn: async () => {
-      const value = await getAppState(APP_STATE_KEY);
-      if (value) {
-        try {
-          const parsed = JSON.parse(value);
-          const result = featureFlagsSchema.safeParse(parsed);
-          if (result.success) {
-            return result.data;
-          }
-        } catch {
-          // JSON parsing failed - return null
-        }
-      }
-      return null;
-    },
-  });
+  // Load flags with Convex useQuery
+  const savedState = useQuery(api.appState.get, { key: APP_STATE_KEY });
+  const setAppState = useMutation(api.appState.set);
 
-  // Sync state with query data
+  const isLoading = savedState === undefined;
+
+  // Parse saved features (savedState is the value string directly from Convex)
   useEffect(() => {
-    if (savedFeatures) {
-      setFeatures((prev) => ({ ...prev, ...savedFeatures }));
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState);
+        const result = featureFlagsSchema.safeParse(parsed);
+        if (result.success) {
+          setFeatures((prev) => ({ ...prev, ...result.data }));
+        }
+      } catch {
+        // JSON parsing failed - use defaults
+      }
     }
-  }, [savedFeatures]);
+  }, [savedState]);
 
   const toggleFeature = async (key: FeatureKey) => {
     const newFeatures = { ...features, [key]: !features[key] };
     setFeatures(newFeatures);
 
     try {
-      await setAppState(APP_STATE_KEY, JSON.stringify(newFeatures));
+      await setAppState({
+        key: APP_STATE_KEY,
+        value: JSON.stringify(newFeatures),
+      });
     } catch (error) {
-      console.error('Failed to save feature flags:', error);
+      console.error("Failed to save feature flags:", error);
       // Revert on error? For now, we trust local state is optimistically updated
     }
   };
@@ -101,7 +104,7 @@ export function FeatureFlagProvider({ children }: { children: React.ReactNode })
 export function useFeatureFlags() {
   const context = useContext(FeatureFlagContext);
   if (!context) {
-    throw new Error('useFeatureFlags must be used within a FeatureFlagProvider');
+    throw new Error("useFeatureFlags must be used within a FeatureFlagProvider");
   }
   return context;
 }

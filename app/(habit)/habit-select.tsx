@@ -1,19 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { Check, ChevronRight } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
 import { ModalHeader } from '@/components/ModalHeader';
 import { useNotification } from '@/components/NotificationContext';
 import { Text } from '@/components/ui/text';
-import { BABY_HABITS_QUERY_KEY, HABIT_DEFINITIONS_QUERY_KEY } from '@/constants/query-keys';
-import { getActiveBabyProfileId, getActiveBabyProfile } from '@/database/baby-profile';
+import { api } from '@/convex/_generated/api';
 import {
-  getHabitDefinitions,
-  getBabyHabits,
-  addBabyHabit,
-  removeBabyHabit,
   HABIT_CATEGORIES,
   isHabitAgeAppropriate,
   type HabitCategory,
@@ -44,95 +39,74 @@ const categoryBgColors: Record<HabitCategory, string> = {
 export default function HabitSelectScreen() {
   const { t } = useLocalization();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { showNotification } = useNotification();
-  const [babyId, setBabyId] = useState<number | null>(null);
-  const [babyAgeMonths, setBabyAgeMonths] = useState<number>(0);
+  const [isPending, setIsPending] = useState(false);
 
-  // Get current baby ID (do this once on mount)
-  useEffect(() => {
-    const loadBabyId = async () => {
-      const id = await getActiveBabyProfileId();
-      setBabyId(id);
+  // Get active baby profile
+  const babyProfile = useQuery(api.babyProfiles.getActive);
 
-      if (id) {
-        const profile = await getActiveBabyProfile();
-        if (profile?.birthDate) {
-          const birthDate = new Date(profile.birthDate);
-          const now = new Date();
-          const ageMonths =
-            (now.getFullYear() - birthDate.getFullYear()) * 12 +
-            (now.getMonth() - birthDate.getMonth());
-          setBabyAgeMonths(Math.max(0, ageMonths));
-        }
-      }
-    };
-    loadBabyId();
-  }, []);
+  // Calculate baby age in months
+  const babyAgeMonths = useMemo(() => {
+    if (babyProfile?.birthDate) {
+      const birthDate = new Date(babyProfile.birthDate);
+      const now = new Date();
+      const ageMonths =
+        (now.getFullYear() - birthDate.getFullYear()) * 12 +
+        (now.getMonth() - birthDate.getMonth());
+      return Math.max(0, ageMonths);
+    }
+    return 0;
+  }, [babyProfile?.birthDate]);
 
   // Fetch ALL habits (no age filter for faster query)
-  const { data: allHabits, isLoading: isLoadingHabits } = useQuery({
-    queryKey: [HABIT_DEFINITIONS_QUERY_KEY],
-    queryFn: () => getHabitDefinitions(),
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-  });
+  const allHabits = useQuery(api.habits.getDefinitions, {});
+  const isLoadingHabits = allHabits === undefined;
 
   // Fetch baby's current habits
-  const { data: babyHabits } = useQuery({
-    queryKey: [BABY_HABITS_QUERY_KEY, babyId],
-    queryFn: () => (babyId ? getBabyHabits(babyId) : []),
-    enabled: !!babyId,
-    staleTime: 1000 * 60, // Cache for 1 minute
-  });
+  const babyHabits = useQuery(
+    api.habits.getBabyHabits,
+    babyProfile?._id ? { babyId: babyProfile._id } : "skip"
+  );
 
-  // Get IDs of already selected habits
-  const selectedHabitIds = new Set(babyHabits?.map((h) => h.habitDefinitionId) ?? []);
+  // Convex mutations
+  const addHabitMutation = useMutation(api.habits.addBabyHabit);
+  const removeHabitMutation = useMutation(api.habits.removeBabyHabit);
 
-  // Add habit mutation
-  const addMutation = useMutation({
-    mutationFn: async (habitDefinitionId: string) => {
-      if (!babyId) throw new Error('No baby selected');
-      await addBabyHabit(babyId, habitDefinitionId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [BABY_HABITS_QUERY_KEY] });
-      showNotification(t('habit.habitLogged', { defaultValue: 'Habit added!' }), 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to add habit:', error);
+  // Get habit definition IDs that are already selected (using Convex IDs as strings for Set comparison)
+  const selectedHabitDefIds = new Set(
+    babyHabits?.map((h) => String(h.habitDefinitionId)) ?? []
+  );
+
+  const handleToggleHabit = async (habit: NonNullable<typeof allHabits>[number]) => {
+    if (!babyProfile?._id) return;
+
+    setIsPending(true);
+    try {
+      // Check if already selected using the Convex ID
+      const existingBabyHabit = babyHabits?.find((h) => String(h.habitDefinitionId) === String(habit._id));
+
+      if (existingBabyHabit) {
+        await removeHabitMutation({ babyHabitId: existingBabyHabit._id });
+      } else {
+        await addHabitMutation({
+          babyId: babyProfile._id,
+          habitDefinitionId: habit._id,
+        });
+        showNotification(t('habit.habitLogged', { defaultValue: 'Habit added!' }), 'success');
+      }
+    } catch (error) {
+      console.error('Failed to toggle habit:', error);
       showNotification(t('common.saveError'), 'error');
-    },
-  });
-
-  // Remove habit mutation
-  const removeMutation = useMutation({
-    mutationFn: async (habitDefinitionId: string) => {
-      const habit = babyHabits?.find((h) => h.habitDefinitionId === habitDefinitionId);
-      if (!habit) throw new Error('Habit not found');
-      await removeBabyHabit(habit.id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [BABY_HABITS_QUERY_KEY] });
-    },
-    onError: (error) => {
-      console.error('Failed to remove habit:', error);
-      showNotification(t('common.saveError'), 'error');
-    },
-  });
-
-  const handleToggleHabit = (habitId: string) => {
-    if (selectedHabitIds.has(habitId)) {
-      removeMutation.mutate(habitId);
-    } else {
-      addMutation.mutate(habitId);
+    } finally {
+      setIsPending(false);
     }
   };
 
-  const handleOpenDetail = (habit: HabitDefinition) => {
+  const handleOpenDetail = (habit: NonNullable<typeof allHabits>[number]) => {
     router.push({
       pathname: '/(habit)/habit-detail',
       params: {
-        id: habit.id,
+        id: habit.definitionId,
         labelKey: habit.labelKey,
         descriptionKey: habit.descriptionKey,
         category: habit.category,
@@ -144,11 +118,12 @@ export default function HabitSelectScreen() {
 
   // Group habits by category
   const habitsByCategory =
-    allHabits?.reduce<Partial<Record<HabitCategory, HabitDefinition[]>>>((acc, habit) => {
-      if (!acc[habit.category]) {
-        acc[habit.category] = [];
+    allHabits?.reduce<Partial<Record<HabitCategory, typeof allHabits>>>((acc, habit) => {
+      const cat = habit.category as HabitCategory;
+      if (!acc[cat]) {
+        acc[cat] = [];
       }
-      acc[habit.category]!.push(habit);
+      acc[cat]!.push(habit);
       return acc;
     }, {}) ?? {};
 
@@ -165,8 +140,6 @@ export default function HabitSelectScreen() {
       </View>
     );
   }
-
-  const isPending = addMutation.isPending || removeMutation.isPending;
 
   return (
     <View className="flex-1 bg-background">
@@ -199,7 +172,7 @@ export default function HabitSelectScreen() {
               {/* Habit list items - full width for easy one-handed tapping */}
               <View className="gap-2">
                 {habits.map((habit) => {
-                  const isSelected = selectedHabitIds.has(habit.id);
+                  const isSelected = selectedHabitDefIds.has(String(habit._id));
                   const isAgeMatch = isHabitAgeAppropriate(habit, babyAgeMonths);
 
                   // Age range text for non-matching habits
@@ -211,7 +184,7 @@ export default function HabitSelectScreen() {
 
                   return (
                     <View
-                      key={habit.id}
+                      key={habit._id}
                       className={`flex-row items-center overflow-hidden rounded-2xl border ${
                         isSelected
                           ? 'border-green-500/30 bg-green-500/10'
@@ -221,7 +194,7 @@ export default function HabitSelectScreen() {
                       }`}>
                       {/* Left side: Checkbox area - large touch target for one-handed use */}
                       <Pressable
-                        onPress={() => handleToggleHabit(habit.id)}
+                        onPress={() => handleToggleHabit(habit)}
                         disabled={isPending}
                         hitSlop={{ top: 12, bottom: 12, left: 16, right: 0 }}
                         className="items-center justify-center p-4 active:opacity-70">
@@ -257,7 +230,7 @@ export default function HabitSelectScreen() {
                                   ? 'text-foreground'
                                   : 'text-muted-foreground'
                             }`}>
-                            {t(habit.labelKey, { defaultValue: habit.id })}
+                            {t(habit.labelKey, { defaultValue: habit.definitionId })}
                           </Text>
                           {ageRangeText && (
                             <Text className="mt-0.5 text-xs text-muted-foreground">

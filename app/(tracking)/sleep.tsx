@@ -1,47 +1,54 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { useEffect, useRef, useState } from 'react';
-import { Platform, Pressable, ScrollView, View, KeyboardAvoidingView } from 'react-native';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import { useMutation, useQuery } from "convex/react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { useEffect, useRef, useState } from "react";
+import {
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+  KeyboardAvoidingView,
+} from "react-native";
 
-import { Input } from '@/components/ui/input';
-import { ModalHeader } from '@/components/ModalHeader';
-import { StickySaveBar } from '@/components/StickySaveBar';
-import { DateTimePickerModal } from '@/components/DateTimePickerModal';
-import { useNotification } from '@/components/NotificationContext';
-import { Text } from '@/components/ui/text';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { SLEEP_SESSIONS_QUERY_KEY } from '@/constants/query-keys';
-import type { SleepSessionKind, SleepSessionPayload } from '@/database/sleep';
-import { getSleepSessionById, saveSleepSession, updateSleepSession } from '@/database/sleep';
-import { useBrandColor } from '@/hooks/use-brand-color';
-import { useLocalization } from '@/localization/LocalizationProvider';
+import { Input } from "@/components/ui/input";
+import { ModalHeader } from "@/components/ModalHeader";
+import { StickySaveBar } from "@/components/StickySaveBar";
+import { DateTimePickerModal } from "@/components/DateTimePickerModal";
+import { useNotification } from "@/components/NotificationContext";
+import { Text } from "@/components/ui/text";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { api } from "@/convex/_generated/api";
+import type { SleepSessionKind } from "@/database/sleep";
+import { useBrandColor } from "@/hooks/use-brand-color";
+import { useLocalization } from "@/localization/LocalizationProvider";
 
 const sleepKinds: {
   key: SleepSessionKind;
   labelKey: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 }[] = [
-  { key: 'nap', labelKey: 'sleep.kinds.nap', icon: 'white-balance-sunny' },
-  { key: 'night', labelKey: 'sleep.kinds.night', icon: 'weather-night' },
+  { key: "nap", labelKey: "sleep.kinds.nap", icon: "white-balance-sunny" },
+  { key: "night", labelKey: "sleep.kinds.night", icon: "weather-night" },
 ];
 
 function formatClock(seconds: number): string {
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  const parts = [hrs, mins, secs].map((value) => String(value).padStart(2, '0'));
-  return parts.join(':');
+  const parts = [hrs, mins, secs].map((value) =>
+    String(value).padStart(2, "0")
+  );
+  return parts.join(":");
 }
 
 function formatDateTime(date: Date) {
   return date.toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
 }
 
@@ -49,22 +56,21 @@ function calculateDuration(start: Date, end: Date) {
   return Math.max(0, Math.floor((end.getTime() - start.getTime()) / 1000));
 }
 
-type PickerTarget = 'start' | 'end' | null;
+type PickerTarget = "start" | "end" | null;
 
 export default function SleepScreen() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { t } = useLocalization();
   const { showNotification } = useNotification();
   const brandColors = useBrandColor();
   const params = useLocalSearchParams<{ id: string }>();
-  const id = params.id ? Number(params.id) : undefined;
-  const isEditing = !!id;
+  const sessionId = params.id;
+  const isEditing = !!sessionId;
 
-  const [sleepKind, setSleepKind] = useState<SleepSessionKind>('nap');
+  const [sleepKind, setSleepKind] = useState<SleepSessionKind>("nap");
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState<Date | null>(null);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState("");
 
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>(null);
 
@@ -74,23 +80,30 @@ export default function SleepScreen() {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Get active baby profile
+  const profile = useQuery(api.babyProfiles.getActive);
+
   // Fetch existing data if editing
-  const { data: existingData, isLoading: _isLoadingData } = useQuery({
-    queryKey: [SLEEP_SESSIONS_QUERY_KEY, id],
-    queryFn: () => (id ? getSleepSessionById(id) : null),
-    enabled: isEditing,
-  });
+  const existingData = useQuery(
+    api.sleepSessions.getById,
+    sessionId ? { sleepSessionId: sessionId as any } : "skip"
+  );
+
+  // Convex mutations
+  const createSession = useMutation(api.sleepSessions.create);
+  const updateSession = useMutation(api.sleepSessions.update);
 
   // Populate state when data is loaded
   useEffect(() => {
     if (existingData) {
-      setSleepKind(existingData.kind);
+      if (existingData.kind === "nap" || existingData.kind === "night") {
+        setSleepKind(existingData.kind);
+      }
       setStartTime(new Date(existingData.startTime * 1000));
       if (existingData.endTime) {
         setEndTime(new Date(existingData.endTime * 1000));
       }
-      setNotes(existingData.notes ?? '');
-      // If there is a duration but no end time (e.g. ongoing?), or just to sync elapsed
+      setNotes(existingData.notes ?? "");
       if (existingData.duration) {
         setElapsedSeconds(existingData.duration);
       }
@@ -105,27 +118,8 @@ export default function SleepScreen() {
     };
   }, []);
 
-  const mutation = useMutation({
-    mutationFn: async (payload: SleepSessionPayload) => {
-      if (isEditing && id) {
-        await updateSleepSession(id, payload);
-      } else {
-        await saveSleepSession(payload);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: SLEEP_SESSIONS_QUERY_KEY });
-      showNotification(t('common.saveSuccess'), 'success');
-      setTimeout(() => router.back(), 500);
-    },
-    onError: (error) => {
-      console.error('Failed to save sleep session:', error);
-      showNotification(t('common.saveError'), 'error');
-    },
-  });
-
   const openPicker = (target: Exclude<PickerTarget, null>) => {
-    if (timerActive && target === 'start') {
+    if (timerActive && target === "start") {
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -136,37 +130,42 @@ export default function SleepScreen() {
     setPickerTarget(null);
   };
 
-  const handlePickerChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
+  const handlePickerChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === "android") {
       closePicker();
     }
 
     if (!selectedDate || !pickerTarget) {
-      if (Platform.OS === 'ios' && event.type === 'dismissed') {
+      if (Platform.OS === "ios" && event.type === "dismissed") {
         closePicker();
       }
       return;
     }
 
-    if (pickerTarget === 'start') {
+    if (pickerTarget === "start") {
       setStartTime(selectedDate);
       if (!timerActive) {
-        setElapsedSeconds(endTime ? calculateDuration(selectedDate, endTime) : 0);
+        setElapsedSeconds(
+          endTime ? calculateDuration(selectedDate, endTime) : 0
+        );
       }
-    } else if (pickerTarget === 'end') {
+    } else if (pickerTarget === "end") {
       setEndTime(selectedDate);
       if (!timerActive) {
         setElapsedSeconds(calculateDuration(startTime, selectedDate));
       }
     }
 
-    if (Platform.OS === 'ios' && event.type === 'dismissed') {
+    if (Platform.OS === "ios" && event.type === "dismissed") {
       closePicker();
     }
   };
 
   const handleSleepKindChange = (value: string | undefined) => {
-    if (value && (value === 'nap' || value === 'night')) {
+    if (value && (value === "nap" || value === "night")) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setSleepKind(value);
     }
@@ -194,7 +193,9 @@ export default function SleepScreen() {
     if (!timerActive) {
       return {
         finalEnd: endTime,
-        duration: endTime ? calculateDuration(startTime, endTime) : elapsedSeconds,
+        duration: endTime
+          ? calculateDuration(startTime, endTime)
+          : elapsedSeconds,
       };
     }
 
@@ -239,7 +240,7 @@ export default function SleepScreen() {
   })();
 
   const handleSave = async () => {
-    if (isSaving) return;
+    if (isSaving || !profile?._id) return;
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -249,43 +250,61 @@ export default function SleepScreen() {
       const normalizedDuration = finalEnd ? Math.max(0, duration) : undefined;
 
       const payload = {
+        babyId: profile._id,
         kind: sleepKind,
         startTime: Math.floor(startTime.getTime() / 1000),
         endTime: finalEnd ? Math.floor(finalEnd.getTime() / 1000) : undefined,
-        duration: normalizedDuration && normalizedDuration > 0 ? normalizedDuration : undefined,
+        duration:
+          normalizedDuration && normalizedDuration > 0
+            ? normalizedDuration
+            : undefined,
         notes: notes || undefined,
       };
 
-      await mutation.mutateAsync(payload);
+      if (isEditing && sessionId) {
+        await updateSession({ sleepSessionId: sessionId as any, ...payload });
+      } else {
+        await createSession(payload);
+      }
+
+      showNotification(t("common.saveSuccess"), "success");
+      setTimeout(() => router.back(), 500);
+    } catch (error) {
+      console.error("Failed to save sleep session:", error);
+      showNotification(t("common.saveError"), "error");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const pickerValue = pickerTarget === 'start' ? startTime : (endTime ?? new Date());
+  const pickerValue =
+    pickerTarget === "start" ? startTime : (endTime ?? new Date());
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1 }}
-      className="bg-background">
+      className="bg-background"
+    >
       <View className="flex-1 bg-background">
         <ModalHeader
-          title={isEditing ? t('sleep.editTitle') : t('sleep.title')}
-          closeLabel={t('common.close')}
+          title={isEditing ? t("sleep.editTitle") : t("sleep.title")}
+          closeLabel={t("common.close")}
         />
 
         <ScrollView
           contentContainerClassName="p-5 pb-28 gap-6"
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Sleep Type Selection */}
           <ToggleGroup
             type="single"
             value={sleepKind}
             onValueChange={handleSleepKindChange}
             variant="outline"
-            className="w-full">
+            className="w-full"
+          >
             {sleepKinds.map((kind, index) => (
               <ToggleGroupItem
                 key={kind.key}
@@ -293,11 +312,16 @@ export default function SleepScreen() {
                 isFirst={index === 0}
                 isLast={index === sleepKinds.length - 1}
                 className="flex-1 flex-row items-center justify-center"
-                aria-label={t(kind.labelKey)}>
+                aria-label={t(kind.labelKey)}
+              >
                 <MaterialCommunityIcons
                   name={kind.icon}
                   size={22}
-                  color={sleepKind === kind.key ? brandColors.colors.white : '#666666'}
+                  color={
+                    sleepKind === kind.key
+                      ? brandColors.colors.white
+                      : "#666666"
+                  }
                 />
                 <Text className="text-base">{t(kind.labelKey)}</Text>
               </ToggleGroupItem>
@@ -312,24 +336,27 @@ export default function SleepScreen() {
               </Text>
               <Pressable
                 className={`h-[88px] w-[88px] items-center justify-center rounded-full ${
-                  timerActive ? 'bg-red-500' : 'bg-lavender'
+                  timerActive ? "bg-red-500" : "bg-lavender"
                 }`}
                 onPress={handleTimerPress}
                 style={{
-                  shadowColor: timerActive ? '#EF4444' : brandColors.colors.lavender,
+                  shadowColor: timerActive
+                    ? "#EF4444"
+                    : brandColors.colors.lavender,
                   shadowOffset: { width: 0, height: 4 },
                   shadowOpacity: 0.3,
                   shadowRadius: 8,
                   elevation: 6,
-                }}>
+                }}
+              >
                 <MaterialCommunityIcons
-                  name={timerActive ? 'pause' : 'play'}
+                  name={timerActive ? "pause" : "play"}
                   size={40}
                   color="#FFF"
                 />
               </Pressable>
               <Text className="text-center text-sm text-muted-foreground">
-                {t(timerActive ? 'sleep.timer.stop' : 'sleep.timer.start')}
+                {t(timerActive ? "sleep.timer.stop" : "sleep.timer.start")}
               </Text>
             </View>
           )}
@@ -338,40 +365,55 @@ export default function SleepScreen() {
           <View className="gap-4 rounded-2xl border border-border bg-card p-4">
             {/* Start Time */}
             <Pressable
-              onPress={() => openPicker('start')}
+              onPress={() => openPicker("start")}
               disabled={timerActive}
-              className={`flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-4 ${timerActive ? 'opacity-60' : ''}`}>
+              className={`flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-4 ${timerActive ? "opacity-60" : ""}`}
+            >
               <View>
                 <Text className="text-sm font-medium text-muted-foreground">
-                  {t('common.starts')}
+                  {t("common.starts")}
                 </Text>
                 <Text className="mt-1 text-lg font-semibold text-foreground">
                   {formatDateTime(startTime)}
                 </Text>
               </View>
-              <MaterialCommunityIcons name="clock-edit-outline" size={24} color="#666" />
+              <MaterialCommunityIcons
+                name="clock-edit-outline"
+                size={24}
+                color="#666"
+              />
             </Pressable>
 
             {/* End Time */}
             <View className="flex-row items-center gap-2">
               <Pressable
-                onPress={() => openPicker('end')}
-                className="flex-1 flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-4">
+                onPress={() => openPicker("end")}
+                className="flex-1 flex-row items-center justify-between rounded-xl bg-muted/30 px-4 py-4"
+              >
                 <View>
                   <Text className="text-sm font-medium text-muted-foreground">
-                    {t('sleep.ends')}
+                    {t("sleep.ends")}
                   </Text>
                   <Text className="mt-1 text-lg font-semibold text-foreground">
-                    {endTime ? formatDateTime(endTime) : t('sleep.unset')}
+                    {endTime ? formatDateTime(endTime) : t("sleep.unset")}
                   </Text>
                 </View>
-                <MaterialCommunityIcons name="clock-edit-outline" size={24} color="#666" />
+                <MaterialCommunityIcons
+                  name="clock-edit-outline"
+                  size={24}
+                  color="#666"
+                />
               </Pressable>
               {endTime && !timerActive && (
                 <Pressable
                   onPress={clearEndTime}
-                  className="h-14 w-14 items-center justify-center rounded-xl bg-red-500/20">
-                  <MaterialCommunityIcons name="close" size={24} color="#EF4444" />
+                  className="h-14 w-14 items-center justify-center rounded-xl bg-red-500/20"
+                >
+                  <MaterialCommunityIcons
+                    name="close"
+                    size={24}
+                    color="#EF4444"
+                  />
                 </Pressable>
               )}
             </View>
@@ -379,9 +421,11 @@ export default function SleepScreen() {
             {/* Duration */}
             <View className="flex-row items-center justify-between px-1">
               <Text className="text-base font-medium text-muted-foreground">
-                {t('common.duration')}
+                {t("common.duration")}
               </Text>
-              <Text className="text-xl font-bold text-accent">{formatClock(resolvedDuration)}</Text>
+              <Text className="text-xl font-bold text-accent">
+                {formatClock(resolvedDuration)}
+              </Text>
             </View>
           </View>
 
@@ -390,7 +434,7 @@ export default function SleepScreen() {
             className="min-h-[100px]"
             value={notes}
             onChangeText={setNotes}
-            placeholder={t('common.notesPlaceholder')}
+            placeholder={t("common.notesPlaceholder")}
             multiline
             textAlignVertical="top"
           />

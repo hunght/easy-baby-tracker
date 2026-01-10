@@ -1,12 +1,12 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation } from 'convex/react';
 import { useMemo, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BabyProfileStep } from '@/pages/onboarding/components/BabyProfileStep';
 import { WelcomeStep } from '@/pages/onboarding/components/WelcomeStep';
-import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
-import { BabyProfilePayload, saveOnboardingProfile } from '@/database/baby-profile';
+import { api } from '@/convex/_generated/api';
+import { BabyProfilePayload } from '@/database/baby-profile';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 type OnboardingScreenProps = {
@@ -15,8 +15,10 @@ type OnboardingScreenProps = {
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const { t } = useLocalization();
-  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
+
+  // Convex mutation to create profile
+  const createProfile = useMutation(api.babyProfiles.create);
 
   const nextStep = () => {
     if (step < 1) {
@@ -25,9 +27,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   };
 
   const handleSaveProfile = async (profileData: BabyProfilePayload) => {
-    await saveOnboardingProfile(profileData);
-    await queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
-    await queryClient.invalidateQueries({ queryKey: BABY_PROFILES_QUERY_KEY });
+    await createProfile({
+      nickname: profileData.nickname,
+      gender: profileData.gender,
+      birthDate: profileData.birthDate,
+      dueDate: profileData.dueDate,
+      firstWakeTime: profileData.firstWakeTime,
+    });
+    // Convex is reactive, no need to invalidate queries
     onComplete();
   };
 

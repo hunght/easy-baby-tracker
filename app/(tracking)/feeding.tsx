@@ -1,29 +1,28 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useMutation, useQuery } from "convex/react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { useCallback, useEffect, useState } from "react";
+import { Pressable, ScrollView, View } from "react-native";
 
-import { BottleFeedingForm } from '@/pages/feeding/components/BottleFeedingForm';
-import { BreastFeedingForm } from '@/pages/feeding/components/BreastFeedingForm';
-import { SolidsFeedingForm } from '@/pages/feeding/components/SolidsFeedingForm';
-import { ModalHeader } from '@/components/ModalHeader';
-import { StickySaveBar } from '@/components/StickySaveBar';
-import { Input } from '@/components/ui/input';
-import { useNotification } from '@/components/NotificationContext';
-import { Text } from '@/components/ui/text';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TimeField } from '@/components/TimeField';
+import { BottleFeedingForm } from "@/pages/feeding/components/BottleFeedingForm";
+import { BreastFeedingForm } from "@/pages/feeding/components/BreastFeedingForm";
+import { SolidsFeedingForm } from "@/pages/feeding/components/SolidsFeedingForm";
+import { ModalHeader } from "@/components/ModalHeader";
+import { StickySaveBar } from "@/components/StickySaveBar";
+import { Input } from "@/components/ui/input";
+import { useNotification } from "@/components/NotificationContext";
+import { Text } from "@/components/ui/text";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TimeField } from "@/components/TimeField";
 
-import { FEEDINGS_QUERY_KEY } from '@/constants/query-keys';
-import type { FeedingPayload, FeedingType, IngredientType } from '@/database/feeding';
-import { getFeedingById, saveFeeding, updateFeeding } from '@/database/feeding';
+import { api } from "@/convex/_generated/api";
+import type { FeedingType, IngredientType } from "@/database/feeding";
 import {
   cancelScheduledNotification,
   scheduleFeedingNotification,
-} from '@/lib/notification-scheduler';
-import { useLocalization } from '@/localization/LocalizationProvider';
+} from "@/lib/notification-scheduler";
+import { useLocalization } from "@/localization/LocalizationProvider";
 
 type FeedingTypeOption = {
   key: FeedingType;
@@ -32,9 +31,13 @@ type FeedingTypeOption = {
 };
 
 const feedingTypes: FeedingTypeOption[] = [
-  { key: 'breast', labelKey: 'feeding.types.breast', icon: 'heart-outline' },
-  { key: 'bottle', labelKey: 'feeding.types.bottle', icon: 'bottle-tonic-outline' },
-  { key: 'solids', labelKey: 'feeding.types.solids', icon: 'bowl-mix-outline' },
+  { key: "breast", labelKey: "feeding.types.breast", icon: "heart-outline" },
+  {
+    key: "bottle",
+    labelKey: "feeding.types.bottle",
+    icon: "bottle-tonic-outline",
+  },
+  { key: "solids", labelKey: "feeding.types.solids", icon: "bowl-mix-outline" },
 ];
 
 // Type guard to check if a string is a valid FeedingType
@@ -44,17 +47,18 @@ function isFeedingType(value: string): value is FeedingType {
 
 export default function FeedingScreen() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { t } = useLocalization();
   const { showNotification } = useNotification();
   const params = useLocalSearchParams<{ id: string }>();
-  const id = params.id ? Number(params.id) : undefined;
-  const isEditing = !!id;
+  const feedingId = params.id;
+  const isEditing = !!feedingId;
 
-  const [feedingType, setFeedingType] = useState<FeedingType>('breast');
+  const [feedingType, setFeedingType] = useState<FeedingType>("breast");
   const [startTime, setStartTime] = useState(new Date());
-  const [notes, setNotes] = useState('');
-  const [scheduledNotificationId, setScheduledNotificationId] = useState<string | null>(null);
+  const [notes, setNotes] = useState("");
+  const [scheduledNotificationId, setScheduledNotificationId] = useState<
+    string | null
+  >(null);
 
   // Feeding type specific data (managed by child components)
   const [breastData, setBreastData] = useState<{
@@ -75,35 +79,53 @@ export default function FeedingScreen() {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Get active baby profile
+  const profile = useQuery(api.babyProfiles.getActive);
+
   // Fetch existing data if editing
-  const { data: existingData, isLoading: _isLoadingData } = useQuery({
-    queryKey: [FEEDINGS_QUERY_KEY, id],
-    queryFn: () => (id ? getFeedingById(id) : null),
-    enabled: isEditing,
-  });
+  const existingData = useQuery(
+    api.feedings.getById,
+    feedingId ? { feedingId: feedingId as any } : "skip"
+  );
+
+  // Convex mutations
+  const createFeeding = useMutation(api.feedings.create);
+  const updateFeedingMutation = useMutation(api.feedings.update);
 
   // Populate state when data is loaded
   useEffect(() => {
     if (existingData) {
-      setFeedingType(existingData.type);
+      if (
+        existingData.type === "breast" ||
+        existingData.type === "bottle" ||
+        existingData.type === "solids"
+      ) {
+        setFeedingType(existingData.type);
+      }
       setStartTime(new Date(existingData.startTime * 1000));
-      setNotes(existingData.notes ?? '');
+      setNotes(existingData.notes ?? "");
 
-      if (existingData.type === 'breast') {
+      if (existingData.type === "breast") {
         setBreastData({
           leftDuration: existingData.leftDuration ?? 0,
           rightDuration: existingData.rightDuration ?? 0,
           duration: existingData.duration ?? 0,
         });
-      } else if (existingData.type === 'bottle') {
+      } else if (existingData.type === "bottle") {
+        const ingredientType = existingData.ingredientType;
         setBottleData({
-          ingredientType: existingData.ingredientType ?? 'breast_milk',
+          ingredientType:
+            ingredientType === "breast_milk" ||
+            ingredientType === "formula" ||
+            ingredientType === "others"
+              ? ingredientType
+              : "breast_milk",
           amountMl: existingData.amountMl ?? 60,
           duration: existingData.duration ?? 0,
         });
-      } else if (existingData.type === 'solids') {
+      } else if (existingData.type === "solids") {
         setSolidsData({
-          ingredient: existingData.ingredient ?? '',
+          ingredient: existingData.ingredient ?? "",
           amountGrams: existingData.amountGrams ?? 60,
           duration: existingData.duration ?? 0,
         });
@@ -140,34 +162,37 @@ export default function FeedingScreen() {
     const fiveMinutes = 5 * 60 * 1000;
 
     if (diff > fiveMinutes) {
-      return 'future'; // More than 5 minutes in the future
+      return "future"; // More than 5 minutes in the future
     } else if (diff < -fiveMinutes) {
-      return 'past'; // More than 5 minutes in the past
+      return "past"; // More than 5 minutes in the past
     } else {
-      return 'now'; // Within 5 minutes (considered "now")
+      return "now"; // Within 5 minutes (considered "now")
     }
   };
 
   const timeState = getTimeState();
-  const isFuture = timeState === 'future';
-  const isPast = timeState === 'past';
+  const isFuture = timeState === "future";
+  const isPast = timeState === "past";
 
   const handleScheduleReminder = async () => {
     if (scheduledNotificationId) {
       // Cancel existing notification
       await cancelScheduledNotification(scheduledNotificationId);
       setScheduledNotificationId(null);
-      showNotification(t('feeding.schedule.scheduleCancelled'), 'info');
+      showNotification(t("feeding.schedule.scheduleCancelled"), "info");
     } else {
       // Schedule new notification using startTime
-      const notificationId = await scheduleFeedingNotification(startTime, feedingType);
+      const notificationId = await scheduleFeedingNotification(
+        startTime,
+        feedingType
+      );
       if (notificationId) {
         setScheduledNotificationId(notificationId);
-        showNotification(t('feeding.schedule.scheduleSet'), 'success');
+        showNotification(t("feeding.schedule.scheduleSet"), "success");
         // Close the modal after successful scheduling
         setTimeout(() => router.back(), 500);
       } else {
-        showNotification(t('feeding.schedule.scheduleError'), 'error');
+        showNotification(t("feeding.schedule.scheduleError"), "error");
       }
     }
   };
@@ -198,7 +223,11 @@ export default function FeedingScreen() {
   );
 
   const handleBottleDataChange = useCallback(
-    (data: { ingredientType: IngredientType; amountMl: number; duration: number }) => {
+    (data: {
+      ingredientType: IngredientType;
+      amountMl: number;
+      duration: number;
+    }) => {
       setBottleData(data);
     },
     []
@@ -211,60 +240,65 @@ export default function FeedingScreen() {
     []
   );
 
-  const mutation = useMutation({
-    mutationFn: async (payload: FeedingPayload) => {
-      if (isEditing && id) {
-        await updateFeeding(id, payload);
-      } else {
-        await saveFeeding(payload);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: FEEDINGS_QUERY_KEY });
-      showNotification(t('common.saveSuccess'), 'success');
-      setTimeout(() => router.back(), 500);
-    },
-    onError: (error) => {
-      console.error('Failed to save feeding:', error);
-      showNotification(t('common.saveError'), 'error');
-    },
-  });
-
   const handleSave = async () => {
-    if (isSaving) return;
+    if (isSaving || !profile?._id) return;
 
     // Haptic feedback on save
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     setIsSaving(true);
     try {
-      const payload: FeedingPayload = {
+      const basePayload: {
+        babyId: typeof profile._id;
+        type: FeedingType;
+        startTime: number;
+        notes?: string;
+        duration?: number;
+        leftDuration?: number;
+        rightDuration?: number;
+        ingredientType?: IngredientType;
+        amountMl?: number;
+        ingredient?: string;
+        amountGrams?: number;
+      } = {
+        babyId: profile._id,
         type: feedingType,
         startTime: Math.floor(startTime.getTime() / 1000),
         notes: notes || undefined,
       };
 
-      if (feedingType === 'breast' && breastData) {
-        payload.leftDuration = breastData.leftDuration;
-        payload.rightDuration = breastData.rightDuration;
-        payload.duration = breastData.duration;
-      } else if (feedingType === 'bottle' && bottleData) {
-        payload.ingredientType = bottleData.ingredientType;
-        payload.amountMl = bottleData.amountMl;
-        payload.duration = bottleData.duration || undefined;
-      } else if (feedingType === 'solids' && solidsData) {
-        payload.ingredient = solidsData.ingredient || undefined;
-        payload.amountGrams = solidsData.amountGrams;
-        payload.duration = solidsData.duration || undefined;
+      if (feedingType === "breast" && breastData) {
+        basePayload.leftDuration = breastData.leftDuration;
+        basePayload.rightDuration = breastData.rightDuration;
+        basePayload.duration = breastData.duration;
+      } else if (feedingType === "bottle" && bottleData) {
+        basePayload.ingredientType = bottleData.ingredientType;
+        basePayload.amountMl = bottleData.amountMl;
+        basePayload.duration = bottleData.duration || undefined;
+      } else if (feedingType === "solids" && solidsData) {
+        basePayload.ingredient = solidsData.ingredient || undefined;
+        basePayload.amountGrams = solidsData.amountGrams;
+        basePayload.duration = solidsData.duration || undefined;
       }
 
-      await mutation.mutateAsync(payload);
+      if (isEditing && feedingId) {
+        await updateFeedingMutation({ feedingId: feedingId as any, ...basePayload });
+      } else {
+        await createFeeding(basePayload);
+      }
+
+      showNotification(t("common.saveSuccess"), "success");
 
       // Cancel scheduled notification after saving
       if (scheduledNotificationId) {
         await cancelScheduledNotification(scheduledNotificationId);
         setScheduledNotificationId(null);
       }
+
+      setTimeout(() => router.back(), 500);
+    } catch (error) {
+      console.error("Failed to save feeding:", error);
+      showNotification(t("common.saveError"), "error");
     } finally {
       setIsSaving(false);
     }
@@ -280,19 +314,28 @@ export default function FeedingScreen() {
   return (
     <View className="flex-1 bg-card">
       <ModalHeader
-        title={isEditing ? t('feeding.editTitle') : t('feeding.title')}
-        closeLabel={t('common.close')}
+        title={isEditing ? t("feeding.editTitle") : t("feeding.title")}
+        closeLabel={t("common.close")}
       />
 
       <ScrollView
         contentContainerClassName="p-5 pb-28"
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Feeding Type Selection */}
-        <Tabs value={feedingType} onValueChange={handleFeedingTypeChange} className="mb-6">
+        <Tabs
+          value={feedingType}
+          onValueChange={handleFeedingTypeChange}
+          className="mb-6"
+        >
           <TabsList className="w-full">
             {feedingTypes.map((type) => (
-              <TabsTrigger key={type.key} value={type.key} className="flex-1 flex-row items-center">
+              <TabsTrigger
+                key={type.key}
+                value={type.key}
+                className="flex-1 flex-row items-center"
+              >
                 <MaterialCommunityIcons name={type.icon} size={20} />
                 <Text>{t(type.labelKey)}</Text>
               </TabsTrigger>
@@ -300,7 +343,7 @@ export default function FeedingScreen() {
           </TabsList>
           {/* Common Fields */}
           <TimeField
-            label={t('common.starts')}
+            label={t("common.starts")}
             value={startTime}
             onChange={handleStartTimeChange}
             showNowThreshold={5}
@@ -347,28 +390,30 @@ export default function FeedingScreen() {
           <View className="mb-6 gap-2">
             <Pressable
               onPress={handleScheduleReminder}
-              className={`flex-row items-center justify-center gap-2 rounded-xl px-5 py-3.5 ${scheduledNotificationId ? 'bg-muted-foreground' : 'bg-blue-500'}`}
+              className={`flex-row items-center justify-center gap-2 rounded-xl px-5 py-3.5 ${scheduledNotificationId ? "bg-muted-foreground" : "bg-blue-500"}`}
               style={{
-                shadowColor: 'rgba(0, 0, 0, 0.05)',
+                shadowColor: "rgba(0, 0, 0, 0.05)",
                 shadowOffset: { width: 0, height: 1 },
                 shadowOpacity: 1,
                 shadowRadius: 2,
                 elevation: 1,
-              }}>
+              }}
+            >
               <MaterialCommunityIcons
-                name={scheduledNotificationId ? 'bell-off' : 'bell'}
+                name={scheduledNotificationId ? "bell-off" : "bell"}
                 size={20}
                 color="#FFFFFF"
               />
               <Text className="text-base font-semibold text-white">
                 {scheduledNotificationId
-                  ? t('feeding.schedule.cancelSchedule')
-                  : t('feeding.schedule.enable')}
+                  ? t("feeding.schedule.cancelSchedule")
+                  : t("feeding.schedule.enable")}
               </Text>
             </Pressable>
             {scheduledNotificationId && (
               <Text className="text-center text-sm italic text-muted-foreground">
-                {t('feeding.schedule.scheduledFor')}: {startTime.toLocaleString()}
+                {t("feeding.schedule.scheduledFor")}:{" "}
+                {startTime.toLocaleString()}
               </Text>
             )}
           </View>
@@ -378,14 +423,18 @@ export default function FeedingScreen() {
         <Input
           value={notes}
           onChangeText={setNotes}
-          placeholder={t('common.notesPlaceholder')}
+          placeholder={t("common.notesPlaceholder")}
           multiline
           numberOfLines={4}
           className="min-h-20"
         />
       </ScrollView>
 
-      <StickySaveBar onPress={handleSave} isSaving={isSaving} containerClassName="bg-card" />
+      <StickySaveBar
+        onPress={handleSave}
+        isSaving={isSaving}
+        containerClassName="bg-card"
+      />
     </View>
   );
 }

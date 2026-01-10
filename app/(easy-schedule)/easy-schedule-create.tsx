@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -19,9 +19,7 @@ import { Text } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNotification } from '@/components/NotificationContext';
-import { BABY_PROFILE_QUERY_KEY, userCustomFormulaRulesKey } from '@/constants/query-keys';
-import { getActiveBabyProfile } from '@/database/baby-profile';
-import { createCustomFormulaRule } from '@/database/easy-formula-rules';
+import { api } from '@/convex/_generated/api';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import type { EasyCyclePhase } from '@/lib/easy-schedule-generator';
 import { useLocalization } from '@/localization/LocalizationProvider';
@@ -44,13 +42,12 @@ export default function EasyScheduleCreateScreen() {
   const router = useRouter();
   const brandColors = useBrandColor();
   const { showNotification } = useNotification();
-  const queryClient = useQueryClient();
 
-  const { data: babyProfile } = useQuery({
-    queryKey: BABY_PROFILE_QUERY_KEY,
-    queryFn: getActiveBabyProfile,
-    staleTime: 30 * 1000,
-  });
+  // Get active baby profile
+  const babyProfile = useQuery(api.babyProfiles.getActive);
+
+  // Convex mutations
+  const createCustomRule = useMutation(api.easyFormulaRules.create);
 
   // Form state
   const [formulaName, setFormulaName] = useState('');
@@ -118,14 +115,19 @@ export default function EasyScheduleCreateScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      if (!babyProfile?.id) {
-        throw new Error('No active baby profile');
-      }
+  const [isSaving, setIsSaving] = useState(false);
 
+  const handleSave = async () => {
+    if (!validateForm()) return;
+    if (!babyProfile?._id) {
+      showNotification('No active baby profile', 'error');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
       const minWeeksNum = parseInt(minWeeks);
-      const maxWeeksNum = maxWeeks ? parseInt(maxWeeks) : null;
+      const maxWeeksNum = maxWeeks ? parseInt(maxWeeks) : undefined;
 
       const convertedPhases: EasyCyclePhase[] = phases.map((phase) => ({
         eat: parseInt(phase.eat),
@@ -133,19 +135,15 @@ export default function EasyScheduleCreateScreen() {
         sleep: parseInt(phase.sleep),
       }));
 
-      await createCustomFormulaRule(babyProfile.id, {
-        id: '',
-        name: formulaName.trim(),
+      await createCustomRule({
+        babyId: babyProfile._id,
+        labelText: formulaName.trim(),
         minWeeks: minWeeksNum,
         maxWeeks: maxWeeksNum,
-        labelKey: '',
-        ageRangeKey: '',
-        description: description.trim(),
-        phases: convertedPhases,
+        description: description.trim() || undefined,
+        phases: JSON.stringify(convertedPhases),
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userCustomFormulaRulesKey(babyProfile?.id ?? 0) });
+
       showNotification(t('easySchedule.formulaCreated'), 'success');
       setTimeout(() => {
         if (router.canGoBack()) {
@@ -154,16 +152,11 @@ export default function EasyScheduleCreateScreen() {
           router.replace('/(easy-schedule)/easy-schedule-select');
         }
       }, 500);
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Failed to create formula:', error);
       showNotification(error instanceof Error ? error.message : t('common.saveError'), 'error');
-    },
-  });
-
-  const handleSave = () => {
-    if (validateForm()) {
-      mutation.mutate();
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -444,9 +437,9 @@ export default function EasyScheduleCreateScreen() {
               variant="default"
               size="lg"
               onPress={handleSave}
-              disabled={mutation.isPending}
+              disabled={isSaving}
               className="flex-[2]">
-              {mutation.isPending ? (
+              {isSaving ? (
                 <ActivityIndicator color="white" />
               ) : (
                 <>
@@ -458,7 +451,7 @@ export default function EasyScheduleCreateScreen() {
           </View>
         </View>
 
-        {mutation.isPending && (
+        {isSaving && (
           <View className="absolute inset-0 items-center justify-center bg-background/80">
             <ActivityIndicator size="large" color={brandColors.colors.primary} />
           </View>

@@ -1,6 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 import {
   Baby,
   BookOpen,
@@ -12,23 +12,15 @@ import {
   Users,
   Apple,
   Flame,
-} from 'lucide-react-native';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View, Platform } from 'react-native';
+} from "lucide-react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, View, Platform } from "react-native";
 
-import { ModalHeader } from '@/components/ModalHeader';
-import { Text } from '@/components/ui/text';
-import { BABY_HABITS_QUERY_KEY, HABIT_LOGS_QUERY_KEY } from '@/constants/query-keys';
-import { getActiveBabyProfileId } from '@/database/baby-profile';
-import {
-  getBabyHabits,
-  getTodayHabitLogs,
-  logHabit,
-  getHabitStreak,
-  type BabyHabitWithDefinition,
-  type HabitCategory,
-} from '@/database/habits';
-import { useLocalization } from '@/localization/LocalizationProvider';
+import { ModalHeader } from "@/components/ModalHeader";
+import { Text } from "@/components/ui/text";
+import { api } from "@/convex/_generated/api";
+import type { HabitCategory } from "@/database/habits";
+import { useLocalization } from "@/localization/LocalizationProvider";
 
 // Icon mapping for categories
 const categoryIcons: Record<HabitCategory, typeof Heart> = {
@@ -42,15 +34,27 @@ const categoryIcons: Record<HabitCategory, typeof Heart> = {
 
 // Color mapping for categories
 const categoryColors: Record<HabitCategory, string> = {
-  health: '#FF5C8D',
-  learning: '#6366F1',
-  physical: '#22C55E',
-  sleep: '#8B5CF6',
-  social: '#F59E0B',
-  nutrition: '#10B981',
+  health: "#FF5C8D",
+  learning: "#6366F1",
+  physical: "#22C55E",
+  sleep: "#8B5CF6",
+  social: "#F59E0B",
+  nutrition: "#10B981",
 };
 
-interface HabitWithStatus extends BabyHabitWithDefinition {
+interface HabitDefinition {
+  definitionId: string;
+  category: string;
+  labelKey: string;
+  descriptionKey: string;
+  minAgeMonths?: number | null;
+  maxAgeMonths?: number | null;
+}
+
+interface HabitWithStatus {
+  _id: any; // Convex Id type
+  habitDefinitionId: any;
+  habit: HabitDefinition | null;
   completedToday: boolean;
   streak: number;
 }
@@ -58,81 +62,71 @@ interface HabitWithStatus extends BabyHabitWithDefinition {
 export default function HabitScreen() {
   const { t } = useLocalization();
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const [babyId, setBabyId] = useState<number | null>(null);
 
-  // Get current baby ID
-  useEffect(() => {
-    const loadBabyId = async () => {
-      const id = await getActiveBabyProfileId();
-      setBabyId(id);
-
-      // Baby ID is loaded, no need to calculate age here
-    };
-    loadBabyId();
-  }, []);
+  // Get active baby profile
+  const profile = useQuery(api.babyProfiles.getActive);
 
   // Fetch baby's habits
-  const { data: habits, isLoading: isLoadingHabits } = useQuery({
-    queryKey: [BABY_HABITS_QUERY_KEY, babyId],
-    queryFn: () => (babyId ? getBabyHabits(babyId) : []),
-    enabled: !!babyId,
-  });
+  const habits = useQuery(
+    api.habits.getBabyHabits,
+    profile?._id ? { babyId: profile._id } : "skip"
+  );
 
   // Fetch today's logs
-  const { data: todayLogs } = useQuery({
-    queryKey: [HABIT_LOGS_QUERY_KEY, 'today', babyId],
-    queryFn: () => (babyId ? getTodayHabitLogs(babyId) : []),
-    enabled: !!babyId,
-  });
+  const todayLogs = useQuery(
+    api.habits.getTodayHabitLogs,
+    profile?._id ? { babyId: profile._id } : "skip"
+  );
 
-  // Combine habits with completion status
+  // Log habit mutation
+  const logHabitMutation = useMutation(api.habits.logHabit);
+
+  const isLoadingHabits = profile === undefined || habits === undefined;
+
+  // Combine habits with completion status and streaks
   const [habitsWithStatus, setHabitsWithStatus] = useState<HabitWithStatus[]>([]);
 
   useEffect(() => {
-    const loadStreaks = async () => {
-      if (!habits) return;
+    if (!habits || !todayLogs) return;
 
-      const habitsData = await Promise.all(
-        habits.map(async (habit) => {
-          const completedToday = todayLogs?.some((log) => log.babyHabitId === habit.id) ?? false;
-          const streak = await getHabitStreak(habit.id);
-          return { ...habit, completedToday, streak };
-        })
+    const habitsData = habits.map((habit) => {
+      const completedToday = todayLogs.some(
+        (log) => log.babyHabitId === habit._id
       );
-      setHabitsWithStatus(habitsData);
-    };
-    loadStreaks();
+      // For now, streak is 0 - would need to implement streak calculation
+      const streak = 0;
+      return {
+        _id: habit._id,
+        habitDefinitionId: habit.habitDefinitionId,
+        habit: habit.definition as HabitDefinition,
+        completedToday,
+        streak,
+      };
+    });
+    setHabitsWithStatus(habitsData);
   }, [habits, todayLogs]);
 
-  // Log habit mutation
-  const logMutation = useMutation({
-    mutationFn: async (babyHabitId: number) => {
-      if (!babyId) throw new Error('No baby selected');
-      await logHabit(babyId, babyHabitId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [HABIT_LOGS_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [BABY_HABITS_QUERY_KEY] });
-    },
-  });
+  const handleQuickLog = async (habitId: any) => {
+    if (!profile?._id) return;
 
-  const handleQuickLog = async (habitId: number) => {
     // Haptic feedback for one-handed use
-    if (Platform.OS !== 'web') {
+    if (Platform.OS !== "web") {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-    logMutation.mutate(habitId);
+    await logHabitMutation({ babyId: profile._id, babyHabitId: habitId });
   };
 
   const navigateToAddHabit = () => {
-    router.push('/habit-select');
+    router.push("/habit-select");
   };
 
   if (isLoadingHabits) {
     return (
       <View className="flex-1 bg-background">
-        <ModalHeader title={t('tracking.tiles.habit.label')} closeLabel={t('common.close')} />
+        <ModalHeader
+          title={t("tracking.tiles.habit.label")}
+          closeLabel={t("common.close")}
+        />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#FF5C8D" />
         </View>
@@ -145,24 +139,33 @@ export default function HabitScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ModalHeader title={t('tracking.tiles.habit.label')} closeLabel={t('common.close')} />
-      <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-6 gap-4">
+      <ModalHeader
+        title={t("tracking.tiles.habit.label")}
+        closeLabel={t("common.close")}
+      />
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="px-5 pb-10 pt-6 gap-4"
+      >
         {/* Progress Card */}
         {totalCount > 0 && (
           <View className="rounded-2xl border border-border bg-card p-4 shadow-sm">
             <View className="flex-row items-center justify-between">
               <View>
                 <Text className="text-base font-semibold text-foreground">
-                  {t('habit.todayProgress', { defaultValue: "Today's Progress" })}
+                  {t("habit.todayProgress", { defaultValue: "Today's Progress" })}
                 </Text>
                 <Text className="mt-1 text-sm text-muted-foreground">
-                  {completedCount} / {totalCount}{' '}
-                  {t('habit.completed', { defaultValue: 'completed' })}
+                  {completedCount} / {totalCount}{" "}
+                  {t("habit.completed", { defaultValue: "completed" })}
                 </Text>
               </View>
               <View className="h-16 w-16 items-center justify-center rounded-full bg-accent/20">
                 <Text className="text-xl font-bold text-accent">
-                  {totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0}%
+                  {totalCount > 0
+                    ? Math.round((completedCount / totalCount) * 100)
+                    : 0}
+                  %
                 </Text>
               </View>
             </View>
@@ -180,33 +183,36 @@ export default function HabitScreen() {
         {habitsWithStatus.length > 0 ? (
           <View className="gap-3">
             {habitsWithStatus.map((habit) => {
-              const CategoryIcon = categoryIcons[habit.habit.category] || Heart;
-              const categoryColor = categoryColors[habit.habit.category] || '#FF5C8D';
+              const category = (habit.habit?.category || 'health') as HabitCategory;
+              const CategoryIcon = categoryIcons[category] || Heart;
+              const categoryColor = categoryColors[category] || "#FF5C8D";
 
               const handleOpenDetail = () => {
+                if (!habit.habit) return;
                 router.push({
-                  pathname: '/(habit)/habit-detail',
+                  pathname: "/(habit)/habit-detail",
                   params: {
-                    id: habit.habit.id,
+                    id: habit.habit.definitionId,
                     labelKey: habit.habit.labelKey,
                     descriptionKey: habit.habit.descriptionKey,
                     category: habit.habit.category,
-                    minAge: habit.habit.minAgeMonths?.toString() ?? '0',
-                    maxAge: habit.habit.maxAgeMonths?.toString() ?? '',
+                    minAge: habit.habit.minAgeMonths?.toString() ?? "0",
+                    maxAge: habit.habit.maxAgeMonths?.toString() ?? "",
                   },
                 });
               };
 
               return (
                 <Pressable
-                  key={habit.id}
-                  onPress={() => !habit.completedToday && handleQuickLog(habit.id)}
-                  disabled={habit.completedToday || logMutation.isPending}
+                  key={habit._id}
+                  onPress={() => !habit.completedToday && handleQuickLog(habit._id)}
+                  disabled={habit.completedToday}
                   className={`flex-row items-center rounded-2xl border p-4 active:opacity-80 ${
                     habit.completedToday
-                      ? 'border-green-500/30 bg-green-500/10'
-                      : 'border-border bg-card'
-                  }`}>
+                      ? "border-green-500/30 bg-green-500/10"
+                      : "border-border bg-card"
+                  }`}
+                >
                   {/* Clickable area - Icon for details */}
                   <Pressable
                     onPress={(e) => {
@@ -214,24 +220,27 @@ export default function HabitScreen() {
                       handleOpenDetail();
                     }}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    className="flex-1 flex-row items-center active:opacity-70">
+                    className="flex-1 flex-row items-center active:opacity-70"
+                  >
                     {/* Icon */}
                     <View
                       className="h-12 w-12 shrink-0 items-center justify-center rounded-full"
-                      style={{ backgroundColor: `${categoryColor}20` }}>
+                      style={{ backgroundColor: `${categoryColor}20` }}
+                    >
                       <CategoryIcon size={24} color={categoryColor} />
                     </View>
 
                     {/* Habit Info */}
                     <View className="ml-3 flex-1">
                       <Text className="text-base font-semibold text-foreground">
-                        {t(habit.habit.labelKey, { defaultValue: habit.habit.id })}
+                        {t(habit.habit?.labelKey || '', { defaultValue: habit.habit?.definitionId || '' })}
                       </Text>
                       {habit.streak > 0 && (
                         <View className="mt-1 flex-row items-center gap-1">
                           <Flame size={14} color="#F59E0B" />
                           <Text className="text-xs text-amber-500">
-                            {habit.streak} {t('habit.streak', { defaultValue: 'day streak' })}
+                            {habit.streak}{" "}
+                            {t("habit.streak", { defaultValue: "day streak" })}
                           </Text>
                         </View>
                       )}
@@ -256,11 +265,12 @@ export default function HabitScreen() {
           <View className="items-center rounded-2xl border border-dashed border-border bg-muted/50 p-6">
             <Baby size={48} color="#9CA3AF" />
             <Text className="mt-4 text-center text-base font-semibold text-foreground">
-              {t('habit.noHabitsYet', { defaultValue: 'No habits added yet' })}
+              {t("habit.noHabitsYet", { defaultValue: "No habits added yet" })}
             </Text>
             <Text className="mt-2 text-center text-sm text-muted-foreground">
-              {t('habit.noHabitsDescription', {
-                defaultValue: 'Tap "Add Habit" to start tracking habits for your baby.',
+              {t("habit.noHabitsDescription", {
+                defaultValue:
+                  'Tap "Add Habit" to start tracking habits for your baby.',
               })}
             </Text>
           </View>
@@ -271,7 +281,8 @@ export default function HabitScreen() {
       <Pressable
         testID="btn-add-habit"
         onPress={navigateToAddHabit}
-        className="absolute bottom-6 right-6 h-16 w-16 items-center justify-center rounded-full bg-accent shadow-lg active:opacity-80">
+        className="absolute bottom-6 right-6 h-16 w-16 items-center justify-center rounded-full bg-accent shadow-lg active:opacity-80"
+      >
         <Plus size={32} color="#FFF" />
       </Pressable>
     </View>

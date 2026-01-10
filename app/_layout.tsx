@@ -1,11 +1,15 @@
+// Polyfill window for Convex compatibility in React Native
+if (typeof window !== 'undefined' && !window.addEventListener) {
+  (window as any).addEventListener = () => {};
+  (window as any).removeEventListener = () => {};
+}
+
 import '@/global.css';
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from '@react-navigation/native';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useReactQueryDevTools } from '@dev-plugins/react-query';
 import { useEffect } from 'react';
 import { LogBox } from 'react-native';
 import 'react-native-reanimated';
@@ -19,14 +23,14 @@ import { LocalizationProvider } from '@/localization/LocalizationProvider';
 import { DatabaseInitializer } from '@/pages/root-layout/DatabaseInitializer';
 import { NavigationStack } from '@/pages/root-layout/NavigationStack';
 
-const queryClient = new QueryClient({});
-
 export const unstable_settings = {
   anchor: '(tabs)/tracking',
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* ignore */
+});
 
 export default function RootLayout() {
   // Suppress expo-notifications Expo Go warnings (we use local notifications, not push)
@@ -44,7 +48,9 @@ export default function RootLayout() {
     // Hide splash screen once we are ready to render
     // In this app, we want to show the MigrationHandler UI if database setup takes time,
     // so we hide the native splash screen as soon as React mounts.
-    SplashScreen.hideAsync();
+    SplashScreen.hideAsync().catch(() => {
+      // Ignore error if splash screen is already hidden or not registered
+    });
   }, []);
 
   return (
@@ -58,23 +64,18 @@ export default function RootLayout() {
 
 function AppProviders() {
   const { colorScheme } = useTheme();
-
-  useReactQueryDevTools(queryClient);
-
   const navTheme = colorScheme === 'dark' ? DarkTheme : DefaultTheme;
 
   return (
     <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <NotificationProvider>
-        <QueryClientProvider client={queryClient}>
-          <DatabaseInitializer>
-            <FeatureFlagProvider>
-              <NavigationThemeProvider value={navTheme}>
-                <NavigationStack colorScheme={colorScheme} />
-              </NavigationThemeProvider>
-            </FeatureFlagProvider>
-          </DatabaseInitializer>
-        </QueryClientProvider>
+        <DatabaseInitializer>
+          <FeatureFlagProvider>
+            <NavigationThemeProvider value={navTheme}>
+              <NavigationStack colorScheme={colorScheme} />
+            </NavigationThemeProvider>
+          </FeatureFlagProvider>
+        </DatabaseInitializer>
       </NotificationProvider>
     </SafeAreaProvider>
   );

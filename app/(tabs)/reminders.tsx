@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
-import { useMemo, useState, useEffect } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { useQuery } from 'convex/react';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { Calendar, Sparkles } from 'lucide-react-native';
+import { z } from 'zod';
 
 import { Badge } from '@/components/ui/badge';
 import {
@@ -10,67 +11,38 @@ import {
 } from '../../pages/scheduling/components/ReminderDetailModal';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { BABY_HABITS_QUERY_KEY, SCHEDULED_NOTIFICATIONS_QUERY_KEY } from '@/constants/query-keys';
-import { getActiveBabyProfileId } from '@/database/baby-profile';
-import { getBabyHabitsWithReminders, type BabyHabitWithDefinition } from '@/database/habits';
-import {
-  getActiveScheduledNotifications,
-  type ScheduledNotificationRecord,
-} from '@/database/scheduled-notifications';
+import { api } from '@/convex/_generated/api';
+import { type BabyHabitWithDefinition } from '@/database/habits';
+import { type ScheduledNotificationDoc } from '@/database/scheduled-notifications';
 import { safeParseNotificationData } from '@/lib/json-parse';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { reminderTimeToDate } from '@/lib/date';
 
 export default function SchedulingScreen() {
   const { t, locale } = useLocalization();
-  const [babyId, setBabyId] = useState<number | null>(null);
   const [selectedSegment, setSelectedSegment] = useState<'today' | 'upcoming'>('today');
   const [selectedReminder, setSelectedReminder] = useState<UnifiedReminder | null>(null);
 
-  // Load baby ID
-  useEffect(() => {
-    const loadBabyId = async () => {
-      const id = await getActiveBabyProfileId();
-      setBabyId(id);
-    };
-    loadBabyId();
-  }, []);
+  // Get active baby profile
+  const babyProfile = useQuery(api.babyProfiles.getActive);
 
   // Fetch scheduled notifications
-  const {
-    data: scheduledNotifications = [],
-    isLoading: isLoadingNotifications,
-    refetch: refetchNotifications,
-    isRefetching: isRefetchingNotifications,
-  } = useQuery<ScheduledNotificationRecord[]>({
-    queryKey: SCHEDULED_NOTIFICATIONS_QUERY_KEY,
-    queryFn: () => getActiveScheduledNotifications(),
-    enabled: !!babyId,
-    staleTime: 15 * 1000,
-    refetchOnWindowFocus: true,
-  });
+  const scheduledNotificationsResult = useQuery(
+    api.scheduledNotifications.list,
+    babyProfile?._id ? { babyId: babyProfile._id } : 'skip'
+  );
+  const scheduledNotifications: ScheduledNotificationDoc[] = scheduledNotificationsResult ?? [];
 
   // Fetch habit reminders
-  const {
-    data: habitReminders = [],
-    isLoading: isLoadingHabits,
-    refetch: refetchHabits,
-    isRefetching: isRefetchingHabits,
-  } = useQuery<BabyHabitWithDefinition[]>({
-    queryKey: [BABY_HABITS_QUERY_KEY, babyId, 'reminders'],
-    queryFn: () => (babyId ? getBabyHabitsWithReminders(babyId) : []),
-    enabled: !!babyId,
-    staleTime: 15 * 1000,
-    refetchOnWindowFocus: true,
-  });
+  const habitRemindersResult = useQuery(
+    api.habits.getBabyHabitsWithReminders,
+    babyProfile?._id ? { babyId: babyProfile._id } : 'skip'
+  );
+  const habitReminders: BabyHabitWithDefinition[] = habitRemindersResult ?? [];
 
-  const isLoading = isLoadingNotifications || isLoadingHabits;
-  const isRefetching = isRefetchingNotifications || isRefetchingHabits;
-
-  const refetch = () => {
-    refetchNotifications();
-    refetchHabits();
-  };
+  const isLoading = babyProfile === undefined ||
+    scheduledNotificationsResult === undefined ||
+    habitRemindersResult === undefined;
 
   const typeLabels = useMemo(
     () => ({
@@ -84,16 +56,12 @@ export default function SchedulingScreen() {
     [t]
   );
 
-  // Type guard for type label keys
+  // Zod schema for type label keys validation
+  const typeLabelKeySchema = z.enum(['feeding', 'pumping', 'sleep', 'diaper', 'habit', 'default']);
+
+  // Type guard using Zod validation
   function isTypeLabelKey(key: string): key is keyof typeof typeLabels {
-    return (
-      key === 'feeding' ||
-      key === 'pumping' ||
-      key === 'sleep' ||
-      key === 'diaper' ||
-      key === 'habit' ||
-      key === 'default'
-    );
+    return typeLabelKeySchema.safeParse(key).success;
   }
 
   // Merge and sort all reminders
@@ -121,7 +89,7 @@ export default function SchedulingScreen() {
 
     // Add habit reminders (for today)
     habitReminders.forEach((habit) => {
-      if (!habit.reminderTime) return;
+      if (!habit.reminderTime || !habit.definition) return;
       const reminderDate = reminderTimeToDate({
         reminderTime: habit.reminderTime,
         reminderDays: habit.reminderDays,
@@ -129,9 +97,9 @@ export default function SchedulingScreen() {
       if (!reminderDate) return;
 
       unified.push({
-        id: `habit-${habit.id}`,
+        id: `habit-${habit._id}`,
         type: 'habit',
-        label: t(habit.habit.labelKey, { defaultValue: habit.habit.id }),
+        label: t(habit.definition.labelKey, { defaultValue: habit.definition.definitionId }),
         scheduledTime: reminderDate,
         category: 'habit',
         source: habit,
@@ -414,8 +382,7 @@ export default function SchedulingScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-4"
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}>
+        contentContainerClassName="px-5 pb-10 pt-4">
         {renderContent()}
       </ScrollView>
 

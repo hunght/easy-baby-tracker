@@ -1,42 +1,40 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, View, KeyboardAvoidingView, Platform } from 'react-native';
-import { z } from 'zod';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useMutation, useQuery } from "convex/react";
+import { Image } from "expo-image";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { useEffect, useState } from "react";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  View,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { z } from "zod";
 
-import { DatePickerField } from '@/components/DatePickerField';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { StickySaveBar } from '@/components/StickySaveBar';
-import { Text } from '@/components/ui/text';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useNotification } from '@/components/NotificationContext';
-import {
-  BABY_PROFILES_QUERY_KEY,
-  BABY_PROFILE_QUERY_KEY,
-  babyProfileByIdKey,
-} from '@/constants/query-keys';
-import {
-  BabyProfilePayload,
-  Gender,
-  getBabyProfileById,
-  saveBabyProfile,
-} from '@/database/baby-profile';
-import { useLocalization } from '@/localization/LocalizationProvider';
-import { ModalHeader } from '@/components/ModalHeader';
-import { deleteAvatar, pickAndUploadAvatar, getAvatarUrl } from '@/lib/avatar-storage';
+import { DatePickerField } from "@/components/DatePickerField";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { StickySaveBar } from "@/components/StickySaveBar";
+import { Text } from "@/components/ui/text";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { useNotification } from "@/components/NotificationContext";
+import { api } from "@/convex/_generated/api";
+import type { Gender } from "@/database/baby-profile";
+import { useLocalization } from "@/localization/LocalizationProvider";
+import { ModalHeader } from "@/components/ModalHeader";
+import { deleteAvatar, pickAndUploadAvatar, getAvatarUrl } from "@/lib/avatar-storage";
 
 const genderSegments: { key: Gender; labelKey: string }[] = [
-  { key: 'unknown', labelKey: 'onboarding.babyProfile.genderOptions.unknown' },
-  { key: 'boy', labelKey: 'onboarding.babyProfile.genderOptions.boy' },
-  { key: 'girl', labelKey: 'onboarding.babyProfile.genderOptions.girl' },
+  { key: "unknown", labelKey: "onboarding.babyProfile.genderOptions.unknown" },
+  { key: "boy", labelKey: "onboarding.babyProfile.genderOptions.boy" },
+  { key: "girl", labelKey: "onboarding.babyProfile.genderOptions.girl" },
 ];
 
 // Zod schema for Gender validation
-const genderSchema = z.enum(['unknown', 'boy', 'girl']);
+const genderSchema = z.enum(["unknown", "boy", "girl"]);
 
 // Type guard using Zod validation
 function isGender(value: unknown): value is Gender {
@@ -46,19 +44,24 @@ function isGender(value: unknown): value is Gender {
 export default function ProfileEditScreen() {
   const { t } = useLocalization();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { showNotification } = useNotification();
   const { babyId } = useLocalSearchParams<{ babyId?: string }>();
-  const numericBabyId = babyId ? Number(babyId) : null;
 
-  const { data: existingProfile, isLoading } = useQuery({
-    queryKey: babyProfileByIdKey(numericBabyId ?? -1),
-    queryFn: () => getBabyProfileById(numericBabyId!),
-    enabled: numericBabyId != null && Number.isFinite(numericBabyId),
-  });
+  // Fetch existing profile if editing
+  const existingProfile = useQuery(
+    api.babyProfiles.getById,
+    babyId ? { babyId: babyId as any } : "skip"
+  );
 
-  const [nickname, setNickname] = useState(t('common.nicknamePlaceholder'));
-  const [gender, setGender] = useState<Gender>('unknown');
+  // Convex mutations
+  const createProfile = useMutation(api.babyProfiles.create);
+  const updateProfile = useMutation(api.babyProfiles.update);
+  const setActiveProfile = useMutation(api.babyProfiles.setActive);
+
+  const isLoading = babyId && existingProfile === undefined;
+
+  const [nickname, setNickname] = useState(t("common.nicknamePlaceholder"));
+  const [gender, setGender] = useState<Gender>("unknown");
   const [birthDate, setBirthDate] = useState(new Date());
   const [dueDate, setDueDate] = useState(new Date());
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -69,23 +72,18 @@ export default function ProfileEditScreen() {
   useEffect(() => {
     if (existingProfile) {
       setNickname(existingProfile.nickname);
-      setGender(existingProfile.gender);
+      setGender(existingProfile.gender as Gender);
       setBirthDate(new Date(existingProfile.birthDate));
       setDueDate(new Date(existingProfile.dueDate));
       setAvatarUri(existingProfile.avatarUri ?? null);
     }
   }, [existingProfile]);
 
-  // Debug: log avatarUri changes
-  useEffect(() => {
-    console.log('[ProfileEdit] avatarUri state changed to:', avatarUri);
-  }, [avatarUri]);
-
   const handleTakePhoto = async () => {
     setShowPhotoModal(false);
     setPhotoProcessing(true);
     try {
-      const uploadedUrl = await pickAndUploadAvatar('camera');
+      const uploadedUrl = await pickAndUploadAvatar("camera");
       if (uploadedUrl) {
         // Delete old avatar if exists
         if (avatarUri) {
@@ -94,8 +92,8 @@ export default function ProfileEditScreen() {
         setAvatarUri(uploadedUrl);
       }
     } catch (error) {
-      console.error('Error in handleTakePhoto:', error);
-      showNotification(t('common.photoSaveError'), 'error');
+      console.error("Error in handleTakePhoto:", error);
+      showNotification(t("common.photoSaveError"), "error");
     } finally {
       setPhotoProcessing(false);
     }
@@ -105,7 +103,7 @@ export default function ProfileEditScreen() {
     setShowPhotoModal(false);
     setPhotoProcessing(true);
     try {
-      const uploadedUrl = await pickAndUploadAvatar('library');
+      const uploadedUrl = await pickAndUploadAvatar("library");
       if (uploadedUrl) {
         // Delete old avatar if exists
         if (avatarUri) {
@@ -114,8 +112,8 @@ export default function ProfileEditScreen() {
         setAvatarUri(uploadedUrl);
       }
     } catch (error) {
-      console.error('Error in handleChoosePhoto:', error);
-      showNotification(t('common.photoSaveError'), 'error');
+      console.error("Error in handleChoosePhoto:", error);
+      showNotification(t("common.photoSaveError"), "error");
     } finally {
       setPhotoProcessing(false);
     }
@@ -128,7 +126,7 @@ export default function ProfileEditScreen() {
     try {
       await deleteAvatar(avatarUri);
     } catch (error) {
-      console.warn('Failed to delete photo', error);
+      console.warn("Failed to delete photo", error);
     }
     setAvatarUri(null);
   };
@@ -147,7 +145,7 @@ export default function ProfileEditScreen() {
 
     try {
       setIsSaving(true);
-      const payload: BabyProfilePayload = {
+      const payload = {
         nickname,
         gender,
         birthDate: birthDate.toISOString(),
@@ -156,41 +154,51 @@ export default function ProfileEditScreen() {
         concerns: existingProfile?.concerns ?? [],
       };
 
-      await saveBabyProfile(payload, { babyId: numericBabyId ?? undefined });
-      await queryClient.invalidateQueries({ queryKey: BABY_PROFILES_QUERY_KEY });
-      await queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
-      if (numericBabyId) {
-        await queryClient.invalidateQueries({ queryKey: babyProfileByIdKey(numericBabyId) });
+      if (babyId) {
+        // Editing existing profile
+        await updateProfile({ babyId: babyId as any, ...payload });
+        router.back();
+      } else {
+        // Creating new profile - set as active and navigate to homepage
+        const newBabyId = await createProfile(payload);
+        await setActiveProfile({ babyId: newBabyId });
+        router.replace("/(tabs)/tracking");
       }
-      router.back();
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+      showNotification(t("common.saveError"), "error");
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (isLoading && numericBabyId) {
+  if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <Text className="font-semibold text-primary">{t('common.loadingProfile')}</Text>
+        <Text className="font-semibold text-primary">
+          {t("common.loadingProfile")}
+        </Text>
       </View>
     );
   }
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1 }}
-      className="bg-background">
+      className="bg-background"
+    >
       <View className="flex-1 bg-background">
         <ModalHeader
-          title={numericBabyId ? t('profileEdit.editTitle') : t('profileEdit.createTitle')}
-          closeLabel={t('common.close')}
+          title={babyId ? t("profileEdit.editTitle") : t("profileEdit.createTitle")}
+          closeLabel={t("common.close")}
         />
 
         <ScrollView
           contentContainerClassName="px-5 pb-28 pt-4"
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Photo Section */}
           <Pressable
             onPress={() => {
@@ -198,7 +206,8 @@ export default function ProfileEditScreen() {
               setShowPhotoModal(true);
             }}
             disabled={photoProcessing}
-            className="mb-6 items-center">
+            className="mb-6 items-center"
+          >
             <View className="relative">
               <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-muted/30">
                 {avatarUri ? (
@@ -210,7 +219,10 @@ export default function ProfileEditScreen() {
                     cachePolicy="none"
                   />
                 ) : (
-                  <Image source={require('@/assets/images/icon.png')} className="h-20 w-20" />
+                  <Image
+                    source={require("@/assets/images/icon.png")}
+                    className="h-20 w-20"
+                  />
                 )}
               </View>
               {/* Camera badge */}
@@ -219,19 +231,19 @@ export default function ProfileEditScreen() {
               </View>
             </View>
             <Text className="mt-3 text-base font-semibold text-accent">
-              {avatarUri ? t('profileEdit.changePhoto') : t('common.addPhoto')}
+              {avatarUri ? t("profileEdit.changePhoto") : t("common.addPhoto")}
             </Text>
           </Pressable>
 
           {/* Nickname */}
           <View className="mb-5">
             <Label className="mb-2 text-base font-semibold text-muted-foreground">
-              {t('common.nickname')}
+              {t("common.nickname")}
             </Label>
             <Input
               value={nickname}
               onChangeText={setNickname}
-              placeholder={t('common.nicknamePlaceholder')}
+              placeholder={t("common.nicknamePlaceholder")}
               className="h-12 text-base"
             />
           </View>
@@ -239,14 +251,15 @@ export default function ProfileEditScreen() {
           {/* Gender - Full width 3-segment toggle */}
           <View className="mb-5">
             <Label className="mb-2 text-base font-semibold text-muted-foreground">
-              {t('common.gender')}
+              {t("common.gender")}
             </Label>
             <ToggleGroup
               type="single"
               value={gender}
               onValueChange={handleGenderChange}
               variant="outline"
-              className="w-full">
+              className="w-full"
+            >
               {genderSegments.map((segment, index) => (
                 <ToggleGroupItem
                   key={segment.key}
@@ -254,8 +267,11 @@ export default function ProfileEditScreen() {
                   isFirst={index === 0}
                   isLast={index === genderSegments.length - 1}
                   className="flex-1"
-                  aria-label={t(segment.labelKey)}>
-                  <Text className="text-base font-semibold">{t(segment.labelKey)}</Text>
+                  aria-label={t(segment.labelKey)}
+                >
+                  <Text className="text-base font-semibold">
+                    {t(segment.labelKey)}
+                  </Text>
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>
@@ -264,7 +280,7 @@ export default function ProfileEditScreen() {
           {/* Birthdate - Full row tappable */}
           <View className="mb-5">
             <DatePickerField
-              label={t('common.birthdate')}
+              label={t("common.birthdate")}
               value={birthDate}
               onChange={setBirthDate}
             />
@@ -272,12 +288,16 @@ export default function ProfileEditScreen() {
 
           {/* Due Date - Full row tappable */}
           <View className="mb-5">
-            <DatePickerField label={t('common.dueDate')} value={dueDate} onChange={setDueDate} />
+            <DatePickerField
+              label={t("common.dueDate")}
+              value={dueDate}
+              onChange={setDueDate}
+            />
           </View>
 
           {/* Info Text */}
           <Text className="text-sm leading-relaxed text-muted-foreground">
-            {t('profileEdit.info')}
+            {t("profileEdit.info")}
           </Text>
         </ScrollView>
 
@@ -286,48 +306,64 @@ export default function ProfileEditScreen() {
           visible={showPhotoModal}
           transparent
           animationType="fade"
-          onRequestClose={() => setShowPhotoModal(false)}>
+          onRequestClose={() => setShowPhotoModal(false)}
+        >
           <Pressable
             className="flex-1 justify-end bg-black/50"
-            onPress={() => setShowPhotoModal(false)}>
+            onPress={() => setShowPhotoModal(false)}
+          >
             <Pressable onPress={(e) => e.stopPropagation()}>
               <View className="rounded-t-3xl bg-card px-5 pb-10 pt-6">
                 <Text className="mb-4 text-center text-lg font-bold text-foreground">
-                  {t('profileEdit.photoOptions')}
+                  {t("profileEdit.photoOptions")}
                 </Text>
 
                 <Pressable
                   onPress={handleTakePhoto}
-                  className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-accent">
+                  className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-accent"
+                >
                   <MaterialCommunityIcons name="camera" size={22} color="#FFF" />
-                  <Text className="text-base font-semibold text-white">{t('diary.takePhoto')}</Text>
+                  <Text className="text-base font-semibold text-white">
+                    {t("diary.takePhoto")}
+                  </Text>
                 </Pressable>
 
                 <Pressable
                   onPress={handleChoosePhoto}
-                  className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-muted">
-                  <MaterialCommunityIcons name="image-multiple" size={22} color="#666" />
+                  className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-muted"
+                >
+                  <MaterialCommunityIcons
+                    name="image-multiple"
+                    size={22}
+                    color="#666"
+                  />
                   <Text className="text-base font-semibold text-foreground">
-                    {t('diary.choosePhoto')}
+                    {t("diary.choosePhoto")}
                   </Text>
                 </Pressable>
 
                 {avatarUri && (
                   <Pressable
                     onPress={handleRemovePhoto}
-                    className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-red-500/10">
-                    <MaterialCommunityIcons name="trash-can-outline" size={22} color="#EF4444" />
+                    className="mb-3 h-14 flex-row items-center justify-center gap-3 rounded-xl bg-red-500/10"
+                  >
+                    <MaterialCommunityIcons
+                      name="trash-can-outline"
+                      size={22}
+                      color="#EF4444"
+                    />
                     <Text className="text-base font-semibold text-red-500">
-                      {t('diary.removePhoto')}
+                      {t("diary.removePhoto")}
                     </Text>
                   </Pressable>
                 )}
 
                 <Pressable
                   onPress={() => setShowPhotoModal(false)}
-                  className="h-14 items-center justify-center rounded-xl">
+                  className="h-14 items-center justify-center rounded-xl"
+                >
                   <Text className="text-base font-semibold text-muted-foreground">
-                    {t('common.cancel')}
+                    {t("common.cancel")}
                   </Text>
                 </Pressable>
               </View>
@@ -339,7 +375,7 @@ export default function ProfileEditScreen() {
           onPress={handleSave}
           isSaving={isSaving}
           disabled={!nickname.trim()}
-          label={numericBabyId ? t('common.saveChanges') : t('common.continue')}
+          label={babyId ? t("common.saveChanges") : t("common.continue")}
         />
       </View>
     </KeyboardAvoidingView>

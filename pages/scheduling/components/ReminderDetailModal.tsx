@@ -1,14 +1,13 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { Clock, ExternalLink, X } from 'lucide-react-native';
+import { useState } from 'react';
 import { Alert, Modal, Pressable, View } from 'react-native';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
-import { SCHEDULED_NOTIFICATIONS_QUERY_KEY } from '@/constants/query-keys';
 import { type BabyHabitWithDefinition } from '@/database/habits';
-import { type ScheduledNotificationRecord } from '@/database/scheduled-notifications';
+import { type ScheduledNotificationDoc } from '@/database/scheduled-notifications';
 import { cancelScheduledNotification } from '@/lib/notification-scheduler';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
@@ -19,7 +18,7 @@ export type UnifiedReminder = {
   label: string;
   scheduledTime: Date;
   category: string;
-  source: ScheduledNotificationRecord | BabyHabitWithDefinition;
+  source: ScheduledNotificationDoc | BabyHabitWithDefinition;
   notificationId?: string;
 };
 
@@ -31,7 +30,7 @@ type ReminderDetailModalProps = {
 export function ReminderDetailModal({ reminder, onClose }: ReminderDetailModalProps) {
   const { t, locale } = useLocalization();
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const [isCanceling, setIsCanceling] = useState(false);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString(locale, {
@@ -78,23 +77,23 @@ export function ReminderDetailModal({ reminder, onClose }: ReminderDetailModalPr
 
   // Type guard for habit source
   function isHabitSource(
-    source: ScheduledNotificationRecord | BabyHabitWithDefinition
+    source: ScheduledNotificationDoc | BabyHabitWithDefinition
   ): source is BabyHabitWithDefinition {
-    return 'habit' in source;
+    return 'definition' in source;
   }
 
   const handleEdit = () => {
     onClose();
-    if (reminder?.type === 'habit' && isHabitSource(reminder.source)) {
+    if (reminder?.type === 'habit' && isHabitSource(reminder.source) && reminder.source.definition) {
       router.push({
         pathname: '/(habit)/habit-detail',
         params: {
-          id: reminder.source.habit.id,
-          labelKey: reminder.source.habit.labelKey,
-          descriptionKey: reminder.source.habit.descriptionKey,
-          category: reminder.source.habit.category,
-          minAge: reminder.source.habit.minAgeMonths?.toString() ?? '0',
-          maxAge: reminder.source.habit.maxAgeMonths?.toString() ?? '',
+          id: reminder.source.definition.definitionId,
+          labelKey: reminder.source.definition.labelKey,
+          descriptionKey: reminder.source.definition.descriptionKey,
+          category: reminder.source.definition.category,
+          minAge: reminder.source.definition.minAgeMonths?.toString() ?? '0',
+          maxAge: reminder.source.definition.maxAgeMonths?.toString() ?? '',
         },
       });
     } else {
@@ -102,21 +101,17 @@ export function ReminderDetailModal({ reminder, onClose }: ReminderDetailModalPr
     }
   };
 
-  const cancelMutation = useMutation({
-    mutationFn: async (notificationId: string) => cancelScheduledNotification(notificationId),
-    onSuccess: () => {
+  const handleCancelReminder = async () => {
+    if (!reminder?.notificationId) return;
+    setIsCanceling(true);
+    try {
+      await cancelScheduledNotification(reminder.notificationId);
       Alert.alert(t('scheduling.cancelSuccessTitle'), t('scheduling.cancelSuccessMessage'));
-      queryClient.invalidateQueries({ queryKey: SCHEDULED_NOTIFICATIONS_QUERY_KEY });
       onClose();
-    },
-    onError: () => {
+    } catch {
       Alert.alert(t('scheduling.cancelErrorTitle'), t('scheduling.cancelErrorMessage'));
-    },
-  });
-
-  const handleCancelReminder = () => {
-    if (reminder?.notificationId) {
-      cancelMutation.mutate(reminder.notificationId);
+    } finally {
+      setIsCanceling(false);
     }
   };
 
@@ -184,9 +179,9 @@ export function ReminderDetailModal({ reminder, onClose }: ReminderDetailModalPr
                     {t('scheduling.habitCategory', { defaultValue: 'Category' })}
                   </Text>
                   <Text className="text-base text-foreground">
-                    {isHabitSource(reminder.source)
-                      ? t(`habit.category.${reminder.source.habit.category}`, {
-                          defaultValue: reminder.source.habit.category,
+                    {isHabitSource(reminder.source) && reminder.source.definition
+                      ? t(`habit.category.${reminder.source.definition.category}`, {
+                          defaultValue: reminder.source.definition.category,
                         })
                       : ''}
                   </Text>
@@ -213,9 +208,9 @@ export function ReminderDetailModal({ reminder, onClose }: ReminderDetailModalPr
                     variant="outline"
                     className="h-14 flex-row items-center justify-center gap-2 rounded-2xl border-destructive"
                     onPress={handleCancelReminder}
-                    disabled={cancelMutation.isPending}>
+                    disabled={isCanceling}>
                     <Text className="text-base font-semibold text-destructive">
-                      {cancelMutation.isPending
+                      {isCanceling
                         ? t('common.loading', { defaultValue: 'Loading...' })
                         : t('scheduling.cancelReminder', { defaultValue: 'Cancel Reminder' })}
                     </Text>

@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
 import { seedPredefinedFormulas } from '@/database/predefined-formulas';
-import { seedHabitDefinitions } from '@/database/habits';
 import { cancelStoredScheduledNotification } from '@/lib/notification-scheduler';
 import {
   setNotificationHandler,
@@ -33,11 +32,8 @@ export function MigrationCompleteHandler({ children }: { children: React.ReactNo
       console.error('[MigrationCompleteHandler] Failed to seed formulas:', error);
     });
 
-    // Seed habit definitions if not already present
-    console.log('[MigrationCompleteHandler] Seeding habit definitions');
-    seedHabitDefinitions().catch((error) => {
-      console.error('[MigrationCompleteHandler] Failed to seed habits:', error);
-    });
+    // Note: Habit definitions are seeded via Convex seed script
+    // See convex/habits.ts seedDefinitions function
 
     // Set up notification handler (only available on native)
     if (setNotificationHandler) {

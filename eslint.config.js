@@ -113,15 +113,14 @@ module.exports = defineConfig([
             'hooks/use-color-scheme.web.ts',
             'lib/format-date.ts',
             'lib/logger.ts',
-            'lib/supabase-types.ts',
-            'lib/supabase.ts',
             'lib/tracking-utils.ts',
             'localization/translations.ts',
             'pages/onboarding/components/ConcernsStep.tsx',
             'pages/onboarding/components/FeaturesStep.tsx',
             'pages/root-layout/MigrationCompleteHandler.tsx',
-            'pages/root-layout/SupabaseAuthProvider.tsx',
-            'lib/merge-anonymous-data.ts', // Used internally by SupabaseAuthProvider
+            'pages/root-layout/ConvexAuthProvider.tsx', // Used by DatabaseInitializer
+            'lib/convex.ts', // Convex client - used by ConvexAuthProvider
+            'convex/**', // Convex backend functions
           ],
         },
       ],

@@ -1,172 +1,124 @@
-import { useFocusEffect } from '@react-navigation/native';
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
-import { ActivityIndicator, SectionList, View } from 'react-native';
+import { useFocusEffect } from "@react-navigation/native";
+import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "expo-router";
+import React, { useMemo, useState, useCallback } from "react";
+import { ActivityIndicator, SectionList, View } from "react-native";
 
-import { TimelineFilters } from '@/pages/timeline/components/TimelineFilters';
-import { TimelineItem } from '@/pages/timeline/components/TimelineItem';
-import { useNotification } from '@/components/NotificationContext';
-import { Text } from '@/components/ui/text';
-import { Button } from '@/components/ui/button';
-import { useBrandColor } from '@/hooks/use-brand-color';
-import {
-  DIAPER_CHANGES_QUERY_KEY,
-  DIARY_ENTRIES_QUERY_KEY,
-  FEEDINGS_QUERY_KEY,
-  GROWTH_RECORDS_QUERY_KEY,
-  HEALTH_RECORDS_QUERY_KEY,
-  PUMPINGS_QUERY_KEY,
-  SLEEP_SESSIONS_QUERY_KEY,
-  TIMELINE_ACTIVITIES_QUERY_KEY,
-} from '@/constants/query-keys';
-import {
-  deleteTimelineActivity,
-  getTimelineActivities,
-  TimelineActivity,
-  TimelineActivityType,
-} from '@/database/timeline';
-import { useLocalization } from '@/localization/LocalizationProvider';
-import { useFeatureFlags } from '@/context/FeatureFlagContext';
+import { TimelineFilters } from "@/pages/timeline/components/TimelineFilters";
+import { TimelineItem, type TimelineItemData } from "@/pages/timeline/components/TimelineItem";
+import type { Id } from "@/convex/_generated/dataModel";
+import { useNotification } from "@/components/NotificationContext";
+import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
+import { useBrandColor } from "@/hooks/use-brand-color";
+import { api } from "@/convex/_generated/api";
+import type { TimelineActivityType } from "@/database/timeline";
+import { useLocalization } from "@/localization/LocalizationProvider";
+import { useFeatureFlags } from "@/context/FeatureFlagContext";
 
 export function TimelineTabContent() {
   const router = useRouter();
   const { t } = useLocalization();
   const { features } = useFeatureFlags();
-  const queryClient = useQueryClient();
   const { showNotification } = useNotification();
   const brandColors = useBrandColor();
-  const [filter, setFilter] = React.useState<TimelineActivityType | 'all'>('all');
+  const [filter, setFilter] = useState<TimelineActivityType | "all">("all");
+  const [beforeTime, setBeforeTime] = useState<number | undefined>(undefined);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const initialPageParam: number | undefined = undefined;
+  // Get active baby profile
+  const profile = useQuery(api.babyProfiles.getActive);
 
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetching,
-    isFetchingNextPage,
-    refetch,
-    isRefetching,
-  } = useInfiniteQuery({
-    queryKey: [...TIMELINE_ACTIVITIES_QUERY_KEY, filter],
-    queryFn: async ({ pageParam }: { pageParam: number | undefined }) => {
-      const beforeTime = pageParam ?? Math.floor(Date.now() / 1000) + 86400; // Future buffer
+  // Build filter types based on enabled features
+  const filterTypes = useMemo(() => {
+    if (filter !== "all") {
+      return [filter];
+    }
+    const validTypes: TimelineActivityType[] = [
+      "feeding",
+      "sleep",
+      "diaper",
+      "health",
+      "growth",
+      "pumping",
+      "diary",
+    ];
+    return validTypes.filter((type) => features[type]);
+  }, [filter, features]);
 
-      let filterTypes: TimelineActivityType[] | undefined;
+  // Query timeline activities
+  const activities =
+    useQuery(
+      api.timeline.getActivities,
+      profile?._id
+        ? {
+            babyId: profile._id,
+            beforeTime: beforeTime ?? Math.floor(Date.now() / 1000) + 86400,
+            limit: 50,
+            filterTypes,
+          }
+        : "skip"
+    ) ?? [];
 
-      if (filter !== 'all') {
-        filterTypes = [filter];
-      } else {
-        // If 'all', only include enabled features
-        const validTypes: TimelineActivityType[] = [
-          'feeding',
-          'sleep',
-          'diaper',
-          'health',
-          'growth',
-          'pumping',
-          'diary',
-        ];
-        filterTypes = validTypes.filter((type) => features[type]);
-      }
-
-      return getTimelineActivities({
-        beforeTime,
-        limit: 20,
-        filterTypes,
-      });
-    },
-    getNextPageParam: (lastPage) => {
-      if (lastPage.length < 20) {
-        return undefined; // No more pages
-      }
-      // Return the timestamp of the last item for the next page
-      return lastPage[lastPage.length - 1]?.timestamp;
-    },
-    initialPageParam,
-  });
-
-  // Flatten all pages into a single array
-  const activities = useMemo(() => {
-    return data?.pages.flat() ?? [];
-  }, [data]);
+  // Delete mutation
+  const deleteActivity = useMutation(api.timeline.deleteActivity);
 
   // Refetch when screen comes into focus
   useFocusEffect(
-    React.useCallback(() => {
-      refetch();
-    }, [refetch])
+    useCallback(() => {
+      setBeforeTime(undefined);
+      setRefreshKey((k) => k + 1);
+    }, [])
   );
 
+  const handleRefresh = () => {
+    setBeforeTime(undefined);
+    setRefreshKey((k) => k + 1);
+  };
+
   const handleLoadMore = () => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    if (activities.length > 0) {
+      const lastItem = activities[activities.length - 1];
+      if (lastItem && lastItem.time < (beforeTime ?? Infinity)) {
+        setBeforeTime(lastItem.time);
+      }
     }
   };
 
-  const deleteMutation = useMutation({
-    mutationFn: (activity: TimelineActivity) => deleteTimelineActivity(activity),
-    onSuccess: (_, activity) => {
-      // Invalidate timeline queries
-      queryClient.invalidateQueries({ queryKey: TIMELINE_ACTIVITIES_QUERY_KEY });
-
-      // Invalidate the specific activity type query
-      switch (activity.type) {
-        case 'diaper':
-          queryClient.invalidateQueries({ queryKey: DIAPER_CHANGES_QUERY_KEY });
-          break;
-        case 'feeding':
-          queryClient.invalidateQueries({ queryKey: FEEDINGS_QUERY_KEY });
-          break;
-        case 'sleep':
-          queryClient.invalidateQueries({ queryKey: SLEEP_SESSIONS_QUERY_KEY });
-          break;
-        case 'growth':
-          queryClient.invalidateQueries({ queryKey: GROWTH_RECORDS_QUERY_KEY });
-          break;
-        case 'health':
-          queryClient.invalidateQueries({ queryKey: HEALTH_RECORDS_QUERY_KEY });
-          break;
-        case 'pumping':
-          queryClient.invalidateQueries({ queryKey: PUMPINGS_QUERY_KEY });
-          break;
-        case 'diary':
-          queryClient.invalidateQueries({ queryKey: DIARY_ENTRIES_QUERY_KEY });
-          break;
-      }
-
-      showNotification(t('common.deleteSuccess'), 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to delete activity:', error);
-      showNotification(t('common.deleteError'), 'error');
-    },
-  });
-
-  const handleDelete = (activity: TimelineActivity) => {
-    deleteMutation.mutate(activity);
+  const handleDelete = async (item: TimelineItemData) => {
+    try {
+      await deleteActivity({
+        activityType: item.type,
+        activityId: item.id as Id<"diaperChanges" | "feedings" | "growthRecords" | "healthRecords" | "pumpings" | "sleepSessions" | "diaryEntries">,
+      });
+      showNotification(t("common.deleteSuccess"), "success");
+    } catch (error) {
+      console.error("Failed to delete activity:", error);
+      showNotification(t("common.deleteError"), "error");
+    }
   };
 
-  const groupActivitiesByDate = (items: TimelineActivity[]) => {
-    const groups: { title: string; data: TimelineActivity[] }[] = [];
+  const groupActivitiesByDate = (
+    items: typeof activities
+  ): { title: string; data: typeof activities }[] => {
+    const groups: { title: string; data: typeof activities }[] = [];
 
     items.forEach((item) => {
-      const date = new Date(item.timestamp * 1000);
+      const date = new Date(item.time * 1000);
       const today = new Date();
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
 
       let title = date.toLocaleDateString(undefined, {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
+        weekday: "long",
+        month: "long",
+        day: "numeric",
       });
 
       if (date.toDateString() === today.toDateString()) {
-        title = 'Today';
+        title = "Today";
       } else if (date.toDateString() === yesterday.toDateString()) {
-        title = 'Yesterday';
+        title = "Yesterday";
       }
 
       const lastGroup = groups[groups.length - 1];
@@ -181,20 +133,30 @@ export function TimelineTabContent() {
   };
 
   const sections = groupActivitiesByDate(activities);
+  const isLoading = profile === undefined || activities === undefined;
 
   return (
     <View className="flex-1">
       <TimelineFilters selectedFilter={filter} onSelectFilter={setFilter} />
 
-      {isFetching && !isRefetching && activities.length === 0 ? (
+      {isLoading && activities.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color={brandColors.colors.primary} />
         </View>
       ) : (
         <SectionList
           sections={sections}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <TimelineItem item={item} onDelete={handleDelete} />}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => {
+            // Convert Convex activity to TimelineItemData
+            const itemData: TimelineItemData = {
+              id: String(item.id),
+              type: item.type,
+              time: item.time,
+              data: item.data,
+            };
+            return <TimelineItem item={itemData} onDelete={handleDelete} />;
+          }}
           renderSectionHeader={({ section: { title } }) => (
             <View className="bg-background px-6 py-3">
               <Text className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
@@ -203,23 +165,20 @@ export function TimelineTabContent() {
             </View>
           )}
           contentContainerClassName="pb-6"
-          refreshing={isRefetching}
-          onRefresh={() => refetch()}
+          refreshing={false}
+          onRefresh={handleRefresh}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            isFetchingNextPage ? (
-              <View className="items-center py-4">
-                <ActivityIndicator size="small" color={brandColors.colors.primary} />
-              </View>
-            ) : null
-          }
           ListEmptyComponent={
-            !isFetching ? (
+            !isLoading ? (
               <View className="items-center p-10">
-                <Text className="mb-4 text-base text-muted-foreground">No activities found</Text>
-                <Button onPress={() => router.replace('/(tabs)/tracking')}>
-                  <Text>{t('common.addActivity', { defaultValue: 'Add Activity' })}</Text>
+                <Text className="mb-4 text-base text-muted-foreground">
+                  No activities found
+                </Text>
+                <Button onPress={() => router.replace("/(tabs)/tracking")}>
+                  <Text>
+                    {t("common.addActivity", { defaultValue: "Add Activity" })}
+                  </Text>
                 </Button>
               </View>
             ) : null

@@ -1,8 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMutation, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Switch, View } from 'react-native';
 import { z } from 'zod';
 
 import { Text } from '@/components/ui/text';
@@ -12,15 +13,12 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { TabPageHeader } from '@/components/TabPageHeader';
 import { useNotification } from '@/components/NotificationContext';
 import { useTheme } from '@/lib/ThemeContext';
-import { useSupabaseAuth } from '@/pages/root-layout/SupabaseAuthProvider';
-import { signOut } from '@/lib/supabase';
+import { useConvexAuth } from '@/pages/root-layout/ConvexAuthProvider';
+import { api } from '@/convex/_generated/api';
 
-import { BABY_PROFILE_QUERY_KEY, BABY_PROFILES_QUERY_KEY } from '@/constants/query-keys';
-import { getBabyProfiles, getActiveBabyProfile } from '@/database/baby-profile';
 import type { Locale } from '@/localization/translations';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { FeatureKey, useFeatureFlags } from '@/context/FeatureFlagContext';
-import { useSetActiveBabyProfile } from '@/hooks/use-set-active-baby-profile';
 
 // Theme mode options
 const themeModes: readonly ('system' | 'light' | 'dark')[] = ['system', 'light', 'dark'];
@@ -54,36 +52,36 @@ export default function SettingsScreen() {
   const { themeMode, setThemeMode } = useTheme();
   const router = useRouter();
   const { showNotification } = useNotification();
-  const { isAnonymous, isLoading: authLoading } = useSupabaseAuth();
-  const queryClient = useQueryClient();
-  const [isSigningOut, setIsSigningOut] = useState(false);
+  const { isLoading: authLoading, isAnonymous } = useConvexAuth();
+  const [isSettingActive, setIsSettingActive] = useState(false);
 
-  const { data: profiles = [], isLoading } = useQuery({
-    queryKey: BABY_PROFILES_QUERY_KEY,
-    queryFn: getBabyProfiles,
-  });
-
-  const { data: currentProfile } = useQuery({
-    queryKey: BABY_PROFILE_QUERY_KEY,
-    queryFn: getActiveBabyProfile,
-  });
+  // Convex queries
+  const profiles = useQuery(api.babyProfiles.list, {}) ?? [];
+  const currentProfile = useQuery(api.babyProfiles.getActive);
+  const isLoading = profiles === undefined;
 
   const { features, toggleFeature } = useFeatureFlags();
 
-  const setActiveBabyMutation = useSetActiveBabyProfile();
+  // Convex mutation
+  const setActiveProfileMutation = useMutation(api.babyProfiles.setActive);
 
-  const handleSetActiveBaby = (babyId: number) => {
-    setActiveBabyMutation.mutate(babyId, {
-      onSuccess: () => {
-        const profile = profiles.find((p) => p.id === babyId);
-        showNotification(
-          profile
-            ? `${profile.nickname} is now active`
-            : t('settings.profileUpdated', { defaultValue: 'Profile updated' }),
-          'success'
-        );
-      },
-    });
+  const handleSetActiveBaby = async (babyId: string) => {
+    setIsSettingActive(true);
+    try {
+      await setActiveProfileMutation({ babyId: babyId as any });
+      const profile = profiles.find((p) => p._id === babyId);
+      showNotification(
+        profile
+          ? `${profile.nickname} is now active`
+          : t('settings.profileUpdated', { defaultValue: 'Profile updated' }),
+        'success'
+      );
+    } catch (error) {
+      console.error('Failed to set active profile:', error);
+      showNotification(t('common.saveError'), 'error');
+    } finally {
+      setIsSettingActive(false);
+    }
   };
 
   const [activeTab, setActiveTab] = useState<'baby' | 'features' | 'system'>('baby');
@@ -101,61 +99,6 @@ export default function SettingsScreen() {
     }
   };
 
-  // Show login prompt if user is anonymous
-  if (!authLoading && isAnonymous) {
-    return (
-      <View className="flex-1 bg-background">
-        <TabPageHeader title={t('settings.title')} subtitle={t('settings.description')} />
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="px-6 py-8 gap-6"
-          showsVerticalScrollIndicator={false}>
-          {/* Login Required Card */}
-          <View className="rounded-2xl border border-border bg-card p-6">
-            <Text className="mb-4 text-2xl font-bold text-foreground">
-              {t('auth.loginRequired', { defaultValue: 'Sign In Required' })}
-            </Text>
-            <Text className="mb-6 text-base leading-6 text-muted-foreground">
-              {t('auth.loginRequiredMessage', {
-                defaultValue:
-                  'To access settings and sync your data across devices, please sign in to your account.',
-              })}
-            </Text>
-            <View className="mb-6 gap-3">
-              <Text className="text-base font-semibold text-foreground">
-                {t('auth.benefits', { defaultValue: 'Benefits of signing in:' })}
-              </Text>
-              <View className="gap-2">
-                <Text className="text-base text-muted-foreground">
-                  {t('auth.benefit1', { defaultValue: '• Sync data across all your devices' })}
-                </Text>
-                <Text className="text-base text-muted-foreground">
-                  {t('auth.benefit2', { defaultValue: '• Keep your data safe and backed up' })}
-                </Text>
-                <Text className="text-base text-muted-foreground">
-                  {t('auth.benefit3', { defaultValue: '• Access advanced settings' })}
-                </Text>
-                <Text className="text-base text-muted-foreground">
-                  {t('auth.benefit4', { defaultValue: '• Your existing data will be preserved' })}
-                </Text>
-              </View>
-            </View>
-            <Button
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push('/(auth)/login');
-              }}
-              className="h-14">
-              <Text className="text-base font-semibold text-primary-foreground">
-                {t('auth.signIn', { defaultValue: 'Sign In' })}
-              </Text>
-            </Button>
-          </View>
-        </ScrollView>
-      </View>
-    );
-  }
-
   if (isLoading || authLoading) {
     return (
       <View className="flex-1 items-center justify-center gap-3 bg-background">
@@ -165,9 +108,66 @@ export default function SettingsScreen() {
     );
   }
 
+  const handleSignIn = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/(auth)/sign-in');
+  };
+
   return (
     <View className="flex-1 bg-background">
       <TabPageHeader title={t('settings.title')} subtitle={t('settings.description')} />
+
+      {/* Anonymous User Banner */}
+      {isAnonymous && (
+        <View className="mx-6 mb-4 rounded-2xl bg-amber-50 p-5 dark:bg-amber-950/30">
+          <View className="mb-3 flex-row items-center gap-3">
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50">
+              <MaterialCommunityIcons name="cloud-off-outline" size={22} color="#D97706" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-base font-bold text-amber-800 dark:text-amber-200">
+                {t('settings.guestMode', { defaultValue: 'Guest Mode' })}
+              </Text>
+              <Text className="text-sm text-amber-700 dark:text-amber-300">
+                {t('settings.dataNotSynced', { defaultValue: 'Your data is only on this device' })}
+              </Text>
+            </View>
+          </View>
+
+          <View className="mb-4 gap-2">
+            <View className="flex-row items-center gap-2">
+              <MaterialCommunityIcons name="sync" size={16} color="#92400E" />
+              <Text className="flex-1 text-sm text-amber-700 dark:text-amber-300">
+                {t('settings.benefitSync', { defaultValue: 'Sync data across all your devices' })}
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <MaterialCommunityIcons name="shield-check" size={16} color="#92400E" />
+              <Text className="flex-1 text-sm text-amber-700 dark:text-amber-300">
+                {t('settings.benefitBackup', { defaultValue: 'Never lose your precious memories' })}
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <MaterialCommunityIcons name="cellphone-link" size={16} color="#92400E" />
+              <Text className="flex-1 text-sm text-amber-700 dark:text-amber-300">
+                {t('settings.benefitDevices', { defaultValue: 'Access from phone, tablet, or web' })}
+              </Text>
+            </View>
+          </View>
+
+          <Button
+            onPress={handleSignIn}
+            className="bg-amber-600 active:bg-amber-700"
+          >
+            <View className="flex-row items-center gap-2">
+              <MaterialCommunityIcons name="login" size={18} color="#FFF" />
+              <Text className="font-semibold text-white">
+                {t('settings.signInToSync', { defaultValue: 'Sign in to sync your data' })}
+              </Text>
+            </View>
+          </Button>
+        </View>
+      )}
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1">
         <View className="px-6 py-4">
@@ -189,10 +189,10 @@ export default function SettingsScreen() {
             <View className="gap-4">
               {profiles.map((profile) => {
                 const monthsOld = computeMonthsOld(profile.birthDate);
-                const isActive = currentProfile?.id === profile.id;
+                const isActive = currentProfile?._id === profile._id;
                 return (
                   <View
-                    key={profile.id}
+                    key={profile._id}
                     className="rounded-2xl bg-card p-5"
                     style={{
                       shadowColor: 'rgba(0, 0, 0, 0.05)',
@@ -206,7 +206,7 @@ export default function SettingsScreen() {
                       onPress={() =>
                         router.push({
                           pathname: '/profile-edit',
-                          params: { babyId: profile.id.toString() },
+                          params: { babyId: profile._id },
                         })
                       }>
                       <View className="flex-1 gap-1">
@@ -229,9 +229,9 @@ export default function SettingsScreen() {
                       size="sm"
                       onPress={() => {
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        handleSetActiveBaby(profile.id);
+                        handleSetActiveBaby(profile._id);
                       }}
-                      disabled={isActive || setActiveBabyMutation.isPending}
+                      disabled={isActive || isSettingActive}
                       className="mt-3">
                       <Text className={isActive ? 'text-primary-foreground' : 'text-foreground'}>
                         {isActive
@@ -388,76 +388,6 @@ export default function SettingsScreen() {
                 </ToggleGroup>
               </View>
 
-              {/* Account Section */}
-              {!isAnonymous && (
-                <View className="gap-3 rounded-2xl border border-destructive/20 bg-card p-5 shadow-sm">
-                  <View className="mb-2">
-                    <Text className="text-lg font-extrabold text-foreground">
-                      {t('settings.accountTitle', { defaultValue: 'Account' })}
-                    </Text>
-                    <Text className="text-sm text-muted-foreground">
-                      {t('settings.accountSubtitle', {
-                        defaultValue: 'Manage your account settings',
-                      })}
-                    </Text>
-                  </View>
-                  <Button
-                    variant="outline"
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                      Alert.alert(
-                        t('auth.signOut', { defaultValue: 'Sign Out' }),
-                        t('auth.signOutConfirm', {
-                          defaultValue:
-                            'Are you sure you want to sign out? You will need to sign in again to access your synced data.',
-                        }),
-                        [
-                          {
-                            text: t('common.cancel', { defaultValue: 'Cancel' }),
-                            style: 'cancel',
-                          },
-                          {
-                            text: t('auth.signOut', { defaultValue: 'Sign Out' }),
-                            style: 'destructive',
-                            onPress: async () => {
-                              setIsSigningOut(true);
-                              try {
-                                await signOut();
-                                // Clear all React Query cache
-                                queryClient.clear();
-                                // Invalidate all queries to refetch with anonymous user
-                                queryClient.invalidateQueries();
-                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                                showNotification(
-                                  t('auth.signOutSuccess', {
-                                    defaultValue: 'Signed out successfully',
-                                  }),
-                                  'success'
-                                );
-                              } catch (error) {
-                                console.error('Sign out error:', error);
-                                showNotification(
-                                  t('auth.signOutError', { defaultValue: 'Failed to sign out' }),
-                                  'error'
-                                );
-                              } finally {
-                                setIsSigningOut(false);
-                              }
-                            },
-                          },
-                        ]
-                      );
-                    }}
-                    disabled={isSigningOut}
-                    className="h-12 border-destructive/30">
-                    <Text className="text-base font-semibold text-destructive">
-                      {isSigningOut
-                        ? t('common.loading', { defaultValue: 'Loading...' })
-                        : t('auth.signOut', { defaultValue: 'Sign Out' })}
-                    </Text>
-                  </Button>
-                </View>
-              )}
             </View>
           </TabsContent>
         </ScrollView>

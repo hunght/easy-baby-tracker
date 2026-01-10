@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from 'convex/react';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -20,20 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNotification } from '@/components/NotificationContext';
-import {
-  BABY_PROFILE_QUERY_KEY,
-  FORMULA_RULES_QUERY_KEY,
-  formulaRuleByIdKey,
-  userCustomFormulaRulesKey,
-} from '@/constants/query-keys';
-import { getActiveBabyProfile } from '@/database/baby-profile';
-import {
-  getFormulaRuleById,
-  getFormulaRules,
-  deleteCustomFormulaRule,
-  createCustomFormulaRule,
-  updateCustomFormulaRule,
-} from '@/database/easy-formula-rules';
+import { api } from '@/convex/_generated/api';
 import { useBrandColor } from '@/hooks/use-brand-color';
 import type { EasyFormulaRuleId, EasyCyclePhase } from '@/lib/easy-schedule-generator';
 import { useLocalization } from '@/localization/LocalizationProvider';
@@ -49,37 +36,35 @@ export default function EasyScheduleFormScreen() {
   const router = useRouter();
   const brandColors = useBrandColor();
   const { showNotification } = useNotification();
-  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ ruleId?: EasyFormulaRuleId }>();
   const requestedRuleId = params.ruleId;
 
   // Load baby profile
-  const { data: babyProfile } = useQuery({
-    queryKey: BABY_PROFILE_QUERY_KEY,
-    queryFn: getActiveBabyProfile,
-    staleTime: 30 * 1000,
-  });
+  const babyProfile = useQuery(api.babyProfiles.getActive);
 
   // Load all formula rules from database
-  const { data: allRules = [] } = useQuery({
-    queryKey: FORMULA_RULES_QUERY_KEY,
-    queryFn: () => getFormulaRules(babyProfile?.id),
-    enabled: !!babyProfile,
-  });
+  const allRules = useQuery(
+    api.easyFormulaRules.list,
+    babyProfile?._id ? { babyId: babyProfile._id } : "skip"
+  ) ?? [];
 
-  const availableRuleIds = allRules.map((rule) => rule.id);
-  const fallbackRuleId: EasyFormulaRuleId = allRules[0]?.id ?? 'newborn';
+  const availableRuleIds = allRules.map((rule) => rule.ruleId);
+  const fallbackRuleId: EasyFormulaRuleId = allRules[0]?.ruleId ?? 'newborn';
   const ruleId: EasyFormulaRuleId =
     requestedRuleId && availableRuleIds.includes(requestedRuleId)
       ? requestedRuleId
       : fallbackRuleId;
 
   // Load the selected formula rule from database
-  const { data: formulaRule } = useQuery({
-    queryKey: formulaRuleByIdKey(ruleId),
-    queryFn: () => getFormulaRuleById(ruleId, babyProfile?.id),
-    enabled: !!babyProfile && !!ruleId,
-  });
+  const formulaRule = useQuery(
+    api.easyFormulaRules.getById,
+    babyProfile?._id && ruleId ? { ruleId, babyId: babyProfile._id } : "skip"
+  );
+
+  // Convex mutations
+  const updateRule = useMutation(api.easyFormulaRules.update);
+  const deleteRule = useMutation(api.easyFormulaRules.remove);
+  const createRule = useMutation(api.easyFormulaRules.create);
 
   // Edit mode state
   const [formulaName, setFormulaName] = useState('');
@@ -100,12 +85,15 @@ export default function EasyScheduleFormScreen() {
       return key || '';
     };
 
-    setFormulaName(formulaRule.labelText || safeTranslateForInit(formulaRule.labelKey));
+    setFormulaName(formulaRule.labelText || safeTranslateForInit(formulaRule.labelKey ?? ''));
     setMinWeeks(formulaRule.minWeeks.toString());
     setMaxWeeks(formulaRule.maxWeeks?.toString() || '');
 
-    // Process phases - phases are already typed as EasyCyclePhase[] from dbToFormulaRule
-    const processedPhases = formulaRule.phases.map((p) => ({
+    // Process phases - parse from JSON string
+    const parsedPhases: EasyCyclePhase[] = typeof formulaRule.phases === 'string'
+      ? JSON.parse(formulaRule.phases)
+      : formulaRule.phases;
+    const processedPhases = parsedPhases.map((p: EasyCyclePhase) => ({
       eat: (p.eat ?? 0).toString(),
       activity: (p.activity ?? 0).toString(),
       sleep: p.sleep.toString(),
@@ -121,15 +109,22 @@ export default function EasyScheduleFormScreen() {
     }
   }, [formulaRule, t]);
 
-  // Update mutation
-  const updateMutation = useMutation({
-    mutationFn: async () => {
-      if (!babyProfile?.id || !formulaRule) {
-        throw new Error('Missing required data');
-      }
+  // Mutation state
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isCloning, setIsCloning] = useState(false);
 
+  // Handle update
+  const handleUpdateFormula = async () => {
+    if (!babyProfile?._id || !formulaRule) {
+      showNotification('Missing required data', 'error');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
       const minWeeksNum = parseInt(minWeeks);
-      const maxWeeksNum = maxWeeks ? parseInt(maxWeeks) : null;
+      const maxWeeksNum = maxWeeks ? parseInt(maxWeeks) : undefined;
 
       const convertedPhases: EasyCyclePhase[] = phases.map((phase) => ({
         eat: parseInt(phase.eat),
@@ -137,42 +132,36 @@ export default function EasyScheduleFormScreen() {
         sleep: parseInt(phase.sleep),
       }));
 
-      await updateCustomFormulaRule(formulaRule.id, babyProfile.id, {
-        name: formulaName.trim(),
+      await updateRule({
+        ruleId: formulaRule.ruleId,
+        babyId: babyProfile._id,
+        labelText: formulaName.trim(),
         minWeeks: minWeeksNum,
         maxWeeks: maxWeeksNum,
-        labelKey: '',
-        ageRangeKey: '',
-        description: description.trim(),
-        phases: convertedPhases,
+        description: description.trim() || undefined,
+        phases: JSON.stringify(convertedPhases),
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: formulaRuleByIdKey(ruleId) });
-      queryClient.invalidateQueries({ queryKey: userCustomFormulaRulesKey(babyProfile?.id ?? 0) });
-      queryClient.invalidateQueries({ queryKey: FORMULA_RULES_QUERY_KEY });
+
       showNotification(t('common.saveSuccess'), 'success');
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Failed to update formula:', error);
       showNotification(t('common.saveError'), 'error');
-    },
-  });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      if (!babyProfile?.id) {
-        throw new Error('No active baby profile');
-      }
-      if (!formulaRule) {
-        throw new Error('No formula rule loaded');
-      }
-      await deleteCustomFormulaRule(formulaRule.id, babyProfile.id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userCustomFormulaRulesKey(babyProfile?.id ?? 0) });
-      queryClient.invalidateQueries({ queryKey: FORMULA_RULES_QUERY_KEY });
+  // Handle delete
+  const handleDeleteFormula = async () => {
+    if (!babyProfile?._id || !formulaRule) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteRule({
+        ruleId: formulaRule.ruleId,
+        babyId: babyProfile._id,
+      });
+
       showNotification(t('common.deleteSuccess'), 'success');
       setTimeout(() => {
         if (router.canGoBack()) {
@@ -181,26 +170,23 @@ export default function EasyScheduleFormScreen() {
           router.replace('/(easy-schedule)/easy-schedule-select');
         }
       }, 500);
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Failed to delete formula:', error);
       showNotification(t('common.deleteError'), 'error');
-    },
-  });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
-  // Clone mutation
-  const cloneMutation = useMutation({
-    mutationFn: async () => {
-      if (!babyProfile?.id) {
-        throw new Error('No active baby profile');
-      }
-      if (!formulaRule) {
-        throw new Error('No formula rule loaded');
-      }
+  // Handle clone
+  const handleCloneFormula = async () => {
+    if (!babyProfile?._id || !formulaRule) return;
 
-      // Helper to safely translate or use direct text (defined inline for mutation)
-      const safeTranslateForClone = (key: string) => {
-        if (key.includes('.')) {
+    setIsCloning(true);
+    try {
+      // Helper to safely translate or use direct text
+      const safeTranslateForClone = (key: string | null | undefined) => {
+        if (key && key.includes('.')) {
           const translated = t(key);
           return translated !== key ? translated : key;
         }
@@ -209,20 +195,20 @@ export default function EasyScheduleFormScreen() {
 
       const clonedName = `${formulaRule.labelText || safeTranslateForClone(formulaRule.labelKey)} (Copy)`;
 
-      await createCustomFormulaRule(babyProfile.id, {
-        id: '',
-        name: clonedName,
+      // Parse phases from JSON if needed
+      const phasesData = typeof formulaRule.phases === 'string'
+        ? JSON.parse(formulaRule.phases)
+        : formulaRule.phases;
+
+      await createRule({
+        babyId: babyProfile._id,
+        labelText: clonedName,
         minWeeks: formulaRule.minWeeks,
-        maxWeeks: formulaRule.maxWeeks,
-        labelKey: '',
-        ageRangeKey: '',
-        description: formulaRule.description ?? null,
-        phases: [...formulaRule.phases],
+        maxWeeks: formulaRule.maxWeeks ?? undefined,
+        description: formulaRule.description ?? undefined,
+        phases: phasesData,
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userCustomFormulaRulesKey(babyProfile?.id ?? 0) });
-      queryClient.invalidateQueries({ queryKey: FORMULA_RULES_QUERY_KEY });
+
       showNotification(t('easySchedule.formulaCloned'), 'success');
       setTimeout(() => {
         if (router.canGoBack()) {
@@ -231,19 +217,20 @@ export default function EasyScheduleFormScreen() {
           router.replace('/(easy-schedule)/easy-schedule-select');
         }
       }, 500);
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Failed to clone formula:', error);
       showNotification(t('common.saveError'), 'error');
-    },
-  });
+    } finally {
+      setIsCloning(false);
+    }
+  };
 
   const handleDelete = () => {
     if (!formulaRule) return;
 
     // Helper to safely translate or use direct text
-    const safeTranslateLocal = (key: string) => {
-      if (key.includes('.')) {
+    const safeTranslateLocal = (key: string | null | undefined) => {
+      if (key && key.includes('.')) {
         const translated = t(key);
         return translated !== key ? translated : key;
       }
@@ -263,14 +250,14 @@ export default function EasyScheduleFormScreen() {
         {
           text: t('easySchedule.deleteFormula.confirm'),
           style: 'destructive',
-          onPress: () => deleteMutation.mutate(),
+          onPress: handleDeleteFormula,
         },
       ]
     );
   };
 
   const handleClone = () => {
-    cloneMutation.mutate();
+    handleCloneFormula();
   };
 
   // Show loading state while data is loading
@@ -283,11 +270,11 @@ export default function EasyScheduleFormScreen() {
   }
 
   // Check if this is a custom formula (ID starts with 'custom_')
-  const isCustomFormula = formulaRule.id.startsWith('custom_');
+  const isCustomFormula = formulaRule.ruleId.startsWith('custom_');
   const isEditable = isCustomFormula;
 
   const handleSave = () => {
-    updateMutation.mutate();
+    handleUpdateFormula();
   };
 
   const addPhase = () => {
@@ -520,7 +507,7 @@ export default function EasyScheduleFormScreen() {
               size="lg"
               className="flex-1"
               onPress={handleClone}
-              disabled={cloneMutation.isPending}>
+              disabled={isCloning}>
               <Ionicons name="copy-outline" size={20} color={brandColors.colors.black} />
               <Text>{t('easySchedule.clone')}</Text>
             </Button>
@@ -531,7 +518,7 @@ export default function EasyScheduleFormScreen() {
                 size="lg"
                 className="aspect-square bg-destructive/10 px-0"
                 onPress={handleDelete}
-                disabled={deleteMutation.isPending}>
+                disabled={isDeleting}>
                 <Ionicons name="trash-outline" size={24} color={brandColors.colors.destructive} />
               </Button>
             )}
@@ -541,9 +528,9 @@ export default function EasyScheduleFormScreen() {
                 variant="default"
                 size="lg"
                 onPress={handleSave}
-                disabled={updateMutation.isPending}
+                disabled={isSaving}
                 className="flex-[2]">
-                {updateMutation.isPending ? (
+                {isSaving ? (
                   <ActivityIndicator color="white" />
                 ) : (
                   <>

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from 'convex/react';
 import React, { useMemo } from 'react';
 import { Dimensions, Text, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
@@ -6,8 +6,7 @@ import { LineChart } from 'react-native-gifted-charts';
 import { ChartCard } from './ChartCard';
 import { SummaryCard } from './SummaryCard';
 
-import { GROWTH_RECORDS_QUERY_KEY } from '@/constants/query-keys';
-import { getGrowthRecords } from '@/database/growth';
+import { api } from '@/convex/_generated/api';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { useBrandColor } from '@/hooks/use-brand-color';
 
@@ -22,10 +21,13 @@ export function GrowthCharts({ startDate, endDate }: GrowthChartsProps) {
   const { t } = useLocalization();
   const brandColors = useBrandColor();
 
-  const { data: records = [] } = useQuery({
-    queryKey: [...GROWTH_RECORDS_QUERY_KEY, { startDate, endDate }],
-    queryFn: () => getGrowthRecords({ startDate, endDate, limit: 100 }),
-  });
+  // Get active baby profile
+  const babyProfile = useQuery(api.babyProfiles.getActive);
+
+  const records = useQuery(
+    api.growthRecords.list,
+    babyProfile?._id ? { babyId: babyProfile._id, startDate, endDate, limit: 100 } : "skip"
+  ) ?? [];
 
   const { weightData, heightData, latestWeight, latestHeight } = useMemo(() => {
     // Process Weight

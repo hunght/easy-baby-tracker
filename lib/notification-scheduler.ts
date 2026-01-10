@@ -207,7 +207,7 @@ export async function rescheduleEasyReminders(
   labels: EasyScheduleReminderLabels,
   daysAhead: number = EASY_REMINDER_DAYS_AHEAD
 ): Promise<number> {
-  console.log('[rescheduleEasyReminders] Starting for baby profile:', babyProfile.id);
+  console.log('[rescheduleEasyReminders] Starting for baby profile:', babyProfile._id);
 
   // Cancel existing EASY schedule reminders
   const existingNotifications = await getScheduledNotifications({
@@ -235,7 +235,7 @@ export async function rescheduleEasyReminders(
     throw new Error('No formula selected for baby profile. Please select a formula first.');
   }
 
-  const formulaRule = await getFormulaRuleById(babyProfile.selectedEasyFormulaId, babyProfile.id);
+  const formulaRule = await getFormulaRuleById(babyProfile.selectedEasyFormulaId, babyProfile._id);
 
   if (!formulaRule) {
     throw new Error(

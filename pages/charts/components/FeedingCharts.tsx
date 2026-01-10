@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from 'convex/react';
 import React, { useMemo } from 'react';
 import { Dimensions, Text, View } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
@@ -6,8 +6,7 @@ import { BarChart, LineChart } from 'react-native-gifted-charts';
 import { ChartCard } from './ChartCard';
 import { SummaryCard } from './SummaryCard';
 
-import { FEEDINGS_QUERY_KEY } from '@/constants/query-keys';
-import { getFeedings } from '@/database/feeding';
+import { api } from '@/convex/_generated/api';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { useBrandColor } from '@/hooks/use-brand-color';
 
@@ -22,10 +21,13 @@ export function FeedingCharts({ startDate, endDate }: FeedingChartsProps) {
   const { t } = useLocalization();
   const brandColors = useBrandColor();
 
-  const { data: feedings = [] } = useQuery({
-    queryKey: [...FEEDINGS_QUERY_KEY, { startDate, endDate }],
-    queryFn: () => getFeedings({ startDate, endDate, limit: 1000 }),
-  });
+  // Get active baby profile
+  const babyProfile = useQuery(api.babyProfiles.getActive);
+
+  const feedings = useQuery(
+    api.feedings.list,
+    babyProfile?._id ? { babyId: babyProfile._id, startDate, endDate, limit: 1000 } : "skip"
+  ) ?? [];
 
   const { volumeData, durationData, avgVolume, totalFeedings } = useMemo(() => {
     // Process Volume (Bottle/Pumped)

@@ -1,410 +1,304 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'expo-router';
-import { ScrollView, View, Pressable, TouchableOpacity, Alert } from 'react-native';
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "expo-router";
+import { useMemo, useState } from "react";
+import { Alert, ActivityIndicator, Pressable, ScrollView, View } from "react-native";
 
-import { Text } from '@/components/ui/text';
-import { useNotification } from '@/components/NotificationContext';
-import {
-  BABY_PROFILE_QUERY_KEY,
-  PREDEFINED_FORMULA_RULES_QUERY_KEY,
-  userCustomFormulaRulesKey,
-  daySpecificFormulaRulesKey,
-  formulaRuleByIdKey,
-} from '@/constants/query-keys';
-import { getActiveBabyProfile , updateSelectedEasyFormula } from '@/database/baby-profile';
-import {
-  getFormulaRuleById,
-  getPredefinedFormulaRules,
-  getUserCustomFormulaRules,
-  getDaySpecificFormulaRules,
-  deleteCustomFormulaRule,
-} from '@/database/easy-formula-rules';
-import { useBrandColor } from '@/hooks/use-brand-color';
-import type { EasyFormulaRuleId } from '@/lib/easy-schedule-generator';
-import { useLocalization } from '@/localization/LocalizationProvider';
+import { ModalHeader } from "@/components/ModalHeader";
+import { Text } from "@/components/ui/text";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/convex/_generated/api";
+import { useBrandColor } from "@/hooks/use-brand-color";
+import { useLocalization } from "@/localization/LocalizationProvider";
+
+type FormulaRule = {
+  _id: string;
+  ruleId: string;
+  labelKey?: string | null;
+  labelText?: string | null;
+  ageRangeKey?: string | null;
+  ageRangeText?: string | null;
+  minWeeks: number;
+  maxWeeks?: number | null;
+  isCustom: boolean;
+  babyId?: string | null;
+};
 
 export default function EasyScheduleSelectScreen() {
   const { t } = useLocalization();
   const router = useRouter();
   const brandColors = useBrandColor();
-  const { showNotification } = useNotification();
-  const queryClient = useQueryClient();
+  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
 
-  const { data: babyProfile } = useQuery({
-    queryKey: BABY_PROFILE_QUERY_KEY,
-    queryFn: getActiveBabyProfile,
-    staleTime: 30 * 1000,
-  });
+  // Get active baby profile
+  const babyProfile = useQuery(api.babyProfiles.getActive);
 
-  // Fetch predefined formulas
-  const { data: predefinedRules = [], isLoading: isLoadingPredefined } = useQuery({
-    queryKey: PREDEFINED_FORMULA_RULES_QUERY_KEY,
-    queryFn: getPredefinedFormulaRules,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Get all formula rules
+  const allRules = useQuery(
+    api.easyFormulaRules.list,
+    babyProfile?._id ? { babyId: babyProfile._id } : "skip"
+  );
 
-  // Fetch user custom formulas
-  const { data: userCustomRules = [], isLoading: isLoadingUserCustom } = useQuery({
-    queryKey: userCustomFormulaRulesKey(babyProfile?.id ?? 0),
-    queryFn: () => getUserCustomFormulaRules(babyProfile!.id),
-    enabled: !!babyProfile?.id,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Mutations
+  const updateSelectedFormula = useMutation(api.babyProfiles.updateSelectedEasyFormula);
+  const deleteCustomRule = useMutation(api.easyFormulaRules.remove);
 
-  // Fetch day-specific (temporary) formulas
-  const { data: daySpecificRules = [], isLoading: isLoadingDaySpecific } = useQuery({
-    queryKey: daySpecificFormulaRulesKey(babyProfile?.id ?? 0),
-    queryFn: () => getDaySpecificFormulaRules(babyProfile!.id),
-    enabled: !!babyProfile?.id,
-    staleTime: 5 * 60 * 1000,
-  });
+  const isLoading = babyProfile === undefined || allRules === undefined;
 
-  // Get the active formula by selected ID from database
-  const { data: formulaRule } = useQuery({
-    queryKey: formulaRuleByIdKey(babyProfile?.selectedEasyFormulaId ?? '', babyProfile?.id),
-    queryFn: () => getFormulaRuleById(babyProfile!.selectedEasyFormulaId!, babyProfile?.id),
-    enabled: !!babyProfile?.selectedEasyFormulaId,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Separate rules into predefined and custom
+  const { predefinedRules, customRules } = useMemo(() => {
+    if (!allRules) return { predefinedRules: [], customRules: [] };
 
-  const isLoadingFormula = isLoadingPredefined || isLoadingUserCustom || isLoadingDaySpecific;
+    const predefined: FormulaRule[] = [];
+    const custom: FormulaRule[] = [];
 
-  const mutation = useMutation({
-    mutationFn: async (ruleId: EasyFormulaRuleId) => {
-      if (!babyProfile?.id) {
-        throw new Error('No active baby profile');
+    allRules.forEach((rule) => {
+      const formattedRule: FormulaRule = {
+        _id: rule._id,
+        ruleId: rule.ruleId,
+        labelKey: rule.labelKey,
+        labelText: rule.labelText,
+        ageRangeKey: rule.ageRangeKey,
+        ageRangeText: rule.ageRangeText,
+        minWeeks: rule.minWeeks,
+        maxWeeks: rule.maxWeeks,
+        isCustom: rule.isCustom,
+        babyId: rule.babyId,
+      };
+
+      if (rule.isCustom) {
+        custom.push(formattedRule);
+      } else {
+        predefined.push(formattedRule);
       }
-      await updateSelectedEasyFormula(babyProfile.id, ruleId);
-    },
-    onSuccess: () => {
-      // Invalidate query to refresh baby profile
-      queryClient.invalidateQueries({ queryKey: BABY_PROFILE_QUERY_KEY });
+    });
 
-      showNotification(t('easySchedule.formulaUpdated'), 'success');
+    return { predefinedRules: predefined, customRules: custom };
+  }, [allRules]);
 
-      if (router.canGoBack()) {
-        router.back();
-      }
-    },
-    onError: (error) => {
-      console.error('Failed to update formula:', error);
-      showNotification(t('common.saveError'), 'error');
-    },
-  });
+  const selectedFormulaId = babyProfile?.selectedEasyFormulaId;
 
-  const handleSelectFormula = (ruleId: EasyFormulaRuleId) => {
-    mutation.mutate(ruleId);
+  // Helper to get rule display name
+  const getRuleName = (rule: FormulaRule) => {
+    if (rule.labelText) return rule.labelText;
+    if (rule.labelKey) {
+      const translated = t(rule.labelKey);
+      if (translated !== rule.labelKey) return translated;
+    }
+    return rule.ruleId;
   };
 
-  const deleteMutation = useMutation({
-    mutationFn: async (payload: { ruleId: string; babyId: number }) => {
-      await deleteCustomFormulaRule(payload.ruleId, payload.babyId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userCustomFormulaRulesKey(babyProfile?.id ?? 0) });
-      queryClient.invalidateQueries({ queryKey: daySpecificFormulaRulesKey(babyProfile?.id ?? 0) });
-      showNotification(t('common.deleteSuccess'), 'success');
-    },
-    onError: (error) => {
-      console.error('Failed to delete formula:', error);
-      showNotification(t('common.deleteError'), 'error');
-    },
-  });
-
-  const handleDeleteFormula = (ruleId: string, ruleName: string) => {
-    // Check if this is the currently active formula
-    if (formulaRule?.id === ruleId) {
-      showNotification(t('easySchedule.deleteFormula.cannotDeleteActive'), 'error');
-      return;
+  // Helper to get age range text
+  const getAgeRange = (rule: FormulaRule) => {
+    if (rule.ageRangeText) return rule.ageRangeText;
+    if (rule.ageRangeKey) {
+      const translated = t(rule.ageRangeKey);
+      if (translated !== rule.ageRangeKey) return translated;
     }
-
-    if (!babyProfile?.id) {
-      showNotification(t('common.error'), 'error');
-      return;
+    if (rule.maxWeeks) {
+      return `${rule.minWeeks}-${rule.maxWeeks} weeks`;
     }
+    return `${rule.minWeeks}+ weeks`;
+  };
 
+  const handleSelectFormula = async (ruleId: string) => {
+    if (!babyProfile?._id) return;
+
+    try {
+      await updateSelectedFormula({
+        babyId: babyProfile._id,
+        selectedEasyFormulaId: ruleId,
+      });
+      router.back();
+    } catch (error) {
+      console.error("Failed to select formula:", error);
+    }
+  };
+
+  const handleDeleteRule = (rule: FormulaRule) => {
     Alert.alert(
-      t('easySchedule.deleteFormula.title'),
-      t('easySchedule.deleteFormula.message', { params: { name: ruleName } }),
+      t("easySchedule.deleteFormula.title"),
+      t("easySchedule.deleteFormula.message", {
+        params: { name: getRuleName(rule) },
+      }),
       [
         {
-          text: t('easySchedule.deleteFormula.cancel'),
-          style: 'cancel',
+          text: t("easySchedule.deleteFormula.cancel"),
+          style: "cancel",
         },
         {
-          text: t('easySchedule.deleteFormula.confirm'),
-          style: 'destructive',
-          onPress: () => {
-            deleteMutation.mutate({ ruleId, babyId: babyProfile.id });
+          text: t("easySchedule.deleteFormula.confirm"),
+          style: "destructive",
+          onPress: async () => {
+            if (!babyProfile?._id) return;
+            setDeletingRuleId(rule.ruleId);
+            try {
+              await deleteCustomRule({
+                ruleId: rule.ruleId,
+                babyId: babyProfile._id,
+              });
+            } catch (error) {
+              console.error("Failed to delete rule:", error);
+            } finally {
+              setDeletingRuleId(null);
+            }
           },
         },
       ]
     );
   };
 
+  const handleViewFormula = (ruleId: string) => {
+    router.push({
+      pathname: "/(easy-schedule)/easy-schedule-form",
+      params: { ruleId },
+    });
+  };
+
+  const handleCreateCustom = () => {
+    router.push("/(easy-schedule)/easy-schedule-create");
+  };
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator size="large" color={brandColors.colors.primary} />
+      </View>
+    );
+  }
+
+  const renderFormulaItem = (rule: FormulaRule, showDelete = false) => {
+    const isSelected = selectedFormulaId === rule.ruleId;
+    const isDeleting = deletingRuleId === rule.ruleId;
+
+    return (
+      <Pressable
+        key={rule.ruleId}
+        onPress={() => handleSelectFormula(rule.ruleId)}
+        disabled={isDeleting}
+        className={`rounded-xl border p-4 ${
+          isSelected
+            ? "border-accent bg-accent/10"
+            : "border-border bg-card"
+        } ${isDeleting ? "opacity-50" : ""}`}
+      >
+        <View className="flex-row items-center justify-between">
+          <View className="flex-1">
+            <View className="flex-row items-center gap-2">
+              <Text
+                className={`text-base font-semibold ${
+                  isSelected ? "text-accent" : "text-foreground"
+                }`}
+              >
+                {getRuleName(rule)}
+              </Text>
+              {isSelected && (
+                <MaterialCommunityIcons
+                  name="check-circle"
+                  size={18}
+                  color={brandColors.colors.accent}
+                />
+              )}
+            </View>
+            <Text className="mt-1 text-sm text-muted-foreground">
+              {getAgeRange(rule)}
+            </Text>
+          </View>
+
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => handleViewFormula(rule.ruleId)}
+              hitSlop={8}
+              className="rounded-full bg-muted p-2"
+            >
+              <Ionicons name="eye-outline" size={18} color="#666" />
+            </Pressable>
+
+            {showDelete && (
+              <Pressable
+                onPress={() => handleDeleteRule(rule)}
+                hitSlop={8}
+                disabled={isDeleting}
+                className="rounded-full bg-red-500/10 p-2"
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color={brandColors.colors.destructive} />
+                ) : (
+                  <Ionicons
+                    name="trash-outline"
+                    size={18}
+                    color={brandColors.colors.destructive}
+                  />
+                )}
+              </Pressable>
+            )}
+          </View>
+        </View>
+      </Pressable>
+    );
+  };
+
   return (
     <View className="flex-1 bg-background">
-      <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-4">
-        <Pressable
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.replace('/');
-            }
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.close')}>
-          <Text className="text-base font-semibold text-accent">{t('common.close')}</Text>
-        </Pressable>
-        <Text
-          className="mx-3 flex-1 text-center text-xl font-bold text-foreground"
-          numberOfLines={1}
-          ellipsizeMode="tail">
-          {t('easySchedule.selectFormulaTitle')}
-        </Text>
-        <Pressable
-          onPress={() => router.push('/(easy-schedule)/easy-schedule-create')}
-          accessibilityRole="button"
-          accessibilityLabel={t('easySchedule.createFormula')}>
-          <Ionicons name="add-circle-outline" size={28} color={brandColors.colors.primary} />
-        </Pressable>
-      </View>
+      <ModalHeader
+        title={t("easySchedule.selectFormula.title")}
+        closeLabel={t("common.close")}
+      />
 
-      {isLoadingFormula && (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-muted-foreground">{t('common.loading')}</Text>
-        </View>
-      )}
-
-      {!isLoadingFormula && (
-        <ScrollView
-          className="flex-1"
-          contentContainerClassName="p-5 pb-10 gap-4"
-          showsVerticalScrollIndicator={false}>
-          {/* Predefined Rules Group */}
-          {predefinedRules.length > 0 && (
-            <View className="gap-2">
-              <Text className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('easySchedule.formulaGroups.predefined')}
+      <ScrollView
+        contentContainerClassName="p-5 pb-10 gap-4"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Predefined Formulas */}
+        <Card className="rounded-lg">
+          <CardHeader>
+            <CardTitle>{t("easySchedule.selectFormula.predefined")}</CardTitle>
+          </CardHeader>
+          <CardContent className="gap-3">
+            {predefinedRules.length > 0 ? (
+              predefinedRules.map((rule) => renderFormulaItem(rule))
+            ) : (
+              <Text className="text-center text-muted-foreground">
+                {t("common.noItemsFound")}
               </Text>
-              {predefinedRules.map((rule) => {
-                const isActive = rule.id === formulaRule?.id;
-                return (
-                  <View
-                    key={rule.id}
-                    className={`flex-row items-center gap-2 rounded-lg border ${
-                      isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
-                    }`}>
-                    <TouchableOpacity
-                      className="flex-1 p-4"
-                      accessibilityRole="button"
-                      accessibilityLabel={rule.labelKey ? t(rule.labelKey) : rule.labelText || ''}
-                      onPress={() =>
-                        router.push(`/(easy-schedule)/easy-schedule-form?ruleId=${rule.id}`)
-                      }>
-                      <View className="flex-1">
-                        <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                          {rule.labelKey ? t(rule.labelKey) : rule.labelText || rule.id}
-                        </Text>
-                        <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-                          {rule.ageRangeKey ? t(rule.ageRangeKey) : rule.ageRangeText || ''}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    {isActive ? (
-                      <View className="px-4 py-4">
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={24}
-                          color={brandColors.colors.primary}
-                        />
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        className="px-4 py-4"
-                        accessibilityRole="button"
-                        accessibilityLabel="Select formula"
-                        disabled={mutation.isPending}
-                        onPress={() => handleSelectFormula(rule.id)}>
-                        <Ionicons
-                          name="radio-button-off"
-                          size={24}
-                          color={brandColors.colors.secondary}
-                        />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          )}
+            )}
+          </CardContent>
+        </Card>
 
-          {/* User Custom Rules Group */}
-          {userCustomRules.length > 0 && (
-            <View className="gap-2">
-              <Text className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('easySchedule.formulaGroups.userCustom')}
-              </Text>
-              {userCustomRules.map((rule) => {
-                const isActive = rule.id === formulaRule?.id;
-                return (
-                  <View
-                    key={rule.id}
-                    className={`flex-row items-center gap-2 rounded-lg border ${
-                      isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
-                    }`}>
-                    <TouchableOpacity
-                      className="flex-1 p-4"
-                      accessibilityRole="button"
-                      accessibilityLabel={rule.labelText || rule.labelKey || rule.id}
-                      onPress={() =>
-                        router.push(`/(easy-schedule)/easy-schedule-form?ruleId=${rule.id}`)
-                      }>
-                      <View className="flex-1">
-                        <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                          {rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)}
-                        </Text>
-                        <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-                          {rule.ageRangeText ||
-                            (rule.ageRangeKey ? t(rule.ageRangeKey) : '') ||
-                            t('easySchedule.formulaGroups.custom')}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    {isActive ? (
-                      <View className="px-4 py-4">
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={24}
-                          color={brandColors.colors.primary}
-                        />
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        className="px-4 py-4"
-                        accessibilityRole="button"
-                        accessibilityLabel="Select formula"
-                        disabled={mutation.isPending}
-                        onPress={() => handleSelectFormula(rule.id)}>
-                        <Ionicons
-                          name="radio-button-off"
-                          size={24}
-                          color={brandColors.colors.secondary}
-                        />
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      className="p-4"
-                      accessibilityRole="button"
-                      accessibilityLabel="Delete"
-                      disabled={deleteMutation.isPending}
-                      onPress={() =>
-                        handleDeleteFormula(
-                          rule.id,
-                          rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)
-                        )
-                      }>
-                      <Ionicons
-                        name="trash-outline"
-                        size={20}
-                        color={brandColors.colors.destructive}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
+        {/* Custom Formulas */}
+        <Card className="rounded-lg">
+          <CardHeader>
+            <View className="flex-row items-center justify-between">
+              <CardTitle>{t("easySchedule.selectFormula.custom")}</CardTitle>
+              <Pressable
+                onPress={handleCreateCustom}
+                className="flex-row items-center gap-1 rounded-md bg-primary px-3 py-2"
+              >
+                <Ionicons name="add" size={16} color={brandColors.colors.white} />
+                <Text className="text-xs font-semibold text-white">
+                  {t("easySchedule.selectFormula.createNew")}
+                </Text>
+              </Pressable>
             </View>
-          )}
-
-          {/* Day-Specific (Temporary) Rules Group */}
-          {daySpecificRules.length > 0 && (
-            <View className="gap-2">
-              <Text className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {t('easySchedule.formulaGroups.daySpecific')}
-              </Text>
-              {daySpecificRules.map((rule) => {
-                const isActive = rule.id === formulaRule?.id;
-                const dateStr = rule.validDate
-                  ? new Date(rule.validDate).toLocaleDateString(undefined, {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                    })
-                  : '';
-                return (
-                  <View
-                    key={rule.id}
-                    className={`flex-row items-center gap-2 rounded-lg border ${
-                      isActive ? 'border-primary bg-primary/5' : 'border-border bg-card'
-                    }`}>
-                    <TouchableOpacity
-                      className="flex-1 p-4"
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        rule.labelText ||
-                        (rule.labelKey ? t(rule.labelKey) : rule.id) +
-                          (dateStr ? ` - ${dateStr}` : '')
-                      }
-                      onPress={() =>
-                        router.push(`/(easy-schedule)/easy-schedule-form?ruleId=${rule.id}`)
-                      }>
-                      <View className="flex-1">
-                        <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
-                          {rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)}
-                        </Text>
-                        <Text className="text-xs text-muted-foreground" numberOfLines={1}>
-                          {dateStr || t('easySchedule.formulaGroups.temporary')}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                    {isActive ? (
-                      <View className="px-4 py-4">
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={24}
-                          color={brandColors.colors.primary}
-                        />
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        className="px-4 py-4"
-                        accessibilityRole="button"
-                        accessibilityLabel="Select formula"
-                        disabled={mutation.isPending}
-                        onPress={() => handleSelectFormula(rule.id)}>
-                        <Ionicons
-                          name="radio-button-off"
-                          size={24}
-                          color={brandColors.colors.secondary}
-                        />
-                      </TouchableOpacity>
-                    )}
-                    <TouchableOpacity
-                      className="p-4"
-                      accessibilityRole="button"
-                      accessibilityLabel="Delete"
-                      disabled={deleteMutation.isPending}
-                      onPress={() =>
-                        handleDeleteFormula(
-                          rule.id,
-                          rule.labelText || (rule.labelKey ? t(rule.labelKey) : rule.id)
-                        )
-                      }>
-                      <Ionicons
-                        name="trash-outline"
-                        size={20}
-                        color={brandColors.colors.destructive}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-        </ScrollView>
-      )}
+          </CardHeader>
+          <CardContent className="gap-3">
+            {customRules.length > 0 ? (
+              customRules.map((rule) => renderFormulaItem(rule, true))
+            ) : (
+              <View className="items-center rounded-xl border border-dashed border-border bg-muted/30 p-6">
+                <MaterialCommunityIcons
+                  name="playlist-plus"
+                  size={32}
+                  color="#9CA3AF"
+                />
+                <Text className="mt-2 text-center text-sm text-muted-foreground">
+                  {t("easySchedule.selectFormula.noCustom")}
+                </Text>
+              </View>
+            )}
+          </CardContent>
+        </Card>
+      </ScrollView>
     </View>
   );
 }

@@ -1,22 +1,21 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-
-import { setActiveBabyProfileId } from '@/database/baby-profile';
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 
 /**
- * Hook to set the active baby profile and invalidate all cached queries
- * This ensures all data is refetched for the new active baby profile
- * @returns Mutation object with mutate function to set active baby profile
+ * Hook to set the active baby profile
+ * Convex is reactive - all queries automatically update when the active profile changes
+ * @returns Mutation function to set active baby profile
  */
 export function useSetActiveBabyProfile() {
-  const queryClient = useQueryClient();
+  const setActive = useMutation(api.babyProfiles.setActive);
 
-  return useMutation({
-    mutationFn: async (babyId: number) => {
-      await setActiveBabyProfileId(babyId);
+  return {
+    mutateAsync: async (babyId: Id<"babyProfiles">) => {
+      await setActive({ babyId });
     },
-    onSuccess: () => {
-      // Invalidate all queries to refetch data for the new active baby profile
-      queryClient.invalidateQueries();
+    mutate: (babyId: Id<"babyProfiles">) => {
+      setActive({ babyId });
     },
-  });
+  };
 }

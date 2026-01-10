@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from 'convex/react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   BookOpen,
@@ -26,16 +26,9 @@ import { TimePickerField } from '@/components/TimePickerField';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { useNotification } from '@/components/NotificationContext';
-import { BABY_HABITS_QUERY_KEY } from '@/constants/query-keys';
-import { getActiveBabyProfileId } from '@/database/baby-profile';
+import { api } from '@/convex/_generated/api';
 import { safeParseReminderDays } from '@/lib/json-parse';
-import {
-  getBabyHabits,
-  addBabyHabit,
-  removeBabyHabit,
-  updateBabyHabitReminder,
-  type HabitCategory,
-} from '@/database/habits';
+import type { HabitCategory } from '@/database/habits';
 import { useLocalization } from '@/localization/LocalizationProvider';
 
 // Icon mapping for categories
@@ -61,7 +54,6 @@ const categoryColors: Record<HabitCategory, string> = {
 export default function HabitDetailScreen() {
   const { t } = useLocalization();
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { showNotification } = useNotification();
   const params = useLocalSearchParams<{
     id: string;
@@ -72,7 +64,6 @@ export default function HabitDetailScreen() {
     maxAge: string;
   }>();
 
-  const [babyId, setBabyId] = useState<number | null>(null);
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(new Date());
   const [reminderDays, setReminderDays] = useState<string>('daily'); // 'daily', 'weekdays', 'weekends', or 'custom'
@@ -80,6 +71,27 @@ export default function HabitDetailScreen() {
   const [hasReminderChanges, setHasReminderChanges] = useState(false);
   const [showBenefits, setShowBenefits] = useState(true);
   const [showReminderModal, setShowReminderModal] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+
+  // Get active baby profile
+  const babyProfile = useQuery(api.babyProfiles.getActive);
+
+  // Get habit definition by definitionId to get the Convex ID
+  const habitDefinition = useQuery(
+    api.habits.getDefinitionById,
+    params.id ? { definitionId: params.id } : "skip"
+  );
+
+  // Fetch baby's current habits
+  const babyHabits = useQuery(
+    api.habits.getBabyHabits,
+    babyProfile?._id ? { babyId: babyProfile._id } : "skip"
+  );
+
+  // Convex mutations
+  const addHabitMutation = useMutation(api.habits.addBabyHabit);
+  const removeHabitMutation = useMutation(api.habits.removeBabyHabit);
+  const updateReminderMutation = useMutation(api.habits.updateBabyHabitReminder);
 
   // Frequency options
   const frequencyOptions = [
@@ -147,22 +159,6 @@ export default function HabitDetailScreen() {
     ? `${minAge} - ${maxAge} ${t('common.months', { defaultValue: 'months' })}`
     : `${minAge}+ ${t('common.months', { defaultValue: 'months' })}`;
 
-  // Load baby ID
-  useEffect(() => {
-    const loadBabyId = async () => {
-      const id = await getActiveBabyProfileId();
-      setBabyId(id);
-    };
-    loadBabyId();
-  }, []);
-
-  // Fetch baby's current habits
-  const { data: babyHabits } = useQuery({
-    queryKey: [BABY_HABITS_QUERY_KEY, babyId],
-    queryFn: () => (babyId ? getBabyHabits(babyId) : []),
-    enabled: !!babyId,
-  });
-
   const existingHabit = babyHabits?.find((h) => h.habitDefinitionId === params.id);
   const isAdded = !!existingHabit;
 
@@ -198,77 +194,84 @@ export default function HabitDetailScreen() {
     }
   }, [existingHabit]);
 
-  // Add habit mutation
-  const addMutation = useMutation({
-    mutationFn: async () => {
-      if (!babyId || !params.id) throw new Error('Missing data');
+  // Handle add habit
+  const handleAddHabit = async () => {
+    if (!babyProfile?._id || !habitDefinition?._id) {
+      showNotification('Missing data', 'error');
+      return;
+    }
+
+    setIsPending(true);
+    try {
       const timeStr = reminderEnabled
         ? `${reminderTime.getHours().toString().padStart(2, '0')}:${reminderTime.getMinutes().toString().padStart(2, '0')}`
         : undefined;
       const daysStr = reminderEnabled ? getReminderDaysToSave() : undefined;
-      await addBabyHabit(babyId, params.id, undefined, timeStr, daysStr);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [BABY_HABITS_QUERY_KEY] });
+
+      await addHabitMutation({
+        babyId: babyProfile._id,
+        habitDefinitionId: habitDefinition._id,
+        reminderTime: timeStr,
+        reminderDays: daysStr,
+      });
+
       showNotification(t('habit.habitLogged', { defaultValue: 'Habit added!' }), 'success');
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Failed to add habit:', error);
       showNotification(t('common.saveError'), 'error');
-    },
-  });
+    } finally {
+      setIsPending(false);
+    }
+  };
 
-  // Remove habit mutation
-  const removeMutation = useMutation({
-    mutationFn: async () => {
-      if (!existingHabit) throw new Error('Habit not found');
-      await removeBabyHabit(existingHabit.id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [BABY_HABITS_QUERY_KEY] });
+  // Handle remove habit
+  const handleRemoveHabit = async () => {
+    if (!existingHabit) return;
+
+    setIsPending(true);
+    try {
+      await removeHabitMutation({
+        babyHabitId: existingHabit._id,
+      });
+
       showNotification(t('habit.removeHabit', { defaultValue: 'Habit removed' }), 'success');
       router.back();
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Failed to remove habit:', error);
       showNotification(t('common.saveError'), 'error');
-    },
-  });
+    } finally {
+      setIsPending(false);
+    }
+  };
 
-  // Update reminder mutation
-  const updateReminderMutation = useMutation({
-    mutationFn: async () => {
-      if (!existingHabit) throw new Error('Habit not found');
+  // Handle save reminder
+  const handleSaveReminder = async () => {
+    if (!existingHabit) return;
+
+    setIsPending(true);
+    try {
       const timeStr = reminderEnabled
         ? `${reminderTime.getHours().toString().padStart(2, '0')}:${reminderTime.getMinutes().toString().padStart(2, '0')}`
-        : null;
-      const daysStr = reminderEnabled ? getReminderDaysToSave() : null;
-      await updateBabyHabitReminder(existingHabit.id, timeStr, daysStr);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [BABY_HABITS_QUERY_KEY] });
+        : undefined;
+      const daysStr = reminderEnabled ? getReminderDaysToSave() : undefined;
+
+      await updateReminderMutation({
+        babyHabitId: existingHabit._id,
+        reminderTime: timeStr,
+        reminderDays: daysStr,
+      });
+
       showNotification(
         t('habit.reminderUpdated', { defaultValue: 'Reminder updated!' }),
         'success'
       );
       setHasReminderChanges(false);
-    },
-    onError: (error) => {
+    } catch (error) {
       console.error('Failed to update reminder:', error);
       showNotification(t('common.saveError'), 'error');
-    },
-  });
-
-  const handleAddHabit = () => {
-    addMutation.mutate();
-  };
-
-  const handleRemoveHabit = () => {
-    removeMutation.mutate();
-  };
-
-  const handleSaveReminder = () => {
-    updateReminderMutation.mutate();
+    } finally {
+      setIsPending(false);
+    }
   };
 
   const handleTimeChange = (selectedTime: Date) => {
@@ -315,8 +318,6 @@ export default function HabitDetailScreen() {
     return reminderDays;
   };
 
-  const isPending =
-    addMutation.isPending || removeMutation.isPending || updateReminderMutation.isPending;
 
   return (
     <View className="flex-1 bg-background">

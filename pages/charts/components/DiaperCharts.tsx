@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from 'convex/react';
 import React, { useMemo } from 'react';
 import { Dimensions, Text, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
@@ -6,8 +6,7 @@ import { BarChart } from 'react-native-gifted-charts';
 import { ChartCard } from './ChartCard';
 import { SummaryCard } from './SummaryCard';
 
-import { DIAPER_CHANGES_QUERY_KEY } from '@/constants/query-keys';
-import { getDiaperChanges } from '@/database/diaper';
+import { api } from '@/convex/_generated/api';
 import { useLocalization } from '@/localization/LocalizationProvider';
 import { useBrandColor } from '@/hooks/use-brand-color';
 
@@ -22,10 +21,13 @@ export function DiaperCharts({ startDate, endDate }: DiaperChartsProps) {
   const { t } = useLocalization();
   const brandColors = useBrandColor();
 
-  const { data: changes = [] } = useQuery({
-    queryKey: [...DIAPER_CHANGES_QUERY_KEY, { startDate, endDate }],
-    queryFn: () => getDiaperChanges({ startDate, endDate, limit: 1000 }),
-  });
+  // Get active baby profile
+  const babyProfile = useQuery(api.babyProfiles.getActive);
+
+  const changes = useQuery(
+    api.diaperChanges.list,
+    babyProfile?._id ? { babyId: babyProfile._id, startDate, endDate, limit: 1000 } : "skip"
+  ) ?? [];
 
   const { diaperData, avgChanges, totalChanges } = useMemo(() => {
     const dailyChanges: Record<string, { wet: number; soiled: number; mixed: number }> = {};
