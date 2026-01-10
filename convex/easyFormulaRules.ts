@@ -27,13 +27,28 @@ export const list = query({
 });
 
 // Get a formula rule by its rule ID
+// If babyId is provided, checks for day-specific override first
 export const getById = query({
   args: {
     ruleId: v.string(),
     babyId: v.optional(v.id('babyProfiles')),
   },
   handler: async (ctx, args) => {
-    // First try to find by ruleId
+    // If babyId is provided, check for day-specific override first
+    if (args.babyId) {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const daySpecificRules = await ctx.db
+        .query('easyFormulaRules')
+        .withIndex('by_baby', (q) => q.eq('babyId', args.babyId))
+        .collect();
+
+      const todayRule = daySpecificRules.find((r) => r.validDate === today);
+      if (todayRule) {
+        return todayRule;
+      }
+    }
+
+    // Fall back to finding by ruleId
     const rule = await ctx.db
       .query('easyFormulaRules')
       .withIndex('by_rule_id', (q) => q.eq('ruleId', args.ruleId))
