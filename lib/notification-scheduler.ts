@@ -15,13 +15,12 @@ import {
   generateEasySchedule,
   type EasyScheduleItem,
   type EasyScheduleActivityType,
-} from '@/lib/easy-schedule-generator';
+ EasyCyclePhase } from '@/lib/easy-schedule-generator';
 import { safeParseEasyScheduleNotificationData } from '@/lib/json-parse';
 import type { BabyProfileRecord } from '@/database/baby-profile';
 
 // Re-export EasyCyclePhase for external use
 export type { EasyCyclePhase } from '@/lib/easy-schedule-generator';
-import type { EasyCyclePhase } from '@/lib/easy-schedule-generator';
 
 // Type for formula rule passed from Convex
 export interface FormulaRuleForScheduling {
@@ -113,6 +112,7 @@ export async function scheduleFeedingNotification(
 }
 
 async function scheduleEasyScheduleReminder(options: {
+  babyId: BabyProfileRecord['_id'];
   targetDate: Date;
   activityType: EasyScheduleActivityType;
   label: string;
@@ -143,6 +143,7 @@ async function scheduleEasyScheduleReminder(options: {
   });
 
   await saveScheduledNotification({
+    babyId: options.babyId,
     notificationType: 'sleep',
     notificationId,
     scheduledTime: Math.floor(options.targetDate.getTime() / 1000),
@@ -305,6 +306,7 @@ export async function rescheduleEasyReminders(
 
         try {
           const notificationId = await scheduleEasyScheduleReminder({
+            babyId: babyProfile._id,
             targetDate: reminderDate,
             activityType: item.activityType,
             label: activityLabel,
