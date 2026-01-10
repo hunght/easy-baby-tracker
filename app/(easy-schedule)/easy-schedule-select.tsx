@@ -1,15 +1,15 @@
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "convex/react";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Alert, ActivityIndicator, Pressable, ScrollView, View } from "react-native";
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMutation, useQuery } from 'convex/react';
+import { useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
+import { Alert, ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 
-import { ModalHeader } from "@/components/ModalHeader";
-import { Text } from "@/components/ui/text";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { api } from "@/convex/_generated/api";
-import { useBrandColor } from "@/hooks/use-brand-color";
-import { useLocalization } from "@/localization/LocalizationProvider";
+import { ModalHeader } from '@/components/ModalHeader';
+import { Text } from '@/components/ui/text';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { api } from '@/convex/_generated/api';
+import { useBrandColor } from '@/hooks/use-brand-color';
+import { useLocalization } from '@/localization/LocalizationProvider';
 
 type FormulaRule = {
   _id: string;
@@ -22,6 +22,7 @@ type FormulaRule = {
   maxWeeks?: number | null;
   isCustom: boolean;
   babyId?: string | null;
+  validDate?: string | null; // Day-specific rules have a validDate
 };
 
 export default function EasyScheduleSelectScreen() {
@@ -36,7 +37,7 @@ export default function EasyScheduleSelectScreen() {
   // Get all formula rules
   const allRules = useQuery(
     api.easyFormulaRules.list,
-    babyProfile?._id ? { babyId: babyProfile._id } : "skip"
+    babyProfile?._id ? { babyId: babyProfile._id } : 'skip'
   );
 
   // Mutations
@@ -53,6 +54,12 @@ export default function EasyScheduleSelectScreen() {
     const custom: FormulaRule[] = [];
 
     allRules.forEach((rule) => {
+      // Skip day-specific rules (they have a validDate)
+      // These are temporary adjustments and shouldn't appear in selection
+      if (rule.validDate) {
+        return;
+      }
+
       const formattedRule: FormulaRule = {
         _id: rule._id,
         ruleId: rule.ruleId,
@@ -64,6 +71,7 @@ export default function EasyScheduleSelectScreen() {
         maxWeeks: rule.maxWeeks,
         isCustom: rule.isCustom,
         babyId: rule.babyId,
+        validDate: rule.validDate,
       };
 
       if (rule.isCustom) {
@@ -111,24 +119,24 @@ export default function EasyScheduleSelectScreen() {
       });
       router.back();
     } catch (error) {
-      console.error("Failed to select formula:", error);
+      console.error('Failed to select formula:', error);
     }
   };
 
   const handleDeleteRule = (rule: FormulaRule) => {
     Alert.alert(
-      t("easySchedule.deleteFormula.title"),
-      t("easySchedule.deleteFormula.message", {
+      t('easySchedule.deleteFormula.title'),
+      t('easySchedule.deleteFormula.message', {
         params: { name: getRuleName(rule) },
       }),
       [
         {
-          text: t("easySchedule.deleteFormula.cancel"),
-          style: "cancel",
+          text: t('easySchedule.deleteFormula.cancel'),
+          style: 'cancel',
         },
         {
-          text: t("easySchedule.deleteFormula.confirm"),
-          style: "destructive",
+          text: t('easySchedule.deleteFormula.confirm'),
+          style: 'destructive',
           onPress: async () => {
             if (!babyProfile?._id) return;
             setDeletingRuleId(rule.ruleId);
@@ -138,7 +146,7 @@ export default function EasyScheduleSelectScreen() {
                 babyId: babyProfile._id,
               });
             } catch (error) {
-              console.error("Failed to delete rule:", error);
+              console.error('Failed to delete rule:', error);
             } finally {
               setDeletingRuleId(null);
             }
@@ -150,13 +158,13 @@ export default function EasyScheduleSelectScreen() {
 
   const handleViewFormula = (ruleId: string) => {
     router.push({
-      pathname: "/(easy-schedule)/easy-schedule-form",
+      pathname: '/(easy-schedule)/easy-schedule-form',
       params: { ruleId },
     });
   };
 
   const handleCreateCustom = () => {
-    router.push("/(easy-schedule)/easy-schedule-create");
+    router.push('/(easy-schedule)/easy-schedule-create');
   };
 
   if (isLoading) {
@@ -177,19 +185,15 @@ export default function EasyScheduleSelectScreen() {
         onPress={() => handleSelectFormula(rule.ruleId)}
         disabled={isDeleting}
         className={`rounded-xl border p-4 ${
-          isSelected
-            ? "border-accent bg-accent/10"
-            : "border-border bg-card"
-        } ${isDeleting ? "opacity-50" : ""}`}
-      >
+          isSelected ? 'border-accent bg-accent/10' : 'border-border bg-card'
+        } ${isDeleting ? 'opacity-50' : ''}`}>
         <View className="flex-row items-center justify-between">
           <View className="flex-1">
             <View className="flex-row items-center gap-2">
               <Text
                 className={`text-base font-semibold ${
-                  isSelected ? "text-accent" : "text-foreground"
-                }`}
-              >
+                  isSelected ? 'text-accent' : 'text-foreground'
+                }`}>
                 {getRuleName(rule)}
               </Text>
               {isSelected && (
@@ -200,17 +204,14 @@ export default function EasyScheduleSelectScreen() {
                 />
               )}
             </View>
-            <Text className="mt-1 text-sm text-muted-foreground">
-              {getAgeRange(rule)}
-            </Text>
+            <Text className="mt-1 text-sm text-muted-foreground">{getAgeRange(rule)}</Text>
           </View>
 
           <View className="flex-row items-center gap-2">
             <Pressable
               onPress={() => handleViewFormula(rule.ruleId)}
               hitSlop={8}
-              className="rounded-full bg-muted p-2"
-            >
+              className="rounded-full bg-muted p-2">
               <Ionicons name="eye-outline" size={18} color="#666" />
             </Pressable>
 
@@ -219,16 +220,11 @@ export default function EasyScheduleSelectScreen() {
                 onPress={() => handleDeleteRule(rule)}
                 hitSlop={8}
                 disabled={isDeleting}
-                className="rounded-full bg-red-500/10 p-2"
-              >
+                className="rounded-full bg-red-500/10 p-2">
                 {isDeleting ? (
                   <ActivityIndicator size="small" color={brandColors.colors.destructive} />
                 ) : (
-                  <Ionicons
-                    name="trash-outline"
-                    size={18}
-                    color={brandColors.colors.destructive}
-                  />
+                  <Ionicons name="trash-outline" size={18} color={brandColors.colors.destructive} />
                 )}
               </Pressable>
             )}
@@ -240,27 +236,19 @@ export default function EasyScheduleSelectScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ModalHeader
-        title={t("easySchedule.selectFormula.title")}
-        closeLabel={t("common.close")}
-      />
+      <ModalHeader title={t('easySchedule.selectFormula.title')} closeLabel={t('common.close')} />
 
-      <ScrollView
-        contentContainerClassName="p-5 pb-10 gap-4"
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerClassName="p-5 pb-10 gap-4" showsVerticalScrollIndicator={false}>
         {/* Predefined Formulas */}
         <Card className="rounded-lg">
           <CardHeader>
-            <CardTitle>{t("easySchedule.selectFormula.predefined")}</CardTitle>
+            <CardTitle>{t('easySchedule.selectFormula.predefined')}</CardTitle>
           </CardHeader>
           <CardContent className="gap-3">
             {predefinedRules.length > 0 ? (
               predefinedRules.map((rule) => renderFormulaItem(rule))
             ) : (
-              <Text className="text-center text-muted-foreground">
-                {t("common.noItemsFound")}
-              </Text>
+              <Text className="text-center text-muted-foreground">{t('common.noItemsFound')}</Text>
             )}
           </CardContent>
         </Card>
@@ -269,14 +257,13 @@ export default function EasyScheduleSelectScreen() {
         <Card className="rounded-lg">
           <CardHeader>
             <View className="flex-row items-center justify-between">
-              <CardTitle>{t("easySchedule.selectFormula.custom")}</CardTitle>
+              <CardTitle>{t('easySchedule.selectFormula.custom')}</CardTitle>
               <Pressable
                 onPress={handleCreateCustom}
-                className="flex-row items-center gap-1 rounded-md bg-primary px-3 py-2"
-              >
+                className="flex-row items-center gap-1 rounded-md bg-primary px-3 py-2">
                 <Ionicons name="add" size={16} color={brandColors.colors.white} />
                 <Text className="text-xs font-semibold text-white">
-                  {t("easySchedule.selectFormula.createNew")}
+                  {t('easySchedule.selectFormula.createNew')}
                 </Text>
               </Pressable>
             </View>
@@ -286,13 +273,9 @@ export default function EasyScheduleSelectScreen() {
               customRules.map((rule) => renderFormulaItem(rule, true))
             ) : (
               <View className="items-center rounded-xl border border-dashed border-border bg-muted/30 p-6">
-                <MaterialCommunityIcons
-                  name="playlist-plus"
-                  size={32}
-                  color="#9CA3AF"
-                />
+                <MaterialCommunityIcons name="playlist-plus" size={32} color="#9CA3AF" />
                 <Text className="mt-2 text-center text-sm text-muted-foreground">
-                  {t("easySchedule.selectFormula.noCustom")}
+                  {t('easySchedule.selectFormula.noCustom')}
                 </Text>
               </View>
             )}
