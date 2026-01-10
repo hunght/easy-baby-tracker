@@ -11,6 +11,7 @@ export const easySchedule = {
     selectFormulaTitle: 'Select Formula',
     selectFormula: {
       title: 'Select Formula',
+      predefined: 'Predefined Formulas',
       custom: 'Custom Formulas',
       noCustom: 'No custom formulas yet',
       createNew: 'Create New Formula',
@@ -327,6 +328,7 @@ export const easySchedule = {
     selectFormulaTitle: 'Chọn Công thức',
     selectFormula: {
       title: 'Chọn Công thức',
+      predefined: 'Công thức có sẵn',
       custom: 'Công thức tùy chỉnh',
       noCustom: 'Chưa có công thức tùy chỉnh',
       createNew: 'Tạo Công thức Mới',
