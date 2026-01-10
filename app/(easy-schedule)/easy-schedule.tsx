@@ -53,6 +53,12 @@ export default function EasyScheduleScreen() {
       : 'skip'
   );
 
+  // If this is a day-specific rule, get the source rule for its name
+  const sourceRule = useQuery(
+    api.easyFormulaRules.getById,
+    formulaRule?.sourceRuleId ? { ruleId: formulaRule.sourceRuleId } : 'skip'
+  );
+
   const isLoadingFormula =
     babyProfile !== undefined && babyProfile?.selectedEasyFormulaId && formulaRule === undefined;
 
@@ -227,6 +233,7 @@ export default function EasyScheduleScreen() {
   }
 
   // Transform formulaRule for ScheduleHeader
+  // For day-specific rules, include source rule's label info
   const headerFormulaRule = {
     id: formulaRule._id,
     labelKey: formulaRule.labelKey ?? '',
@@ -239,6 +246,9 @@ export default function EasyScheduleScreen() {
       typeof formulaRule.phases === 'string' ? JSON.parse(formulaRule.phases) : formulaRule.phases,
     validDate: formulaRule.validDate ?? null,
     description: formulaRule.description ?? null,
+    // Include source rule info for day-specific rules
+    sourceRuleLabelKey: sourceRule?.labelKey ?? null,
+    sourceRuleLabelText: sourceRule?.labelText ?? null,
   };
 
   return (

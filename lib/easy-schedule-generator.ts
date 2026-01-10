@@ -45,6 +45,9 @@ export type EasyFormulaRule = {
   phases: readonly EasyCyclePhase[];
   // Day-specific rule: if set, this rule only applies to this date (YYYY-MM-DD format)
   validDate?: string | null;
+  // For day-specific rules: the source rule's label info
+  sourceRuleLabelKey?: string | null;
+  sourceRuleLabelText?: string | null;
 };
 
 /**

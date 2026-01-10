@@ -19,9 +19,20 @@ export function ScheduleHeader({ formulaRule }: ScheduleHeaderProps) {
   // Check if this is a day-specific rule (has validDate)
   const isDaySpecific = !!formulaRule.validDate;
 
-  // Get display name - for day-specific rules, show "Today's Custom Schedule"
+  // Get the source rule's name for day-specific rules
+  const getSourceRuleName = () => {
+    if (formulaRule.sourceRuleLabelText) return formulaRule.sourceRuleLabelText;
+    if (formulaRule.sourceRuleLabelKey) return t(formulaRule.sourceRuleLabelKey);
+    return null;
+  };
+
+  // Get display name - for day-specific rules, show original name + "(Custom)"
   const getDisplayName = () => {
     if (isDaySpecific) {
+      const sourceName = getSourceRuleName();
+      if (sourceName) {
+        return `${sourceName} (${t('easySchedule.formulaGroups.custom', { defaultValue: 'Custom' })})`;
+      }
       return t('easySchedule.todaysSchedule', { defaultValue: "Today's Custom Schedule" });
     }
     if (formulaRule.labelText) return formulaRule.labelText;
@@ -29,10 +40,18 @@ export function ScheduleHeader({ formulaRule }: ScheduleHeaderProps) {
     return '';
   };
 
-  // Get age range - for day-specific rules, show "Custom for today"
+  // Get age range - for day-specific rules, show the date
   const getAgeRange = () => {
-    if (isDaySpecific) {
-      return t('easySchedule.customForToday', { defaultValue: 'Custom for today' });
+    if (isDaySpecific && formulaRule.validDate) {
+      // Format the date nicely (e.g., "Jan 10, 2026")
+      const date = new Date(formulaRule.validDate);
+      const formattedDate = date.toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+      });
+      return t('easySchedule.customForDate', {
+        defaultValue: 'Custom for {{date}}',
+      }).replace('{{date}}', formattedDate);
     }
     if (formulaRule.ageRangeText) return formulaRule.ageRangeText;
     if (formulaRule.ageRangeKey) return t(formulaRule.ageRangeKey);

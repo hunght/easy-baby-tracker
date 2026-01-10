@@ -41,6 +41,7 @@ export const easySchedule = {
     customScheduleNotice: '✨ Custom schedule for today - resets tomorrow',
     todaysSchedule: "Today's Custom Schedule",
     customForToday: 'Custom for today',
+    customForDate: 'Custom for {{date}}',
     viewMore: 'View more',
     create: {
       title: 'Create Custom Formula',
@@ -221,6 +222,7 @@ export const easySchedule = {
     customScheduleNotice: '✨ Lịch trình tùy chỉnh cho hôm nay - đặt lại vào ngày mai',
     todaysSchedule: 'Lịch tùy chỉnh hôm nay',
     customForToday: 'Tùy chỉnh cho hôm nay',
+    customForDate: 'Tùy chỉnh cho {{date}}',
     formulaGroups: {
       predefined: 'Công thức có sẵn',
       userCustom: 'Công thức tùy chỉnh',
