@@ -9,6 +9,12 @@ export const easySchedule = {
     hideDetails: 'Hide details',
     infoTitle: 'How E.A.S.Y. Works',
     selectFormulaTitle: 'Select Formula',
+    selectFormula: {
+      title: 'Select Formula',
+      custom: 'Custom Formulas',
+      noCustom: 'No custom formulas yet',
+      createNew: 'Create New Formula',
+    },
     formulaUpdated: 'Formula updated successfully',
     formulaGroups: {
       predefined: 'Predefined Formulas',
@@ -319,6 +325,12 @@ export const easySchedule = {
     hideDetails: 'Ẩn chi tiết',
     infoTitle: 'Cách hoạt động của E.A.S.Y.',
     selectFormulaTitle: 'Chọn Công thức',
+    selectFormula: {
+      title: 'Chọn Công thức',
+      custom: 'Công thức tùy chỉnh',
+      noCustom: 'Chưa có công thức tùy chỉnh',
+      createNew: 'Tạo Công thức Mới',
+    },
     viewMore: 'Xem thêm',
     scheduleFor: '{{number}}',
     approximateTime: '~ {{time}} ({{duration}})',
