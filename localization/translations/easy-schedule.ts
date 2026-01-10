@@ -39,6 +39,8 @@ export const easySchedule = {
     editTitle: 'Edit Formula',
     formulaCloned: 'Formula cloned successfully',
     customScheduleNotice: '✨ Custom schedule for today - resets tomorrow',
+    todaysSchedule: "Today's Custom Schedule",
+    customForToday: 'Custom for today',
     viewMore: 'View more',
     create: {
       title: 'Create Custom Formula',
@@ -217,6 +219,8 @@ export const easySchedule = {
     firstWakeTimeTitle: 'Chọn giờ thức đầu tiên',
     formulaUpdated: 'Đã cập nhật công thức thành công',
     customScheduleNotice: '✨ Lịch trình tùy chỉnh cho hôm nay - đặt lại vào ngày mai',
+    todaysSchedule: 'Lịch tùy chỉnh hôm nay',
+    customForToday: 'Tùy chỉnh cho hôm nay',
     formulaGroups: {
       predefined: 'Công thức có sẵn',
       userCustom: 'Công thức tùy chỉnh',

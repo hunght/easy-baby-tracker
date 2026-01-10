@@ -16,6 +16,29 @@ export function ScheduleHeader({ formulaRule }: ScheduleHeaderProps) {
   const router = useRouter();
   const brandColors = useBrandColor();
 
+  // Check if this is a day-specific rule (has validDate)
+  const isDaySpecific = !!formulaRule.validDate;
+
+  // Get display name - for day-specific rules, show "Today's Custom Schedule"
+  const getDisplayName = () => {
+    if (isDaySpecific) {
+      return t('easySchedule.todaysSchedule', { defaultValue: "Today's Custom Schedule" });
+    }
+    if (formulaRule.labelText) return formulaRule.labelText;
+    if (formulaRule.labelKey) return t(formulaRule.labelKey);
+    return '';
+  };
+
+  // Get age range - for day-specific rules, show "Custom for today"
+  const getAgeRange = () => {
+    if (isDaySpecific) {
+      return t('easySchedule.customForToday', { defaultValue: 'Custom for today' });
+    }
+    if (formulaRule.ageRangeText) return formulaRule.ageRangeText;
+    if (formulaRule.ageRangeKey) return t(formulaRule.ageRangeKey);
+    return '';
+  };
+
   return (
     <View className="flex-row items-center justify-between border-b border-border bg-background px-5 py-2">
       <View className="w-10" />
@@ -33,13 +56,13 @@ export function ScheduleHeader({ formulaRule }: ScheduleHeaderProps) {
             className="text-center text-xs font-semibold text-foreground"
             numberOfLines={1}
             ellipsizeMode="tail">
-            {t(formulaRule.labelKey)}
+            {getDisplayName()}
           </Text>
           <Text
             className="text-center text-[10px] text-muted-foreground"
             numberOfLines={1}
             ellipsizeMode="tail">
-            {t(formulaRule.ageRangeKey)}
+            {getAgeRange()}
           </Text>
         </View>
         <Ionicons name="chevron-down" size={16} color={brandColors.colors.lavender} />

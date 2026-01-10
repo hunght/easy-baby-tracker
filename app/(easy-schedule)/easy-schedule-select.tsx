@@ -54,12 +54,6 @@ export default function EasyScheduleSelectScreen() {
     const custom: FormulaRule[] = [];
 
     allRules.forEach((rule) => {
-      // Skip day-specific rules (they have a validDate)
-      // These are temporary adjustments and shouldn't appear in selection
-      if (rule.validDate) {
-        return;
-      }
-
       const formattedRule: FormulaRule = {
         _id: rule._id,
         ruleId: rule.ruleId,
@@ -88,6 +82,10 @@ export default function EasyScheduleSelectScreen() {
 
   // Helper to get rule display name
   const getRuleName = (rule: FormulaRule) => {
+    // Day-specific rules show "Today's Custom Schedule"
+    if (rule.validDate) {
+      return t('easySchedule.todaysSchedule', { defaultValue: "Today's Custom Schedule" });
+    }
     if (rule.labelText) return rule.labelText;
     if (rule.labelKey) {
       const translated = t(rule.labelKey);
@@ -98,6 +96,10 @@ export default function EasyScheduleSelectScreen() {
 
   // Helper to get age range text
   const getAgeRange = (rule: FormulaRule) => {
+    // Day-specific rules show "Custom for today"
+    if (rule.validDate) {
+      return t('easySchedule.customForToday', { defaultValue: 'Custom for today' });
+    }
     if (rule.ageRangeText) return rule.ageRangeText;
     if (rule.ageRangeKey) {
       const translated = t(rule.ageRangeKey);
