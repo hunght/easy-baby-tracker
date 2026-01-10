@@ -12,13 +12,21 @@ import {
 } from '@/lib/notifications-wrapper';
 
 import {
-  EasyScheduleActivityType,
   generateEasySchedule,
   type EasyScheduleItem,
+  type EasyScheduleActivityType,
 } from '@/lib/easy-schedule-generator';
 import { safeParseEasyScheduleNotificationData } from '@/lib/json-parse';
 import type { BabyProfileRecord } from '@/database/baby-profile';
-import { getFormulaRuleById } from '@/database/easy-formula-rules';
+
+// Re-export EasyCyclePhase for external use
+export type { EasyCyclePhase } from '@/lib/easy-schedule-generator';
+import type { EasyCyclePhase } from '@/lib/easy-schedule-generator';
+
+// Type for formula rule passed from Convex
+export interface FormulaRuleForScheduling {
+  phases: EasyCyclePhase[];
+}
 
 // Re-export requestNotificationPermissions from wrapper
 export { requestNotificationPermissions };
@@ -190,12 +198,38 @@ export interface EasyScheduleReminderLabels {
 }
 
 /**
+ * Cancel all existing EASY schedule reminders.
+ */
+export async function cancelAllEasyReminders(): Promise<void> {
+  console.log('[cancelAllEasyReminders] Canceling all EASY reminders');
+
+  const existingNotifications = await getScheduledNotifications({
+    notificationType: 'sleep',
+  });
+
+  for (const notification of existingNotifications) {
+    const data = safeParseEasyScheduleNotificationData(notification.data);
+    if (data?.activityType) {
+      try {
+        await cancelScheduledNotificationAsync(notification.notificationId);
+        await deleteScheduledNotificationByNotificationId(notification.notificationId);
+      } catch (error) {
+        console.error('Error canceling notification:', error);
+      }
+    }
+  }
+
+  console.log(`[cancelAllEasyReminders] Canceled ${existingNotifications.length} notifications`);
+}
+
+/**
  * Reschedule EASY schedule reminders based on current baby profile and settings.
  * Cancels existing reminders and schedules new ones for the specified number of days ahead.
  *
  * @param babyProfile - The baby profile with formula and birth date
  * @param firstWakeTime - First wake time in HH:mm format
  * @param reminderAdvanceMinutes - Minutes before activity to send reminder
+ * @param formulaRule - The formula rule with phases
  * @param labels - Localized labels for activities and notifications
  * @param daysAhead - Number of days ahead to schedule reminders (default: EASY_REMINDER_DAYS_AHEAD)
  * @returns Number of reminders scheduled
@@ -204,44 +238,14 @@ export async function rescheduleEasyReminders(
   babyProfile: BabyProfileRecord,
   firstWakeTime: string,
   reminderAdvanceMinutes: number,
+  formulaRule: FormulaRuleForScheduling,
   labels: EasyScheduleReminderLabels,
   daysAhead: number = EASY_REMINDER_DAYS_AHEAD
 ): Promise<number> {
   console.log('[rescheduleEasyReminders] Starting for baby profile:', babyProfile._id);
 
-  // Cancel existing EASY schedule reminders
-  const existingNotifications = await getScheduledNotifications({
-    notificationType: 'sleep',
-  });
-  console.log(
-    '[rescheduleEasyReminders] Found existing notifications:',
-    existingNotifications.length
-  );
-  for (const notification of existingNotifications) {
-    const data = safeParseEasyScheduleNotificationData(notification.data);
-    // Check if it's an EASY schedule reminder (has activityType in data)
-    if (data && data.activityType) {
-      try {
-        await cancelScheduledNotificationAsync(notification.notificationId);
-        await deleteScheduledNotificationByNotificationId(notification.notificationId);
-      } catch (error) {
-        console.error('Error canceling existing notification:', error);
-      }
-    }
-  }
-
-  // Get formula rule by selected ID from database
-  if (!babyProfile.selectedEasyFormulaId) {
-    throw new Error('No formula selected for baby profile. Please select a formula first.');
-  }
-
-  const formulaRule = await getFormulaRuleById(babyProfile.selectedEasyFormulaId, babyProfile._id);
-
-  if (!formulaRule) {
-    throw new Error(
-      `Formula rule with ID "${babyProfile.selectedEasyFormulaId}" not found for baby profile`
-    );
-  }
+  // Cancel existing EASY schedule reminders first
+  await cancelAllEasyReminders();
 
   const scheduleLabels = {
     eat: labels.eat,

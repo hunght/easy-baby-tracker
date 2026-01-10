@@ -14,6 +14,7 @@ import { api } from "@/convex/_generated/api";
 import { useLocalization } from "@/localization/LocalizationProvider";
 import { useNotification } from "@/components/NotificationContext";
 import { requestNotificationPermissions } from "@/lib/notification-scheduler";
+import { useNotificationSync } from "@/pages/root-layout/NotificationSyncProvider";
 
 const ADVANCE_OPTIONS = [5, 10, 15, 30];
 
@@ -21,6 +22,7 @@ export default function EasyScheduleSettingsScreen() {
   const { t } = useLocalization();
   const router = useRouter();
   const { showNotification } = useNotification();
+  const { triggerSync, cancelReminders } = useNotificationSync();
   const [firstWakeTime, setFirstWakeTime] = useState("07:00");
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [tempTime, setTempTime] = useState(new Date());
@@ -128,8 +130,16 @@ export default function EasyScheduleSettingsScreen() {
         value: String(reminderEnabled),
       });
 
+      // Trigger notification sync or cancel based on settings
+      if (reminderEnabled) {
+        // Small delay to let Convex sync the new settings
+        setTimeout(() => triggerSync(), 500);
+      } else {
+        await cancelReminders();
+      }
+
       showNotification(t("common.saveSuccess"), "success");
-      setTimeout(() => router.back(), 500);
+      setTimeout(() => router.back(), 800);
     } catch (error) {
       console.error("Failed to save settings:", error);
       showNotification(t("common.saveError"), "error");

@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { api } from '@/convex/_generated/api';
 
 import { ConvexAuthProvider } from './ConvexAuthProvider';
+import { NotificationSyncProvider } from './NotificationSyncProvider';
 
 // Inner component that runs seeding after auth is ready
 function DataSeeder({ children }: { children: React.ReactNode }) {
@@ -40,7 +41,7 @@ function DataSeeder({ children }: { children: React.ReactNode }) {
     }
   }, [seedStatus, seedAll]);
 
-  return <>{children}</>;
+  return <NotificationSyncProvider>{children}</NotificationSyncProvider>;
 }
 
 // Component that initializes database and auth
