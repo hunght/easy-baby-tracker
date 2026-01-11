@@ -8,9 +8,11 @@ import { Text } from '@/components/ui/text';
 type WelcomeStepProps = {
   headerText: string;
   onContinue: () => void;
+  onSignIn: () => void;
+  onExplore: () => void;
 };
 
-export function WelcomeStep({ headerText, onContinue }: WelcomeStepProps) {
+export function WelcomeStep({ headerText, onContinue, onSignIn, onExplore }: WelcomeStepProps) {
   const { t } = useLocalization();
 
   return (
@@ -55,9 +57,17 @@ export function WelcomeStep({ headerText, onContinue }: WelcomeStepProps) {
         </Text>
       </View>
 
-      <Button onPress={onContinue}>
-        <Text>{t('common.continue')}</Text>
-      </Button>
+      <View className="gap-3">
+        <Button onPress={onContinue}>
+          <Text>{t('onboarding.welcome.createAccount')}</Text>
+        </Button>
+        <Button variant="outline" onPress={onSignIn}>
+          <Text>{t('onboarding.welcome.signIn')}</Text>
+        </Button>
+        <Button variant="ghost" onPress={onExplore}>
+          <Text className="text-muted-foreground">{t('onboarding.welcome.exploreAsGuest')}</Text>
+        </Button>
+      </View>
     </View>
   );
 }

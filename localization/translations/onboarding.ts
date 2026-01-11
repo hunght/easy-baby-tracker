@@ -19,6 +19,9 @@ export const onboarding = {
       },
       disclaimer:
         'We do NOT use third party advertising. By tapping to continue, you agree to the Terms of Service and Privacy Policy of Easy Baby Tracker.',
+      createAccount: 'Create Account',
+      signIn: 'Sign In',
+      exploreAsGuest: 'Explore as Guest',
     },
     concerns: {
       helper: 'Tap to select (X)',
@@ -87,6 +90,9 @@ export const onboarding = {
       },
       disclaimer:
         'Chúng tôi KHÔNG sử dụng quảng cáo bên thứ ba. Tiếp tục nghĩa là bạn đồng ý với Điều khoản Dịch vụ và Chính sách Quyền riêng tư của Easy Baby Tracker.',
+      createAccount: 'Tạo tài khoản',
+      signIn: 'Đăng nhập',
+      exploreAsGuest: 'Khám phá với tư cách khách',
     },
     concerns: {
       helper: 'Chạm để chọn (X)',

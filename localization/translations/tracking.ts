@@ -2,6 +2,18 @@ export const tracking = {
   en: {
     loading: 'Loading your dashboard...',
     selectBaby: 'Select baby',
+    guestMode: {
+      title: 'Start Tracking Your Baby',
+      description:
+        'Create an account to track feeding, sleep, diapers, and more. Your data syncs across all your devices.',
+      createAccount: 'Create Account',
+      signIn: 'Sign In',
+    },
+    noProfile: {
+      title: 'Create Baby Profile',
+      description: "Set up your baby's profile to start tracking feeding, sleep, and more.",
+      createProfile: 'Create Profile',
+    },
     tiles: {
       feeding: { label: 'Feeding', sublabel: "See today's feeds & totals" },
       pumping: { label: 'Pumping', sublabel: "See today's output & sides" },
@@ -18,6 +30,18 @@ export const tracking = {
   vi: {
     loading: 'Đang tải bảng điều khiển của bạn...',
     selectBaby: 'Chọn bé',
+    guestMode: {
+      title: 'Bắt đầu theo dõi bé',
+      description:
+        'Tạo tài khoản để theo dõi bú, ngủ, tã và nhiều hơn nữa. Dữ liệu đồng bộ trên tất cả thiết bị.',
+      createAccount: 'Tạo tài khoản',
+      signIn: 'Đăng nhập',
+    },
+    noProfile: {
+      title: 'Tạo hồ sơ bé',
+      description: 'Thiết lập hồ sơ bé để bắt đầu theo dõi bú, ngủ và nhiều hơn nữa.',
+      createProfile: 'Tạo hồ sơ',
+    },
     tiles: {
       feeding: { label: 'Cho ăn', sublabel: 'Xem bữa ăn & tổng hôm nay' },
       pumping: { label: 'Hút sữa', sublabel: 'Xem lượng hút & bên hôm nay' },

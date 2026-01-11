@@ -1,9 +1,10 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuthActions } from '@convex-dev/auth/react';
 import { useMutation, useQuery } from 'convex/react';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Switch, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Switch, View } from 'react-native';
 import { z } from 'zod';
 
 import { Text } from '@/components/ui/text';
@@ -52,8 +53,13 @@ export default function SettingsScreen() {
   const { themeMode, setThemeMode } = useTheme();
   const router = useRouter();
   const { showNotification } = useNotification();
-  const { isLoading: authLoading, isAnonymous } = useConvexAuth();
+  const { isLoading: authLoading, isAuthenticated } = useConvexAuth();
+  const { signOut } = useAuthActions();
   const [isSettingActive, setIsSettingActive] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  // Get current user info
+  const currentUser = useQuery(api.users.getCurrentUser);
 
   // Convex queries
   const profiles = useQuery(api.babyProfiles.list, {}) ?? [];
@@ -65,11 +71,11 @@ export default function SettingsScreen() {
   // Convex mutation
   const setActiveProfileMutation = useMutation(api.babyProfiles.setActive);
 
-  const handleSetActiveBaby = async (babyId: string) => {
+  const handleSetActiveBaby = async (profileId: (typeof profiles)[number]['_id']) => {
     setIsSettingActive(true);
     try {
-      await setActiveProfileMutation({ babyId: babyId as any });
-      const profile = profiles.find((p) => p._id === babyId);
+      await setActiveProfileMutation({ babyId: profileId });
+      const profile = profiles.find((p) => p._id === profileId);
       showNotification(
         profile
           ? `${profile.nickname} is now active`
@@ -113,12 +119,48 @@ export default function SettingsScreen() {
     router.push('/(auth)/sign-in');
   };
 
+  const handleSignOut = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      t('settings.signOutTitle', { defaultValue: 'Sign Out' }),
+      t('settings.signOutMessage', { defaultValue: 'Are you sure you want to sign out?' }),
+      [
+        {
+          text: t('common.cancel', { defaultValue: 'Cancel' }),
+          style: 'cancel',
+        },
+        {
+          text: t('settings.signOut', { defaultValue: 'Sign Out' }),
+          style: 'destructive',
+          onPress: async () => {
+            setIsSigningOut(true);
+            try {
+              await signOut();
+              showNotification(
+                t('settings.signedOut', { defaultValue: 'You have been signed out' }),
+                'success'
+              );
+            } catch (error) {
+              console.error('Sign out error:', error);
+              showNotification(
+                t('settings.signOutError', { defaultValue: 'Failed to sign out' }),
+                'error'
+              );
+            } finally {
+              setIsSigningOut(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <View className="flex-1 bg-background">
       <TabPageHeader title={t('settings.title')} subtitle={t('settings.description')} />
 
       {/* Anonymous User Banner */}
-      {isAnonymous && (
+      {!isAuthenticated && (
         <View className="mx-6 mb-4 rounded-2xl bg-amber-50 p-5 dark:bg-amber-950/30">
           <View className="mb-3 flex-row items-center gap-3">
             <View className="h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50">
@@ -150,15 +192,14 @@ export default function SettingsScreen() {
             <View className="flex-row items-center gap-2">
               <MaterialCommunityIcons name="cellphone-link" size={16} color="#92400E" />
               <Text className="flex-1 text-sm text-amber-700 dark:text-amber-300">
-                {t('settings.benefitDevices', { defaultValue: 'Access from phone, tablet, or web' })}
+                {t('settings.benefitDevices', {
+                  defaultValue: 'Access from phone, tablet, or web',
+                })}
               </Text>
             </View>
           </View>
 
-          <Button
-            onPress={handleSignIn}
-            className="bg-amber-600 active:bg-amber-700"
-          >
+          <Button onPress={handleSignIn} className="bg-amber-600 active:bg-amber-700">
             <View className="flex-row items-center gap-2">
               <MaterialCommunityIcons name="login" size={18} color="#FFF" />
               <Text className="font-semibold text-white">
@@ -388,6 +429,81 @@ export default function SettingsScreen() {
                 </ToggleGroup>
               </View>
 
+              {/* Account Section */}
+              <View className="gap-3 rounded-2xl bg-card p-5 shadow-sm">
+                <View className="mb-2">
+                  <Text className="text-lg font-extrabold text-foreground">
+                    {t('settings.accountTitle', { defaultValue: 'Account' })}
+                  </Text>
+                  <Text className="text-sm text-muted-foreground">
+                    {t('settings.accountSubtitle', {
+                      defaultValue: 'Manage your account settings',
+                    })}
+                  </Text>
+                </View>
+
+                {!isAuthenticated ? (
+                  <View className="gap-3">
+                    <View className="flex-row items-center gap-3 rounded-xl bg-muted/30 p-3">
+                      <View className="h-10 w-10 items-center justify-center rounded-full bg-muted">
+                        <MaterialCommunityIcons name="account-outline" size={22} color="#9CA3AF" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-base font-semibold text-foreground">
+                          {t('settings.guestAccount', { defaultValue: 'Guest Account' })}
+                        </Text>
+                        <Text className="text-sm text-muted-foreground">
+                          {t('settings.guestDescription', {
+                            defaultValue: 'Sign in to sync your data',
+                          })}
+                        </Text>
+                      </View>
+                    </View>
+                    <Button
+                      onPress={handleSignIn}
+                      className="flex-row items-center justify-center gap-2">
+                      <MaterialCommunityIcons name="login" size={18} color="#FFF" />
+                      <Text className="font-semibold text-primary-foreground">
+                        {t('settings.signIn', { defaultValue: 'Sign In' })}
+                      </Text>
+                    </Button>
+                  </View>
+                ) : (
+                  <View className="gap-3">
+                    <View className="flex-row items-center gap-3 rounded-xl bg-muted/30 p-3">
+                      <View className="h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                        <MaterialCommunityIcons name="account-check" size={22} color="#7C3AED" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-base font-semibold text-foreground">
+                          {currentUser?.email ??
+                            t('settings.signedInUser', { defaultValue: 'Signed In' })}
+                        </Text>
+                        <Text className="text-sm text-muted-foreground">
+                          {t('settings.syncEnabled', { defaultValue: 'Data syncing enabled' })}
+                        </Text>
+                      </View>
+                      <MaterialCommunityIcons name="check-circle" size={20} color="#22C55E" />
+                    </View>
+                    <Button
+                      variant="outline"
+                      onPress={handleSignOut}
+                      disabled={isSigningOut}
+                      className="flex-row items-center justify-center gap-2 border-destructive">
+                      {isSigningOut ? (
+                        <ActivityIndicator size="small" color="#EF4444" />
+                      ) : (
+                        <>
+                          <MaterialCommunityIcons name="logout" size={18} color="#EF4444" />
+                          <Text className="font-semibold text-destructive">
+                            {t('settings.signOut', { defaultValue: 'Sign Out' })}
+                          </Text>
+                        </>
+                      )}
+                    </Button>
+                  </View>
+                )}
+              </View>
             </View>
           </TabsContent>
         </ScrollView>
